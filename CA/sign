@@ -1,0 +1,3 @@
+#!/bin/sh
+source vars
+exec openssl ca -outfile crt-$$.pem "$@"
