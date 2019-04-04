@@ -6,7 +6,7 @@ export LC_ALL=C
 source vars
 install -d ca ca/newcerts
 install -d -m 700 ca/private
-touch ca/index.txt
+touch -a ca/index.txt
 
 test -f ca/private/cakey.pem \
 || openssl genrsa -des3 -out ca/private/cakey.pem 4096
@@ -19,6 +19,7 @@ test -f ca/cacsr.pem \
 
 test -f ca/cacrt.pem \
 || openssl ca -selfsign -days 3650 -keyfile ca/private/cakey.pem \
+   -extensions v3_ca \
    -out ca/cacert.pem \
    -create_serial \
    -infiles ca/cacsr.pem
