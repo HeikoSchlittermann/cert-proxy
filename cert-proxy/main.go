@@ -1,60 +1,37 @@
 package main
 
 import (
+	. "cert-proxy/shared"
 	"crypto/tls"
-	"crypto/x509"
 	"fmt"
-	"io/ioutil"
-	"log"
 	"net/http"
 )
 
 var (
-	crtFile string
-	keyFile string
-	caFile  string
-	serve   string
+	caFile, crtFile, keyFile string
+	serve                    string
 )
 
-func check(err error) {
-	if err == nil {
-		return
-	}
-	log.Fatal(err)
-}
-
-func welcome(w http.ResponseWriter, r *http.Request) {
+func serveWelcome(w http.ResponseWriter, r *http.Request) {
 	state := r.TLS
-	fmt.Println(state.PeerCertificates)
-	fmt.Println(state.VerifiedChains)
-	fmt.Fprintf(w, "Welcome\r\n")
-}
-
-func rootCAs(files ...string) (pool *x509.CertPool) {
-	pool = x509.NewCertPool()
-	for _, f := range files {
-		pem, err := ioutil.ReadFile(f)
-		check(err)
-		if !pool.AppendCertsFromPEM(pem) {
-			panic("Can't append to ca cert pool")
-		}
-	}
-	return
+	fmt.Fprintf(w, "Welcome %s\r\n",
+        state.PeerCertificates[0].Subject.CommonName)
 }
 
 func main() {
 
-	http.HandleFunc("/", welcome)
+	http.HandleFunc("/", serveWelcome)
 
+	// The certificate we present to the client
 	cert, err := tls.LoadX509KeyPair(crtFile, keyFile)
-	check(err)
+	Check(err)
 
 	listener, err := tls.Listen("tcp", serve, &tls.Config{
-		ClientCAs:    rootCAs(caFile),
+		ClientCAs:    CertPool(caFile),
 		ClientAuth:   tls.RequireAndVerifyClientCert,
 		Certificates: []tls.Certificate{cert},
 	})
-	check(err)
+	Check(err)
 
 	http.Serve(listener, nil)
 }

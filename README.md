@@ -30,13 +30,12 @@ client.
 Authentication in both directions is done with X509 certs, issued by a
 CA running on the cert-proxy.
 
-
     Requests:
     GET /crt/<cn>
     GET /privkey/<cn>
     GET /fullchain/<cn>
 
-## operation
+## Operation
 
 Start the proxy on the proxy host:
 
