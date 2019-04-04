@@ -1,9 +1,8 @@
 # CERT-PROXY
 
-cert-proxy should be the trustworthy system acting on behalf of cert-proxy
-clients. It interacts with the Let's Encrypt CA system as a ACME
-protocol client. Certproxy is responsible for responding to the
-challenges from LE.
+cert-proxy should act as a proxy between systems with limited access to
+the Let's Encrypt CA or with limited abilities to respond to the
+challenges.
 
 ## Concept
 
@@ -23,5 +22,26 @@ the clients.
 	 | |
        cert-proxy-client
 
-As the cert-proxy may send sensitive information to the
-client, the client has to authenticate itself.
+As the cert-proxy may send sensitive information to the client, the
+client has to authenticate itself. As the client has to trust the
+information from the proxy, the server needs to authenticate with the
+client.
+
+Authentication in both directions is done with X509 certs, issued by a
+CA running on the cert-proxy.
+
+
+    Requests:
+    GET /crt/<cn>
+    GET /privkey/<cn>
+    GET /fullchain/<cn>
+
+## operation
+
+Start the proxy on the proxy host:
+
+    cert-proxy
+
+Run the client:
+
+    cert-proxy-client -interval 1h <dn>...

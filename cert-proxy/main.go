@@ -57,8 +57,4 @@ func main() {
 	check(err)
 
 	http.Serve(listener, nil)
-	/*
-		err := http.ListenAndServeTLS(serve, crtFile, keyFile, &tls.Config{})
-		check(err)
-	*/
 }
