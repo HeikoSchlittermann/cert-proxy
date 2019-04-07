@@ -1,12 +1,30 @@
 package main
 
-import "flag"
+import (
+	"flag"
+	"fmt"
+	"os"
+)
 
 func init() {
-	flag.StringVar(&crtFile, "crt", "crt.pem", "client certificate file")
-	flag.StringVar(&keyFile, "key", "key.pem", "client certificate key file")
-	flag.StringVar(&caFile, "ca", "ca.pem", "client certificate key file")
-	flag.StringVar(&connect, "connect", "localhost:4433", "address of cert proxy server")
-	flag.StringVar(&serverCN, "server name", "cert-proxy", "CN of the server")
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage: %s [options] <CN>\n", os.Args[0])
+		flag.PrintDefaults()
+	}
+
+	flag.StringVar(&opt.CrtFile, "crt", "crt.pem", "client certificate file")
+	flag.StringVar(&opt.KeyFile, "key", "key.pem", "client certificate key file")
+	flag.StringVar(&opt.CaFile, "ca", "ca.pem", "client certificate key file")
+	flag.StringVar(&opt.Connect, "connect", "localhost:4433", "address of cert proxy server")
+	flag.StringVar(&opt.ServerCN, "server name", "cert-proxy", "CN of the server")
+	flag.StringVar(&opt.Certbase, "certbase", "/var/lib/dehydrated/certs", "base dir for certs")
+	flag.StringVar(&opt.Outfile, "outfile", "", "output file (use - for stdout)")
 	flag.Parse()
+
+	if len(flag.Args()) < 1 {
+		flag.Usage()
+		os.Exit(1)
+	}
+
+	CN = flag.Arg(0)
 }
