@@ -14,7 +14,7 @@ var (
 	CN  string
 	opt struct {
 		Certbase                 string
-		CaFile, CrtFile, KeyFile string
+		CAFile, CrtFile, KeyFile string
 		Connect                  string
 		ServerCN                 string
 		Outfile                  string
@@ -35,8 +35,12 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
+            pool, err := CertPool(opt.CAFile)
+            if err != nil {
+                log.Fatal(err)
+            }
 			return &tls.Config{
-				RootCAs:      CertPool(opt.CaFile),
+				RootCAs:      pool,
 				ServerName:   opt.ServerCN,
 				Certificates: []tls.Certificate{cert},
 			}
