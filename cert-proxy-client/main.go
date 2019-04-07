@@ -18,7 +18,9 @@ var (
 		Connect                  string
 		ServerCN                 string
 		Outfile                  string
+		Verbose                  bool
 	}
+	verbose func(string, ...interface{})
 )
 
 func main() {
@@ -41,19 +43,21 @@ func main() {
 		}(),
 	}
 
-	resp, err := http.Get(urlBase + "/cert/" + CN)
+	URL := urlBase + "/cert/" + CN
+	verbose("Getting %s", URL)
+
+	resp, err := http.Get(URL)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer resp.Body.Close()
 
 	// Ok, we can get something, so prepare the destination,
-	// if any
 	var out io.WriteCloser
-
-	switch certFile := opt.Outfile; certFile {
+	switch certfile := opt.Outfile; certfile {
 	case "-":
 		out = os.Stdout
+		verbose("output to STDOUT")
 	case "":
 		cnDir := filepath.Join(opt.Certbase, CN)
 		err = os.Mkdir(cnDir, 0777)
@@ -61,16 +65,18 @@ func main() {
 			log.Fatal(err)
 		}
 
-		certFile = filepath.Join(cnDir, "cert.pem")
+		certfile = filepath.Join(cnDir, "cert.pem")
 		fallthrough
 	default:
-		out, err = os.Create(certFile)
+		verbose("output to %s", certfile)
+		out, err = os.Create(certfile)
 		if err != nil {
 			log.Fatal(err)
 		}
 		defer out.Close()
 	}
 
+	// Finally do the output
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
 		log.Fatal(err)

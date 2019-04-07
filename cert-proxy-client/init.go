@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 )
 
@@ -19,6 +20,7 @@ func init() {
 	flag.StringVar(&opt.ServerCN, "server name", "cert-proxy", "CN of the server")
 	flag.StringVar(&opt.Certbase, "certbase", "/var/lib/dehydrated/certs", "base dir for certs")
 	flag.StringVar(&opt.Outfile, "outfile", "", "output file (use - for stdout)")
+	flag.BoolVar(&opt.Verbose, "verbose", false, "verbose output")
 	flag.Parse()
 
 	if len(flag.Args()) < 1 {
@@ -27,4 +29,10 @@ func init() {
 	}
 
 	CN = flag.Arg(0)
+
+	if opt.Verbose {
+		verbose = func(format string, s ...interface{}) { log.Printf(format, s...) }
+	} else {
+		verbose = func(string, ...interface{}) {}
+	}
 }
