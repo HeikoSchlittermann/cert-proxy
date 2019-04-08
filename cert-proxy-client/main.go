@@ -35,10 +35,10 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
-            pool, err := CertPool(opt.CAFile)
-            if err != nil {
-                log.Fatal(err)
-            }
+			pool, err := CertPool(opt.CAFile)
+			if err != nil {
+				log.Fatal(err)
+			}
 			return &tls.Config{
 				RootCAs:      pool,
 				ServerName:   opt.ServerCN,
@@ -47,43 +47,56 @@ func main() {
 		}(),
 	}
 
-	URL := urlBase + "/cert/" + CN
-	verbose("Getting %s", URL)
+	for _, item := range []string{"cert", "chain", "fullchain"} {
+		URL := urlBase + "/" + item + "/" + CN
+		verbose("Getting %s", URL)
 
-	resp, err := http.Get(URL)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer resp.Body.Close()
-
-	// Ok, we can get something, so prepare the destination,
-	var out io.WriteCloser
-	switch certfile := opt.Outfile; certfile {
-	case "-":
-		out = os.Stdout
-		verbose("output to STDOUT")
-	case "":
-		cnDir := filepath.Join(opt.Certbase, CN)
-		err = os.Mkdir(cnDir, 0777)
-		if m, e := os.Stat(cnDir); !os.IsExist(err) || e != nil || !m.IsDir() {
-			log.Fatal(err)
-		}
-
-		certfile = filepath.Join(cnDir, "cert.pem")
-		fallthrough
-	default:
-		verbose("output to %s", certfile)
-		out, err = os.Create(certfile)
+		resp, err := http.Get(URL)
 		if err != nil {
 			log.Fatal(err)
 		}
-		defer out.Close()
-	}
+		if resp.StatusCode != http.StatusOK {
+			log.Printf("Status %s\n", resp.Status)
+			os.Exit(1)
+		}
+		defer resp.Body.Close()
 
-	// Finally do the output
-	_, err = io.Copy(out, resp.Body)
-	if err != nil {
-		log.Fatal(err)
+		// Ok, we can get something, so prepare the destination,
+		var out io.WriteCloser
+		switch certfile := opt.Outfile; certfile {
+		case "-":
+			out = os.Stdout
+			verbose("output to STDOUT")
+		case "":    // store in the certbase directory structure
+			cnDir := filepath.Join(opt.Certbase, CN)
+			switch err := os.Mkdir(cnDir, 0777); err != nil {
+			case os.IsExist(err):
+				if stat, err := os.Stat(cnDir); err != nil {
+					log.Fatal(err)
+				} else if stat.IsDir() {
+					break
+				}
+				fallthrough
+			default:
+				log.Fatal(err)
+			}
+
+			certfile = filepath.Join(cnDir, item+".pem")
+			fallthrough
+		default:
+			verbose("Output to %s", certfile)
+			out, err = os.Create(certfile)
+			if err != nil {
+				log.Fatal(err)
+			}
+			defer out.Close()
+		}
+
+		// Finally do the output
+		_, err = io.Copy(out, resp.Body)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 }
