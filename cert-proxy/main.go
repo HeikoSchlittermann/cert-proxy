@@ -22,16 +22,19 @@ func serveWelcome(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "HALLO: ", cn, r.URL.Path)
 }
 
-func serveCrt(w http.ResponseWriter, r *http.Request) {
+func servePublic(w http.ResponseWriter, r *http.Request) {
 
 	if strings.Contains(r.URL.Path, "..") {
 		http.Error(w, "No `..` allowed.", http.StatusNotAcceptable)
 		return
 	}
 
-	dir := http.Dir(opt.Certbase)
-	fn := filepath.Join(strings.TrimPrefix(r.URL.Path, "/cert/"), "cert.pem")
-	file, err := dir.Open(fn)
+    fn := func() string {
+        parts := strings.Split(r.URL.Path, "/") // "" / "cert" / "domain"
+        return filepath.Join(parts[2], parts[1] + ".pem")
+    }()
+
+	file, err := http.Dir(opt.Certbase).Open(fn)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), http.StatusNotFound)
@@ -42,7 +45,9 @@ func serveCrt(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 
-	http.HandleFunc("/cert/", serveCrt)
+	http.HandleFunc("/fullchain/", servePublic)
+	http.HandleFunc("/chain/", servePublic)
+	http.HandleFunc("/cert/", servePublic)
 	http.HandleFunc("/", serveWelcome)
 
 	// The certificate we present to the client
