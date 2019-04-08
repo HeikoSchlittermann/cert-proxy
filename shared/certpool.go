@@ -13,7 +13,9 @@ func CertPool(files ...string) (pool *x509.CertPool, err error) {
 	for _, f := range files {
         var pem []byte
 		pem, err = ioutil.ReadFile(f)
-        return
+        if err != nil {
+            return
+        }
 		if !pool.AppendCertsFromPEM(pem) {
 			panic("Can't append to ca cert pool")
 		}
