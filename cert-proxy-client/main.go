@@ -47,7 +47,7 @@ func main() {
 		}(),
 	}
 
-	for _, item := range []string{"cert", "chain", "fullchain"} {
+	for _, item := range []string{"cert", "chain", "fullchain", "privkey"} {
 		URL := urlBase + "/" + item + "/" + CN
 		verbose("Getting %s", URL)
 
