@@ -22,6 +22,9 @@ var items = []string{"cert", "chain", "fullchain", "privkey"}
 */
 
 func init() {
+
+	log.SetFlags(0) // supress Timestamp output
+
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] <CN>\n", os.Args[0])
 		flag.PrintDefaults()
