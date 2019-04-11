@@ -57,10 +57,10 @@ func servePrivate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-    domain, filename := func() (string, string) {
-			parts := strings.Split(r.URL.Path, "/")
-            return parts[2], filepath.Join(parts[2], parts[1]+".pem")
-    }()
+	domain, filename := func() (string, string) {
+		parts := strings.Split(r.URL.Path, "/")
+		return parts[2], filepath.Join(parts[2], parts[1]+".pem")
+	}()
 
 	cn := r.TLS.PeerCertificates[0].Subject.CommonName
 
@@ -71,7 +71,7 @@ func servePrivate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Your cn "+cn+" is unknown", http.StatusForbidden)
 		return
 	}
-    defer config.Close()
+	defer config.Close()
 
 	// now check, if the current cn is allowed to access the domain,
 	// that is, we check, if the config file (already opened) contains
@@ -90,19 +90,19 @@ func servePrivate(w http.ResponseWriter, r *http.Request) {
 		return false
 	}()
 
-    if !ok {
-        log.Printf("%s is not authorized for %s\n", cn, domain)
-        http.Error(w, "You are not authorized", http.StatusForbidden)
-        return
-    }
+	if !ok {
+		log.Printf("%s is not authorized for %s\n", cn, domain)
+		http.Error(w, "You are not authorized", http.StatusForbidden)
+		return
+	}
 
-    file, err := http.Dir(opt.Certbase).Open(filename)
-    if err != nil {
-        log.Println(err)
-        http.Error(w, err.Error(), http.StatusNotFound)
-        return
-    }
-    io.Copy(w, file)
+	file, err := http.Dir(opt.Certbase).Open(filename)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	io.Copy(w, file)
 
 }
 
