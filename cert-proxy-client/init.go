@@ -7,6 +7,20 @@ import (
 	"os"
 )
 
+/*
+type Items []string
+
+func (items Items) String() string {
+	return strings.Join(items, ", ")
+}
+func (items *Items) Set(value string) error {
+    *items = append(*items, value)
+    return nil
+}
+
+var items = []string{"cert", "chain", "fullchain", "privkey"}
+*/
+
 func init() {
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] <CN>\n", os.Args[0])
