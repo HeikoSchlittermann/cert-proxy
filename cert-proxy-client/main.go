@@ -11,17 +11,17 @@ import (
 )
 
 var (
-	CN  string
+	CNs = CNList{}
 	opt = struct {
-		Certbase string
-		//CAFile, CrtFile, KeyFile string
+		Certbase  string
 		SSLFile   string
 		Connect   string
 		ServerCN  string
 		Outfile   string
+		CNfile    string
 		Verbose   bool
 		OutFormat Format
-	}{ OutFormat: FormatPEM }
+	}{OutFormat: FORMAT}
 	verbose func(string, ...interface{})
 )
 
@@ -49,55 +49,77 @@ func main() {
 		}(),
 	}
 
-	for _, item := range []string{"cert", "chain", "fullchain", "privkey"} {
-		URL := urlBase + "/" + item + "/" + CN
-		verbose("Getting %s", URL)
-
-		resp, err := http.Get(URL)
-		if err != nil {
-			log.Fatal(err)
-		}
-		if resp.StatusCode != http.StatusOK {
-			log.Printf("Status %s\n", resp.Status)
-			os.Exit(1)
-		}
-		defer resp.Body.Close()
-
-		// Ok, we can get something, so prepare the destination,
-		var out io.WriteCloser
-		switch certfile := opt.Outfile; certfile {
-		case "-":
-			out = os.Stdout
-			verbose("output to STDOUT")
-		case "": // store in the certbase directory structure
-			cnDir := filepath.Join(opt.Certbase, CN)
-			switch err := os.Mkdir(cnDir, 0777); err != nil {
-			case os.IsExist(err):
-				if stat, err := os.Stat(cnDir); err != nil {
-					log.Fatal(err)
-				} else if stat.IsDir() {
-					break
-				}
-				fallthrough
-			default:
-				log.Fatal(err)
-			}
-
-			certfile = filepath.Join(cnDir, item+".pem")
-			fallthrough
+	// build a list with required items, depending on the required
+	// output format
+	var items = func() []string {
+		switch opt.OutFormat {
+		case FormatPEM:
+			return []string{"cert", "chain", "fullchain", "privkey"}
+		case FormatPKCS12:
+			return []string{"pkcs12"}
 		default:
-			verbose("Output to %s", certfile)
-			out, err = os.Create(certfile)
+			panic("unknown output format")
+		}
+	}()
+
+	// If we've a CNs list, append them to the CNs
+	err := CNs.AppendFromFile(opt.CNfile)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for CN, _ := range CNs {
+		verbose("Request %s: %s\n", CN, items)
+		for _, item := range items {
+			URL := urlBase + "/" + item + "/" + CN
+			verbose("Getting %s", URL)
+
+			resp, err := http.Get(URL)
 			if err != nil {
 				log.Fatal(err)
 			}
-			defer out.Close()
-		}
+			if resp.StatusCode != http.StatusOK {
+				log.Printf("Status %s\n", resp.Status)
+				os.Exit(1)
+			}
+			defer resp.Body.Close()
 
-		// Finally do the output
-		_, err = io.Copy(out, resp.Body)
-		if err != nil {
-			log.Fatal(err)
+			// Ok, we can get something, so prepare the destination,
+			var out io.WriteCloser
+			switch certfile := opt.Outfile; certfile {
+			case "-":
+				out = os.Stdout
+				verbose("output to STDOUT")
+			case "": // store in the certbase directory structure
+				cnDir := filepath.Join(opt.Certbase, CN)
+				switch err := os.Mkdir(cnDir, 0777); err != nil {
+				case os.IsExist(err):
+					if stat, err := os.Stat(cnDir); err != nil {
+						log.Fatal(err)
+					} else if stat.IsDir() {
+						break
+					}
+					fallthrough
+				default:
+					log.Fatal(err)
+				}
+
+				certfile = filepath.Join(cnDir, item+".pem")
+				fallthrough
+			default:
+				verbose("Output to %s", certfile)
+				out, err = os.Create(certfile)
+				if err != nil {
+					log.Fatal(err)
+				}
+				defer out.Close()
+			}
+
+			// Finally do the output
+			_, err = io.Copy(out, resp.Body)
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 	}
 
