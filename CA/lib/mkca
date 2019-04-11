@@ -2,6 +2,7 @@
 
 set -e
 export LC_ALL=C
+umask 077
 
 BINDIR=$(dirname $0)
 : ${BINDIR:=.}

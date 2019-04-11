@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+umask 077
 BINDIR=$(dirname $0)
 : ${BINDIR:=.}
 LIBDIR=$(readlink -f "$BINDIR"/../lib)
