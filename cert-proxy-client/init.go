@@ -19,7 +19,7 @@ func init() {
 	flag.StringVar(&opt.SSLFile, "sslfile", "ssl.pem", "SSL auth file (crt+key+ca) PEM")
 	flag.StringVar(&opt.Connect, "cert-proxy", "localhost:4433", "Address of cert proxy server")
 	flag.StringVar(&opt.ServerCN, "cert-proxy-cn", "cert-proxy", "CN of the cert proxy certificate")
-	flag.StringVar(&opt.Certbase, "certbase", CERTBASE, "Base dir for downloaded certs")
+	flag.StringVar(&opt.Certbase, "certbase", "certs", "Base dir for downloaded certs")
 	flag.StringVar(&opt.Outfile, "outfile", "", "Output file (use - for stdout)")
     flag.StringVar(&opt.CNfile, "cnfile", "", "CN list file (use - for stdin)")
 	flag.BoolVar(&opt.Verbose, "verbose", false, "Verbose output")
