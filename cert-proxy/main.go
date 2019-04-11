@@ -13,10 +13,10 @@ import (
 )
 
 var opt struct { // see init.go for defaults
-	Certbase                 string
-	CAFile, CrtFile, KeyFile string
-	Serve                    string
-	ClientConfigDir          string
+	Certbase        string
+	SSLFile         string
+	Serve           string
+	ClientConfigDir string
 }
 
 func serveWelcome(w http.ResponseWriter, r *http.Request) {
@@ -114,11 +114,11 @@ func main() {
 	http.HandleFunc("/privkey/", servePrivate)
 
 	// The certificate we present to the client
-	cert, err := tls.LoadX509KeyPair(opt.CrtFile, opt.KeyFile)
+	cert, err := tls.LoadX509KeyPair(opt.SSLFile, opt.SSLFile)
 	if err != nil {
 		log.Fatal(err)
 	}
-	pool, err := CertPool(opt.CAFile)
+	pool, err := CertPool(opt.SSLFile)
 	if err != nil {
 		log.Fatal(err)
 	}
