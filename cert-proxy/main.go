@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	. "cert-proxy/shared"
 	"crypto/tls"
 	"fmt"
@@ -76,21 +75,13 @@ func servePrivate(w http.ResponseWriter, r *http.Request) {
 	// now check, if the current cn is allowed to access the domain,
 	// that is, we check, if the config file (already opened) contains
 	// a line with the current domain
-	ok := func() bool {
-		scanner := bufio.NewScanner(config)
-		for scanner.Scan() {
-			line := strings.Trim(strings.SplitN(scanner.Text(), "#", 2)[0], " \t\r")
-			if line == domain {
-				return true
-			}
-		}
-		if err := scanner.Err(); err != nil {
-			log.Fatal(err)
-		}
-		return false
-	}()
+	var allowedDomains = UList{}
+	err = ReadItemsFromReader(&allowedDomains, config)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	if !ok {
+	if _, ok := allowedDomains[domain]; !ok {
 		log.Printf("%s is not authorized for %s\n", cn, domain)
 		http.Error(w, "You are not authorized", http.StatusForbidden)
 		return

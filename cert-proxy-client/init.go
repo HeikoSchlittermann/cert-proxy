@@ -21,7 +21,7 @@ func init() {
 	flag.StringVar(&opt.ServerCN, "cert-proxy-cn", "cert-proxy", "CN of the cert proxy certificate")
 	flag.StringVar(&opt.Certbase, "certbase", "certs", "Base dir for downloaded certs")
 	flag.StringVar(&opt.Outfile, "outfile", "", "Output file (use - for stdout)")
-    flag.StringVar(&opt.CNfile, "cnfile", "", "CN list file (use - for stdin)")
+	flag.StringVar(&opt.CNfile, "cnfile", "", "CN list file (use - for stdin)")
 	flag.BoolVar(&opt.Verbose, "verbose", false, "Verbose output")
 	flag.Var(&opt.OutFormat, "format", "Format of the requested certificate(s)")
 	flag.Parse()
@@ -31,9 +31,9 @@ func init() {
 		os.Exit(1)
 	}
 
-    for _, v := range flag.Args() {
-        CNs[v] = nil
-    }
+	for _, v := range flag.Args() {
+		CNs.Add(v)
+	}
 
 	if opt.Verbose {
 		verbose = func(format string, s ...interface{}) { log.Printf(format, s...) }

@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	CNs = CNList{}
+	CNs = UList{}
 	opt = struct {
 		Certbase  string
 		SSLFile   string
@@ -63,10 +63,12 @@ func main() {
 	}()
 
 	// If we've a CNs list, append them to the CNs
-	err := CNs.AppendFromFile(opt.CNfile)
-	if err != nil {
-		log.Fatal(err)
-	}
+    if opt.CNfile != "" {
+        err := ReadItemsFromFile(&CNs, opt.CNfile)
+        if err != nil {
+            log.Fatal(err)
+        }
+    }
 
 	for CN, _ := range CNs {
 		verbose("Request %s: %s\n", CN, items)
