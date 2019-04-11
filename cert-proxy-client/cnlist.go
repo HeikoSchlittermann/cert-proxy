@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"io"
 	"os"
 	"strings"
 )
@@ -10,15 +11,20 @@ type CNList map[string]interface{}
 
 func (cnlist *CNList) AppendFromFile(filename string) (err error) {
 
-	if filename == "" {
-		return
-	}
+	var file io.ReadCloser
 
-	file, err := os.Open(filename)
-	if err != nil {
+	switch filename {
+	case "":
 		return
+	case "-":
+		file = os.Stdin
+	default:
+		file, err = os.Open(filename)
+		if err != nil {
+			return
+		}
+		defer file.Close()
 	}
-	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
@@ -26,5 +32,5 @@ func (cnlist *CNList) AppendFromFile(filename string) (err error) {
 			(*cnlist)[l] = nil
 		}
 	}
-	return err
+	return scanner.Err()
 }
