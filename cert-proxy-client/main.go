@@ -79,8 +79,8 @@ func main() {
 				log.Fatal(err)
 			}
 			if resp.StatusCode != http.StatusOK {
-				log.Printf("Status %s\n", resp.Status)
-				os.Exit(1)
+				log.Printf("%s: Status %s\n", CN, resp.Status)
+				continue
 			}
 			defer resp.Body.Close()
 
