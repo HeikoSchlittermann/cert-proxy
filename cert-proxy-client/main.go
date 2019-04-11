@@ -12,15 +12,16 @@ import (
 
 var (
 	CN  string
-	opt struct {
+	opt = struct {
 		Certbase string
 		//CAFile, CrtFile, KeyFile string
-		SSLFile  string
-		Connect  string
-		ServerCN string
-		Outfile  string
-		Verbose  bool
-	}
+		SSLFile   string
+		Connect   string
+		ServerCN  string
+		Outfile   string
+		Verbose   bool
+		OutFormat Format
+	}{ OutFormat: FormatPEM }
 	verbose func(string, ...interface{})
 )
 

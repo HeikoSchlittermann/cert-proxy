@@ -22,6 +22,7 @@ func init() {
 	flag.StringVar(&opt.Certbase, "certbase", CERTBASE, "base dir for downloaded certs")
 	flag.StringVar(&opt.Outfile, "outfile", "", "output file (use - for stdout)")
 	flag.BoolVar(&opt.Verbose, "verbose", false, "verbose output")
+	flag.Var(&opt.OutFormat, "format", "format of the requested certificate(s)")
 	flag.Parse()
 
 	if len(flag.Args()) < 1 {
