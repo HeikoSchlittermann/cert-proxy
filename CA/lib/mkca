@@ -1,0 +1,88 @@
+#!/bin/bash
+
+set -e
+export LC_ALL=C
+
+BINDIR=$(dirname $0)
+: ${BINDIR:=.}
+
+VARSFILE="$BINDIR/.vars.sh"
+
+if ! test -f "$VARSFILE"; then
+    echo "$0: $VARSFILE not found. Please create it from the example in $BINDIR/" >&2
+    exit 1
+fi
+source $VARSFILE
+
+function _git() {
+    git -C "$CA_DIR" "$@"
+}
+
+trap "_git reset --hard; _git clean -d -f" ERR
+
+git init "$CA_DIR"
+cat > "$CA_DIR/.gitignore" <<_
+index*.old
+serial*.old
+_
+
+install -m 0644 $BINDIR/openssl.cnf "$CA_DIR/"
+
+install -d "$CA_DIR"/{newcerts,certs}
+install -d -m 700 "$CA_DIR/private"
+
+touch -a "$CA_DIR/index.txt"
+
+test -f "$CA_DIR"/private/cakey.pem \
+|| {
+    cat >&2 <<_
+#
+# NEXT: now you will be prompted *twice* for the passphrase to protect your CA key
+#
+_
+    openssl genrsa -des3 -out "$CA_DIR/private/cakey.pem" 4096
+
+    echo "# DONE: CA key generated." >&2
+}
+
+test -f "$CA_DIR"/cacsr.pem \
+|| {
+    cat >&2 <<_
+#
+# NEXT: create the CA certificate signing request.
+#
+_
+    openssl req -new -out "$CA_DIR/cacsr.pem" \
+    -days 3650 \
+    -key "$CA_DIR/private/cakey.pem" \
+    -subj "/C=$CA_DEFAULT_C/ST=$CA_DEFAULT_ST/L=$CA_DEFAULT_L/O=$CA_DEFAULT_O/OU=$CA_DEFAULT_OU/CN=CA"
+    echo "# DONE: CA certificate signing request." >&2
+}
+
+test -f "$CA_DIR"/cacrt.pem \
+|| {
+    cat >&2 <<_
+#
+# NEXT: Sign the CA certificate.
+#
+_
+    openssl ca -selfsign -days 3650 -keyfile "$CA_DIR"/private/cakey.pem \
+   -extensions v3_ca \
+   -out "$CA_DIR/cacert.pem" \
+   -create_serial \
+   -infiles "$CA_DIR/cacsr.pem"
+
+   _git add "$CA_DIR/private/cakey.pem"
+   _git add "$CA_DIR/cacert.pem"
+   _git add "$CA_DIR/serial"
+   _git add "$CA_DIR/index.txt"
+   _git add "$CA_DIR/index.txt.attr"
+   _git add "$CA_DIR/newcerts"
+   _git add "$CA_DIR/cacsr.pem"
+   _git add "$CA_DIR/openssl.cnf"
+   _git add "$CA_DIR/.gitignore"
+
+   echo "# DONE: Signed the CA certificate" >&2
+}
+
+_git commit -m 'initial setup'

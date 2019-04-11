@@ -1,6 +1,0 @@
-export OPENSSL_CONF=$PWD/openssl.cnf
-export CA_DEFAULT_C=DE
-export CA_DEFAULT_ST=Sachsen
-export CA_DEFAULT_L=Dresden
-export CA_DEFAULT_O=IUS
-export CA_DEFAULT_OU=cert-proxy

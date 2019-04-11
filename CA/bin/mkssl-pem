@@ -1,0 +1,80 @@
+#!/bin/bash
+set -e
+BINDIR=$(dirname $0)
+: ${BINDIR:=.}
+LIBDIR=$(readlink -f "$BINDIR"/../lib)
+VARSFILE="$LIBDIR"/.vars.sh
+
+test -f "$VARSFILE" || {
+    echo "$0: Can't source $VARSFILE" >&2
+    exit 1
+}
+
+source "$VARSFILE"
+
+function _git() {
+    git -C "$CA_DIR" "$@"
+}
+function _gitclean() {
+    _git reset --hard
+    _git clean -d -f
+}
+
+trap _gitclean ERR
+
+test -d "$CA_DIR" || {
+    echo "$0: CA $CA_DIR is missing. Please run lib/mkca first" >&2
+    exit 1
+}
+
+
+if (( $# != 1 )); then
+    cat >&2 <<_
+Usage: $0 CN
+       CN: common name of the certificate (auth-info)
+       Example: $0 cert-proxy
+            or: $0 host2.domain.com
+_
+    exit 1
+fi
+
+_gitclean
+
+REQ_DIR=$CA_DIR/requests
+install -d -m 0700 "$REQ_DIR"
+
+cn="$1"; shift
+test -d "$REQ_DIR/$cn" && {
+    echo "$0: $cn is already known. Aborting." >&2
+    exit 1
+}
+
+install -d -m 0700 "$REQ_DIR/$cn"
+openssl genrsa -out "$REQ_DIR/$cn/key.pem" 4096
+gitfiles+=("$REQ_DIR/$cn/key.pem")
+
+openssl req -new -key "$REQ_DIR/$cn/key.pem" \
+	    -out "$REQ_DIR/$cn/csr.pem" \
+	    -subj "/C=$CA_DEFAULT_C/ST=$CA_DEFAULT_ST/L=$CA_DEFAULT_L/O=$CA_DEFAULT_O/OU=$CA_DEFAULT_OU/CN=$cn"
+gitfiles+=("$REQ_DIR/$cn/csr.pem")
+
+install -d -m 0755 "$CA_DIR/certs"
+openssl ca -notext -out "$CA_DIR/certs/$cn.pem" -in "$REQ_DIR/$cn/csr.pem"
+gitfiles+=("$CA_DIR/certs/$cn.pem")
+gitfiles+=("$CA_DIR/newcerts")
+
+# the rest looks spooky, but we didn't want to touch new files until we
+# got our data
+ssl=(
+ "$(openssl x509 -in "$CA_DIR/certs/$cn.pem")"
+ "$(openssl rsa  -in "$REQ_DIR/$cn/key.pem")"
+ "$(openssl x509 -in "$CA_DIR/cacert.pem")"
+)
+IFS=$'\x0a'; echo "${ssl[*]}" >"$REQ_DIR/$cn/ssl.pem"
+gitfiles+=("$REQ_DIR/$cn/ssl.pem")
+
+IFS=$'\x0a'; echo "${ssl[*]}" >"$cn-ssl.pem"
+
+_git add "${gitfiles[@]}"
+_git add -u
+_git commit -m "New Cert for $cn"

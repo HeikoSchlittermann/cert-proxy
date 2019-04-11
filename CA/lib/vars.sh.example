@@ -1,0 +1,10 @@
+export CA_DIR=$PWD/CA
+export OPENSSL_CONF=$CA_DIR/openssl.cnf
+export CA_DEFAULT_C=DE
+export CA_DEFAULT_ST=Sachsen
+export CA_DEFAULT_L=Dresden
+export CA_DEFAULT_O=IUS
+export CA_DEFAULT_OU=cert-proxy
+
+export GIT_COMMITTER_NAME=${GIT_COMMITTER_NAME:-"AUTO Cert-Proxy CA"}
+export GIT_COMMITTER_EMAIL=${GIT_COMMITTER_EMAIL:-"cert-proxy-ca@$(hostname)"}

@@ -1,2 +1,2 @@
-ca
-vars
+ca/
+lib/.vars.sh
