@@ -30,9 +30,12 @@ func init() {
 		flag.PrintDefaults()
 	}
 
-	flag.StringVar(&opt.CrtFile, "crt", "crt.pem", "client certificate file")
-	flag.StringVar(&opt.KeyFile, "key", "key.pem", "client certificate key file")
-	flag.StringVar(&opt.CAFile, "ca", "ca.pem", "client certificate key file")
+	/*
+		flag.StringVar(&opt.CrtFile, "crt", "crt.pem", "client certificate file")
+		flag.StringVar(&opt.KeyFile, "key", "key.pem", "client certificate key file")
+		flag.StringVar(&opt.CAFile, "ca", "ca.pem", "client certificate key file")
+	*/
+	flag.StringVar(&opt.SSLFile, "ssl", "proxy.pem", "proxy auth file (crt+key+ca)")
 	flag.StringVar(&opt.Connect, "connect", "localhost:4433", "address of cert proxy server")
 	flag.StringVar(&opt.ServerCN, "server name", "cert-proxy", "CN of the server")
 	flag.StringVar(&opt.Certbase, "certbase", "/var/lib/dehydrated/certs", "base dir for certs")

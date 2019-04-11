@@ -13,12 +13,13 @@ import (
 var (
 	CN  string
 	opt struct {
-		Certbase                 string
-		CAFile, CrtFile, KeyFile string
-		Connect                  string
-		ServerCN                 string
-		Outfile                  string
-		Verbose                  bool
+		Certbase string
+		//CAFile, CrtFile, KeyFile string
+		SSLFile  string
+		Connect  string
+		ServerCN string
+		Outfile  string
+		Verbose  bool
 	}
 	verbose func(string, ...interface{})
 )
@@ -31,11 +32,11 @@ func main() {
 	// avoid having tons of semiglobal variables
 	http.DefaultClient.Transport = &http.Transport{
 		TLSClientConfig: func() *tls.Config {
-			cert, err := tls.LoadX509KeyPair(opt.CrtFile, opt.KeyFile)
+			cert, err := tls.LoadX509KeyPair(opt.SSLFile, opt.SSLFile)
 			if err != nil {
 				log.Fatal(err)
 			}
-			pool, err := CertPool(opt.CAFile)
+			pool, err := CertPool(opt.SSLFile)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -67,7 +68,7 @@ func main() {
 		case "-":
 			out = os.Stdout
 			verbose("output to STDOUT")
-		case "":    // store in the certbase directory structure
+		case "": // store in the certbase directory structure
 			cnDir := filepath.Join(opt.Certbase, CN)
 			switch err := os.Mkdir(cnDir, 0777); err != nil {
 			case os.IsExist(err):
