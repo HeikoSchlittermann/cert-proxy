@@ -3,11 +3,9 @@ package main
 import (
 	. "cert-proxy/shared"
 	"crypto/tls"
-	"io"
 	"log"
 	"net/http"
-	"os"
-	"path/filepath"
+	"sync"
 )
 
 var (
@@ -25,104 +23,76 @@ var (
 	verbose func(string, ...interface{})
 )
 
+func tlsClientConfig(sslFile string) (config *tls.Config, err error) {
+	cert, err := tls.LoadX509KeyPair(sslFile, sslFile)
+	if err != nil {
+		return
+	}
+	pool, err := CertPool(opt.SSLFile)
+	if err != nil {
+		return
+	}
+
+	config = &tls.Config{
+		RootCAs:      pool,
+		ServerName:   opt.ServerCN,
+		Certificates: []tls.Certificate{cert},
+	}
+	return
+}
+
 func main() {
 
-	urlBase := "https://" + opt.Connect
+	// Build the list of DNs (Domains) we need to fetch the
+	// certficates for
+	err := AddItemsFromFile(&CNs, opt.CNfile)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	// ohoh, even in Go we can write unreadable code, just to
-	// avoid having tons of semiglobal variables
+	// Build a list of items to fetch. This depends on the
+	// output format (cert, chain, fullchain, privkey), (pkcs12)
+	var items = ITEMS[opt.OutFormat]
+
+	// Setup the HTTP client, some more setup is necessary, as we need
+	// to send our certificate and we need to check the server's cert
+	// agains a non-public root CA.
+	// FIXME: is this really the right way?
 	http.DefaultClient.Transport = &http.Transport{
+		// Go behaves quite rude and just tears down the connections
+		// when the program stops (even the CloseIdleConnections
+		// doesn't seem to help
+		// If we want to be more polite, we should disable the long
+		// lived connections:
+		//DisableKeepAlives: true,
 		TLSClientConfig: func() *tls.Config {
-			cert, err := tls.LoadX509KeyPair(opt.SSLFile, opt.SSLFile)
+			config, err := tlsClientConfig(opt.SSLFile)
 			if err != nil {
 				log.Fatal(err)
 			}
-			pool, err := CertPool(opt.SSLFile)
-			if err != nil {
-				log.Fatal(err)
-			}
-			return &tls.Config{
-				RootCAs:      pool,
-				ServerName:   opt.ServerCN,
-				Certificates: []tls.Certificate{cert},
-			}
+			return config
 		}(),
 	}
+	// WTF is going on here, I need to explore this in more detail
+	defer http.DefaultClient.Transport.(*http.Transport).CloseIdleConnections()
 
-	// build a list with required items, depending on the required
-	// output format
-	var items = func() []string {
-		switch opt.OutFormat {
-		case FormatPEM:
-			return []string{"cert", "chain", "fullchain", "privkey"}
-		case FormatPKCS12:
-			return []string{"pkcs12"}
-		default:
-			panic("unknown output format")
-		}
-	}()
+	verbose("Enqueing tasks")
+	var queue = make(chan Task)
+    go func() {
+        enqueTasks(queue, CNs, items)
+        close(queue)
+    }()
 
-	// If we've a CNs list, append them to the CNs
-    if opt.CNfile != "" {
-        err := ReadItemsFromFile(&CNs, opt.CNfile)
-        if err != nil {
-            log.Fatal(err)
-        }
-    }
-
-	for CN, _ := range CNs {
-		verbose("Request %s: %s\n", CN, items)
-		for _, item := range items {
-			URL := urlBase + "/" + item + "/" + CN
-			verbose("Getting %s", URL)
-
-			resp, err := http.Get(URL)
-			if err != nil {
-				log.Fatal(err)
-			}
-			if resp.StatusCode != http.StatusOK {
-				log.Printf("%s: Status %s\n", CN, resp.Status)
-				continue
-			}
-			defer resp.Body.Close()
-
-			// Ok, we can get something, so prepare the destination,
-			var out io.WriteCloser
-			switch certfile := opt.Outfile; certfile {
-			case "-":
-				out = os.Stdout
-				verbose("output to STDOUT")
-			case "": // store in the certbase directory structure
-				cnDir := filepath.Join(opt.Certbase, CN)
-				switch err := os.Mkdir(cnDir, 0777); err != nil {
-				case os.IsExist(err):
-					if stat, err := os.Stat(cnDir); err != nil {
-						log.Fatal(err)
-					} else if stat.IsDir() {
-						break
-					}
-					fallthrough
-				default:
-					log.Fatal(err)
-				}
-
-				certfile = filepath.Join(cnDir, item+".pem")
-				fallthrough
-			default:
-				verbose("Output to %s", certfile)
-				out, err = os.Create(certfile)
-				if err != nil {
-					log.Fatal(err)
-				}
-				defer out.Close()
-			}
-
-			// Finally do the output
-			_, err = io.Copy(out, resp.Body)
-			if err != nil {
-				log.Fatal(err)
-			}
-		}
+	verbose("Launching workers")
+	var wg = sync.WaitGroup{}
+	for i := 0; i < 3; i++ {
+		wg.Add(1)
+		go func(wid int) {
+			defer wg.Done()
+			Worker(wid, queue)
+		}(i)
 	}
+    verbose("Waiting for completion")
+	wg.Wait()
 
 }
