@@ -23,7 +23,6 @@ func serveWelcome(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Welcome", cn, r.URL.Path)
 }
 
-// servePublic delivers public files
 func servePublic(w http.ResponseWriter, r *http.Request) {
 
 	// do not allow ..
@@ -76,7 +75,7 @@ func servePrivate(w http.ResponseWriter, r *http.Request) {
 	// that is, we check, if the config file (already opened) contains
 	// a line with the current domain
 	var allowedDomains = UList{}
-	err = ReadItemsFromReader(&allowedDomains, config)
+	err = AddItemsFromReader(&allowedDomains, config)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -119,7 +118,9 @@ func main() {
 		ClientAuth:   tls.RequireAndVerifyClientCert, // !! RequireAndVerify !!
 		Certificates: []tls.Certificate{cert},
 	})
-	Check(err)
+    if err != nil {
+        log.Fatal(err)
+    }
 
 	http.Serve(listener, nil)
 }

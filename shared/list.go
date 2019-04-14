@@ -15,16 +15,20 @@ type Items interface {
 
 // ReadListFromFile reads a file, and adds each line as an
 // item to the Items list. Comments (#) are allowed.
-func ReadItemsFromFile(items Items, filename string) error {
+func AddItemsFromFile(items Items, filename string) error {
+    if filename == "" {
+        return nil
+    }
+
 	file, err := os.Open(filename)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	return ReadItemsFromReader(items, file)
+	return AddItemsFromReader(items, file)
 }
-func ReadItemsFromReader(items Items, r io.Reader) error {
+func AddItemsFromReader(items Items, r io.Reader) error {
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		l := strings.Trim(strings.SplitN(scanner.Text(), "#", 2)[0], " \t\r")

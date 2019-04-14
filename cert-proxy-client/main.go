@@ -45,14 +45,9 @@ func main() {
 
 	// Build the list of DNs (Domains) we need to fetch the
 	// certficates for
-	err := AddItemsFromFile(&CNs, opt.CNfile)
-	if err != nil {
+	if err := AddItemsFromFile(&CNs, opt.CNfile); err != nil {
 		log.Fatal(err)
 	}
-
-	// Build a list of items to fetch. This depends on the
-	// output format (cert, chain, fullchain, privkey), (pkcs12)
-	var items = ITEMS[opt.OutFormat]
 
 	// Setup the HTTP client, some more setup is necessary, as we need
 	// to send our certificate and we need to check the server's cert
@@ -79,7 +74,7 @@ func main() {
 	verbose("Enqueing tasks")
 	var queue = make(chan Task)
     go func() {
-        enqueTasks(queue, CNs, items)
+        enqueTasks(queue, CNs, ITEMS[opt.OutFormat])
         close(queue)
     }()
 
