@@ -1,7 +1,7 @@
 package main
 
 import (
-	. "cert-proxy/shared"
+	. "cert-proxy/internal/shared"
 	"crypto/tls"
 	"fmt"
 	"io"
