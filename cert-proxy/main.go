@@ -25,20 +25,18 @@ func serveWelcome(w http.ResponseWriter, r *http.Request) {
 
 func servePublic(w http.ResponseWriter, r *http.Request) {
 
-	// do not allow ..
-	if strings.Contains(r.URL.Path, "..") {
-		http.Error(w, "No `..` allowed.", http.StatusNotAcceptable)
-		return
-	}
+	// do not allow .., but as we use http.Dir(), we should be
+	// protected, as http.Dir() does not accept .. in the path on it's
+	// own. (Otherwise check string.Contains(r.URL.Path, `..`)
+	// and return http.StatusNotAcceptable)
 
 	// construct the filename, hide short-lived variables inside the
-	// path: "" / cert /example.com
-	// parts 0    1    2
-	var fn string
-	{
-		parts := strings.Split(r.URL.Path, "/")
-		fn = filepath.Join(parts[2], parts[1]+".pem")
-	}
+	// URL.Path: /<type>/<domain>   with type: // (cert|chain|fullchain|privkey|pkcs12)
+	// path:  <certbase>/<domain>/<type>.pem
+	var fn string = func() string {
+		parts := strings.Split(r.URL.Path, "/") // /<type>/<domain>
+		return filepath.Join(parts[2], parts[1]+".pem")
+	}()
 
 	file, err := http.Dir(opt.Certbase).Open(fn)
 	if err != nil {
