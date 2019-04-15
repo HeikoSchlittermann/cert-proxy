@@ -42,6 +42,7 @@ func tlsClientConfig(sslFile string) (config *tls.Config, err error) {
 }
 
 func main() {
+    defer verbose("done")
 
 	// Build the list of DNs (Domains) we need to fetch the
 	// certficates for
@@ -89,5 +90,4 @@ func main() {
 	}
     verbose("Waiting for completion")
 	wg.Wait()
-
 }
