@@ -44,14 +44,19 @@ func servePublic(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-	io.Copy(w, file)
+	defer file.Close()
+
+	if _, err := io.Copy(w, file); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func servePrivate(w http.ResponseWriter, r *http.Request) {
-	if strings.Contains(r.URL.Path, "..") {
-		http.Error(w, "No `..` allowed.", http.StatusNotAcceptable)
-		return
-	}
+
+	// do not allow .., but as we use http.Dir(), we should be
+	// protected, as http.Dir() does not accept .. in the path on it's
+	// own. (Otherwise check string.Contains(r.URL.Path, `..`)
+	// and return http.StatusNotAcceptable)
 
 	domain, filename := func() (string, string) {
 		parts := strings.Split(r.URL.Path, "/")
@@ -90,8 +95,11 @@ func servePrivate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-	io.Copy(w, file)
+    defer file.Close()
 
+	if _, err := io.Copy(w, file); err != nil {
+        log.Fatal(err)
+    }
 }
 
 func main() {
@@ -116,9 +124,9 @@ func main() {
 		ClientAuth:   tls.RequireAndVerifyClientCert, // !! RequireAndVerify !!
 		Certificates: []tls.Certificate{cert},
 	})
-    if err != nil {
-        log.Fatal(err)
-    }
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	http.Serve(listener, nil)
 }
