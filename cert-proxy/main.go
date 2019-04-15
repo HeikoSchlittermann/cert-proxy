@@ -11,12 +11,16 @@ import (
 	"strings"
 )
 
-var opt struct { // see init.go for defaults
-	Certbase        string
-	SSLFile         string
-	Serve           string
-	ClientConfigDir string
-}
+var (
+	opt struct { // see init.go for defaults
+		Certbase        string
+		SSLFile         string
+		Serve           string
+		ClientConfigDir string
+	    Verbose         bool
+	}
+    verbose func(string, ...interface{})
+)
 
 func serveWelcome(w http.ResponseWriter, r *http.Request) {
 	cn := r.TLS.PeerCertificates[0].Subject.CommonName
@@ -95,11 +99,11 @@ func servePrivate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-    defer file.Close()
+	defer file.Close()
 
 	if _, err := io.Copy(w, file); err != nil {
-        log.Fatal(err)
-    }
+		log.Fatal(err)
+	}
 }
 
 func main() {
@@ -128,5 +132,6 @@ func main() {
 		log.Fatal(err)
 	}
 
+    verbose("Starting listener\n")
 	http.Serve(listener, nil)
 }

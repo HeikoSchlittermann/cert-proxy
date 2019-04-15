@@ -36,7 +36,7 @@ func init() {
 	}
 
 	if opt.Verbose {
-		verbose = func(format string, s ...interface{}) { log.Printf(format, s...) }
+		verbose = log.Printf
 	} else {
 		verbose = func(string, ...interface{}) {}
 	}
