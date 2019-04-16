@@ -9,7 +9,7 @@ import (
 
 func init() {
 
-	log.SetFlags(log.Flags()|log.Lmicroseconds) // supress Timestamp output
+	log.SetFlags(log.Flags() | log.Lmicroseconds) // supress Timestamp output
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] [<CN>]...\n", os.Args[0])

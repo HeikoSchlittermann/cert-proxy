@@ -24,7 +24,7 @@ var (
 )
 
 func main() {
-    defer verbose("done")
+	defer verbose("done")
 
 	// Build the list of DNs (Domains) we need to fetch the
 	// certficates for
@@ -36,6 +36,7 @@ func main() {
 	// to send our certificate and we need to check the server's cert
 	// agains a non-public root CA.
 	// FIXME: is this really the right way?
+
 	http.DefaultClient.Transport = &http.Transport{
 		// Go behaves quite rude and just tears down the connections
 		// when the program stops (even the CloseIdleConnections
@@ -58,10 +59,10 @@ func main() {
 
 	verbose("Enqueing tasks")
 	var queue = make(chan Task)
-    go func() {
-        enqueTasks(queue, CNs, ITEMS[opt.OutFormat])
-        close(queue)
-    }()
+	go func() {
+		enqueTasks(queue, CNs, ITEMS[opt.OutFormat])
+		close(queue)
+	}()
 
 	verbose("Launching workers")
 	var wg = sync.WaitGroup{}
@@ -72,6 +73,6 @@ func main() {
 			Worker(wid, queue)
 		}(i)
 	}
-    verbose("Waiting for completion")
+	verbose("Waiting for completion")
 	wg.Wait()
 }
