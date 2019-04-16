@@ -46,8 +46,8 @@ type OList []string
 func (list *OList) Add(v string) {
 	*list = append(*list, v)
 }
-func (list *OList) Items() []string {
-	return (*list)
+func (list OList) Items() []string {
+	return (list)
 }
 
 // Type UList implements a list of uniq items
@@ -56,9 +56,9 @@ type UList map[string]interface{}
 func (list *UList) Add(v string) {
 	(*list)[v] = nil
 }
-func (list *UList) Items() []string {
-	var items = make([]string, 0, len(*list))
-	for k, _ := range *list {
+func (list UList) Items() []string {
+	var items = make([]string, 0, len(list))
+	for k, _ := range list {
 		items = append(items, k)
 	}
 	return items
