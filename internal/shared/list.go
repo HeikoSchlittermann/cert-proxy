@@ -63,3 +63,6 @@ func (list UList) Items() []string {
 	}
 	return items
 }
+func (list UList) String() string {
+    return strings.Join(list.Items(), ", ")
+}
