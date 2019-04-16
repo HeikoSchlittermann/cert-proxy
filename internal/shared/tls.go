@@ -5,25 +5,26 @@ import (
 	"crypto/x509"
 )
 
-func TLSClientConfig(sslFile string) (config *tls.Config, err error) {
-	config, CAs, err := TLSConfig(sslFile)
+func TLSClientConfig(sslFile string, config *tls.Config) (*tls.Config, error) {
+	CAs, err := TLSConfig(sslFile, config)
 	if err != nil {
-		return
+		return config, err
 	}
 	config.RootCAs = CAs
-	return
+	return config, err
 }
 
-func TLSServerConfig(sslFile string) (config *tls.Config, err error) {
-	config, CAs, err := TLSConfig(sslFile)
+func TLSServerConfig(sslFile string, config *tls.Config) (*tls.Config, error) {
+	CAs, err := TLSConfig(sslFile, config)
 	if err != nil {
-		return
+		return config, err
 	}
 	config.ClientCAs = CAs
-	return
+	return config, err
 }
 
-func TLSConfig(sslFile string) (config *tls.Config, pool *x509.CertPool, err error) {
+func TLSConfig(sslFile string, config *tls.Config) (pool *x509.CertPool, err error) {
+
 	cert, err := tls.LoadX509KeyPair(sslFile, sslFile)
 	if err != nil {
 		return
@@ -34,8 +35,6 @@ func TLSConfig(sslFile string) (config *tls.Config, pool *x509.CertPool, err err
 		return
 	}
 
-	config = &tls.Config{
-		Certificates: []tls.Certificate{cert},
-	}
+    config.Certificates = []tls.Certificate{cert}
 	return
 }

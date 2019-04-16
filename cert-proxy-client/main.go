@@ -44,7 +44,9 @@ func main() {
 		// lived connections:
 		//DisableKeepAlives: true,
 		TLSClientConfig: func() *tls.Config {
-			cfg, err := TLSClientConfig(opt.SSLFile, opt.ServerCN)
+			cfg, err := TLSClientConfig(opt.SSLFile, &tls.Config{
+				ServerName: opt.ServerCN,
+			})
 			if err != nil {
 				log.Fatal(err)
 			}

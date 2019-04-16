@@ -113,21 +113,14 @@ func main() {
 	http.HandleFunc("/fullchain/", servePublic)
 	http.HandleFunc("/privkey/", servePrivate)
 
-	// The certificate we present to the client
-	cert, err := tls.LoadX509KeyPair(opt.SSLFile, opt.SSLFile)
-	if err != nil {
-		log.Fatal(err)
-	}
-	pool, err := CertPool(opt.SSLFile)
-	if err != nil {
-		log.Fatal(err)
-	}
+    tlsConfig, err := TLSServerConfig(opt.SSLFile, &tls.Config{
+        ClientAuth: tls.RequireAndVerifyClientCert,
+    })
+    if err != nil {
+        log.Fatal(err)
+    }
 
-	listener, err := tls.Listen("tcp", opt.Serve, &tls.Config{
-		ClientCAs:    pool,
-		ClientAuth:   tls.RequireAndVerifyClientCert, // !! RequireAndVerify !!
-		Certificates: []tls.Certificate{cert},
-	})
+	listener, err := tls.Listen("tcp", opt.Serve, tlsConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
