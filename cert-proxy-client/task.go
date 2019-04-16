@@ -31,7 +31,7 @@ func enqueTasks(tasks chan<- Task, CNs UList, items []string) {
 	for cn, _ := range CNs {
 		var task = Task{Name: cn}
 		for _, item := range items {
-			req, err := http.NewRequest(`GET`, opt.Connect+`/`+path.Join(item, cn), nil)
+			req, err := http.NewRequest(`GET`, opt.Connect+`/v1`+path.Join(item, cn), nil)
 			if err != nil {
 				panic(err)
 			}
