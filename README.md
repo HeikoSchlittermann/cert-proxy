@@ -85,11 +85,17 @@ Login to the client. Install the cert-proxy-client binary, and start it.
 Authentication in both directions is done with X509 certs, issued by a
 CA running on the cert-proxy.
 
+Auhentication (authn) is always required. Authorization (authz) for
+specific commands
+
     Requests:
-    GET /cert/<cn>	    // PEM
-    GET /chain/<cn>	    // PEM
-    GET /privkey/<cn>	    // PEM
-    GET /fullchain/<cn>	    // PEM
-    GET /pkcs12/<cn>
+    GET /v1/list			// no authz
+    GET /v1/cert/<domain>		// cert, no authz¹
+    GET /v1/chain/<domain>		// chain, no authz¹
+    GET /v1/fullchain/<domain>		// fullchain, no authz¹
+    GET /v1/privkey/<domain>		// privkey, authz required¹
+    GET /v1/bundle/<domain>		// all of the above, authz required¹
+
+¹) a ?format=[pem|pkcs12] may be appended. The default format is "pem"
 
 Yes, for PEM, multiple requests are used.
