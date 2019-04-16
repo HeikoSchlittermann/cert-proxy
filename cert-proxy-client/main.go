@@ -23,24 +23,6 @@ var (
 	verbose func(string, ...interface{})
 )
 
-func tlsClientConfig(sslFile string) (config *tls.Config, err error) {
-	cert, err := tls.LoadX509KeyPair(sslFile, sslFile)
-	if err != nil {
-		return
-	}
-	pool, err := CertPool(opt.SSLFile)
-	if err != nil {
-		return
-	}
-
-	config = &tls.Config{
-		RootCAs:      pool,
-		ServerName:   opt.ServerCN,
-		Certificates: []tls.Certificate{cert},
-	}
-	return
-}
-
 func main() {
     defer verbose("done")
 
@@ -62,11 +44,11 @@ func main() {
 		// lived connections:
 		//DisableKeepAlives: true,
 		TLSClientConfig: func() *tls.Config {
-			config, err := tlsClientConfig(opt.SSLFile)
+			cfg, err := TLSClientConfig(opt.SSLFile, opt.ServerCN)
 			if err != nil {
 				log.Fatal(err)
 			}
-			return config
+			return cfg
 		}(),
 	}
 	// WTF is going on here, I need to explore this in more detail
