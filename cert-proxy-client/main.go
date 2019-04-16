@@ -11,14 +11,14 @@ import (
 var (
 	CNs = UList{}
 	opt = struct {
-		Certbase  string
-		SSLFile   string
-		Connect   string
-		ServerCN  string
-		Outfile   string
-		CNfile    string
+		Certbase  string // where to put the output
+		CNfile    string // the CNs to fetch
+		Connect   string // Server address
+		Outfile   string // ignore certbase and output directly
+		OutFormat Format // PEM|PKCS12
+		ServerCN  string // X509 CN of the server
+		SSLFile   string // SSL auth file
 		Verbose   bool
-		OutFormat Format
 	}{OutFormat: FORMAT}
 	verbose func(string, ...interface{})
 )
