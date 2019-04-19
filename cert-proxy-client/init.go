@@ -28,6 +28,7 @@ func init() {
 	flag.StringVar(&opt.Outfile, "outfile", "", "Output file (use - for stdout)")
 	flag.StringVar(&opt.CNfile, "cnfile", "", "CN list file (use - for stdin)")
 	flag.BoolVar(&opt.Verbose, "verbose", false, "Verbose output")
+	flag.IntVar(&opt.Jobs, "jobs", 3, "Number of parallel running jobs")
 	flag.Var(&opt.OutFormat, "format", "Format of the requested certificate(s)")
 	flag.Parse()
 

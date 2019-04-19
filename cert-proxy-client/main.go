@@ -62,7 +62,7 @@ func main() {
 	defer http.DefaultClient.Transport.(*http.Transport).CloseIdleConnections()
 
 	verbose("Enqueing tasks")
-	var queue = make(chan Task)
+	var queue = make(chan Task, opt.Jobs+1)
 	go func() {
 		enqueTasks(queue, CNs, opt.OutFormat, ITEMS[opt.OutFormat])
 		close(queue)
@@ -70,7 +70,7 @@ func main() {
 
 	verbose("Launching workers")
 	var wg = sync.WaitGroup{}
-	for i := 0; i < 3; i++ {
+	for i := 0; i < opt.Jobs; i++ {
 		wg.Add(1)
 		go func(wid int) {
 			defer wg.Done()
