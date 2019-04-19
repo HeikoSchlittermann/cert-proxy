@@ -53,6 +53,8 @@ func (format Format) String() string {
 	case FormatPKCS12:
 		return "PKCS12"
 	default:
+        // we can't panic here, as flag tries to convert
+        // the zero value to a string
 		return "<invalid format>"
 	}
 }
