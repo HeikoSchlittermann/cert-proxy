@@ -22,6 +22,7 @@ func init() {
 	// -outformat PKCS12 implies bundle
 
 	flag.BoolVar(&opt.Verbose, "verbose", false, "Verbose output")
+	flag.BoolVar(&opt.Auto, "auto", true, "Auto mode (fetch all CNs the server provides us)")
 	flag.IntVar(&opt.Jobs, "jobs", 3, "Number of parallel running jobs")
 	flag.StringVar(&opt.CNfile, "cnfile", "", "CN list file (use - for stdin)")
 	flag.StringVar(&opt.Certbase, "certbase", "certs", "Base dir for downloaded certs")
@@ -32,7 +33,7 @@ func init() {
 	flag.Var(&opt.OutFormat, "format", "Format of the requested certificate(s)")
 	flag.Parse()
 
-	if opt.CNfile == "" && flag.NArg() < 1 {
+	if !opt.Auto && opt.CNfile == "" && flag.NArg() < 1 {
 		flag.Usage()
 		os.Exit(1)
 	}
