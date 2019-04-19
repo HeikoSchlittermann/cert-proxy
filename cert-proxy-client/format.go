@@ -16,7 +16,7 @@ type Format int
 
 var ITEMS = map[Format][]string{
 	FormatPEM:    []string{"cert", "chain", "fullchain", "privkey"},
-	FormatPKCS12: []string{"pkcs12"},
+	FormatPKCS12: []string{"bundle"},
 }
 
 // Implement the flag.Value interface

@@ -16,6 +16,11 @@ func init() {
 		flag.PrintDefaults()
 	}
 
+    // On Windows: outFormat is PKCS12 and Item is "bundle"
+    // On Linux: outFormat is PEM and Items are "cert", "chain", "fullchain", "privkey"
+    // -outformat PEM    implies cert, chain, fullchain, privkey
+    // -outformat PKCS12 implies bundle
+
 	flag.StringVar(&opt.SSLFile, "sslfile", "ssl.pem", "SSL auth file (crt+key+ca) PEM")
 	flag.StringVar(&opt.Connect, "connect", "https://localhost:4433", "Address of cert proxy server")
 	flag.StringVar(&opt.ServerCN, "cert-proxy-cn", "cert-proxy", "CN of the cert proxy certificate")
