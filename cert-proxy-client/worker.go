@@ -20,7 +20,7 @@ type Task struct {
 	Outfiles []string
 }
 
-func (task *Task) String() string {
+func (task Task) String() string {
 	return fmt.Sprintf("%s (%d jobs)", task.CN, len(task.Requests))
 }
 
@@ -54,7 +54,7 @@ func enqueTasks(tasks chan<- Task, CNs UList, format Format, items []string) {
 func Worker(wid int, queue <-chan Task) {
 TASK:
 	for task := range queue {
-		verbose("[%d] Task %s\n", wid, task.String())
+		verbose("[%d] Task %s\n", wid, task)
 
 		if len(task.Requests) != len(task.Outfiles) {
 			panic("number of requests != outfiles")
@@ -70,10 +70,10 @@ TASK:
 			defer resp.Body.Close()
 
 			if resp.StatusCode != http.StatusOK {
-				log.Printf("[%d] Status %s: %s\n", wid, resp.Status, req.URL.String())
+				log.Printf("[%d] %s: Status %s\n", wid, req.URL, resp.Status)
 				continue TASK
 			}
-			verbose("[%d] Status %s: %s\n", wid, resp.Status, req.URL.String())
+			verbose("[%d] %s: Status %s", wid, req.URL, resp.Status)
 
 			var out io.WriteCloser
 			if outfile := task.Outfiles[i]; outfile == "-" {
