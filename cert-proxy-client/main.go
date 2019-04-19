@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"log"
 	"net/http"
+	"path"
 	"sync"
 )
 
@@ -13,16 +14,18 @@ const API_VERSION = `v1`
 var (
 	CNs = UList{} // List of unique strings
 	opt = struct {
-		Certbase  string // where to put the output
 		CNfile    string // the CNs to fetch
+		Certbase  string // where to put the output
 		Connect   string // Server address
-		Outfile   string // ignore certbase and output directly
+		Jobs      int    // parallel Jobs
 		OutFormat Format // PEM|PKCS12
-		ServerCN  string // X509 CN of the server
+		Outfile   string // ignore certbase and output directly
 		SSLFile   string // SSL auth file
+		ServerCN  string // X509 CN of the server
 		Verbose   bool
-		Jobs      int // parallel Jobs
+		Auto      bool // Fetch all (Issue /list first)
 	}{
+		Auto:      true,
 		OutFormat: FORMAT, // platform dependend, PEM (*nix) vs PKCS12 (Win*)
 	}
 	verbose func(string, ...interface{})
@@ -63,7 +66,19 @@ func main() {
 	// And this CloseIdleConnections doesn't seem to help either
 	defer http.DefaultClient.Transport.(*http.Transport).CloseIdleConnections()
 
-	verbose("Enqueing tasks")
+	// In auto mode we fetch the list of domains from the proxy and add
+    // it to our own (possibly empty) list
+	if opt.Auto {
+		verbose("Getting list of CNs")
+		resp, err := http.Get(opt.Connect + path.Join(`/`+API_VERSION, `list`))
+		if err != nil {
+			log.Fatal(err)
+		}
+		AddItemsFromReader(&CNs, resp.Body)
+		resp.Body.Close()
+	}
+
+	verbose("Enqueing tasks for %d CNs", len(CNs))
 	var queue = make(chan Task, opt.Jobs+1)
 	go func() {
 		enqueTasks(queue, CNs, opt.OutFormat, ITEMS[opt.OutFormat])
