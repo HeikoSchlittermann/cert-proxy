@@ -17,9 +17,9 @@ var (
 		SSLFile         string
 		Serve           string
 		ClientConfigDir string
-	    Verbose         bool
+		Verbose         bool
 	}
-    verbose func(string, ...interface{})
+	verbose func(string, ...interface{})
 )
 
 func serveWelcome(w http.ResponseWriter, r *http.Request) {
@@ -29,18 +29,26 @@ func serveWelcome(w http.ResponseWriter, r *http.Request) {
 
 func servePublic(w http.ResponseWriter, r *http.Request) {
 
-	// do not allow .., but as we use http.Dir(), we should be
-	// protected, as http.Dir() does not accept .. in the path on it's
-	// own. (Otherwise check string.Contains(r.URL.Path, `..`)
-	// and return http.StatusNotAcceptable)
+	cn := r.TLS.PeerCertificates[0].Subject.CommonName
+	parts := strings.Split(r.URL.Path, "/")[2:]
+	req, parts := parts[0], parts[1:]
+	verbose("Serving cn=%s %s\n", cn, r.URL)
 
-	// construct the filename, hide short-lived variables inside the
-	// URL.Path: /<type>/<domain>   with type: // (cert|chain|fullchain|privkey|pkcs12)
-	// path:  <certbase>/<domain>/<type>.pem
-	var fn string = func() string {
-		parts := strings.Split(r.URL.Path, "/") // /<type>/<domain>
-		return filepath.Join(parts[2], parts[1]+".pem")
-	}()
+	// return the list of domains this client is allowed to fetch the
+	// certificiates
+	if req == "list" {
+		if allowedDomains, err := cnList(cn); err != nil {
+			log.Println(err)
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		} else {
+			fmt.Fprintln(w, strings.Join(allowedDomains.Items(), "\n"))
+			return
+		}
+	}
+
+	domain, parts := parts[0], parts[1:]
+	fn := filepath.Join(domain, req+".pem")
 
 	file, err := http.Dir(opt.Certbase).Open(fn)
 	if err != nil {
@@ -61,34 +69,26 @@ func servePrivate(w http.ResponseWriter, r *http.Request) {
 	// protected, as http.Dir() does not accept .. in the path on it's
 	// own. (Otherwise check string.Contains(r.URL.Path, `..`)
 	// and return http.StatusNotAcceptable)
-
-	domain, filename := func() (string, string) {
-		parts := strings.Split(r.URL.Path, "/")
-		return parts[2], filepath.Join(parts[2], parts[1]+".pem")
-	}()
-
 	cn := r.TLS.PeerCertificates[0].Subject.CommonName
+	parts := strings.Split(r.URL.Path, "/")[2:]
+	verbose("Serving cn=%s %s\n", cn, r.URL)
 
-	// we have a per cn config file in <config-dir>/cn.conf
-	config, err := http.Dir(opt.ClientConfigDir).Open(cn)
+	allowedDomains, err := cnList(cn)
 	if err != nil {
 		log.Println(err)
-		http.Error(w, "Your cn "+cn+" is unknown", http.StatusForbidden)
+		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}
-	defer config.Close()
+
+	req, parts := parts[0], parts[1:]
+	domain, parts := parts[0], parts[1:]
+	filename := filepath.Join(domain, req+".pem")
 
 	// now check, if the current cn is allowed to access the domain,
 	// that is, we check, if the config file (already opened) contains
 	// a line with the current domain
-	var allowedDomains = UList{}
-	err = AddItemsFromReader(&allowedDomains, config)
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	if _, ok := allowedDomains[domain]; !ok {
-		log.Printf("%s is not authorized for %s\n", cn, domain)
+		log.Printf("Client cn=%s is not authorized for %s\n", cn, domain)
 		http.Error(w, "You are not authorized", http.StatusForbidden)
 		return
 	}
@@ -108,23 +108,25 @@ func servePrivate(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 
-	http.HandleFunc("/cert/", servePublic)
-	http.HandleFunc("/chain/", servePublic)
-	http.HandleFunc("/fullchain/", servePublic)
-	http.HandleFunc("/privkey/", servePrivate)
+	http.HandleFunc("/v1/list", servePublic)
+	http.HandleFunc("/v1/cert/", servePublic)
+	http.HandleFunc("/v1/chain/", servePublic)
+	http.HandleFunc("/v1/fullchain/", servePublic)
+	http.HandleFunc("/v1/privkey/", servePrivate)
+	http.HandleFunc("/v1/bundle/", servePrivate)
 
-    tlsConfig, err := TLSServerConfig(opt.SSLFile, &tls.Config{
-        ClientAuth: tls.RequireAndVerifyClientCert,
-    })
-    if err != nil {
-        log.Fatal(err)
-    }
+	tlsConfig, err := TLSServerConfig(opt.SSLFile, &tls.Config{
+		ClientAuth: tls.RequireAndVerifyClientCert,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	listener, err := tls.Listen("tcp", opt.Serve, tlsConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-    verbose("Starting listener\n")
+	verbose("Starting listener\n")
 	http.Serve(listener, nil)
 }
