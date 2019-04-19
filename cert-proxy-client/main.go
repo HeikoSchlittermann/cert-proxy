@@ -8,6 +8,7 @@ import (
 	"sync"
 )
 
+const API_VERSION = `v1`
 var (
 	CNs = UList{}
 	opt = struct {
@@ -19,7 +20,10 @@ var (
 		ServerCN  string // X509 CN of the server
 		SSLFile   string // SSL auth file
 		Verbose   bool
-	}{OutFormat: FORMAT}
+		Jobs      int // parallel Jobs
+	}{
+		OutFormat: FORMAT, // platform dependend, PEM (*nix) vs PKCS12 (Win*)
+	}
 	verbose func(string, ...interface{})
 )
 
@@ -60,7 +64,7 @@ func main() {
 	verbose("Enqueing tasks")
 	var queue = make(chan Task)
 	go func() {
-		enqueTasks(queue, CNs, ITEMS[opt.OutFormat])
+		enqueTasks(queue, CNs, opt.OutFormat, ITEMS[opt.OutFormat])
 		close(queue)
 	}()
 

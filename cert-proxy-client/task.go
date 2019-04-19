@@ -15,35 +15,37 @@ import (
 // files. Typically this is the bundle of operations necessary for
 // one DN
 type Task struct {
-	Name     string
+	CN       string
 	Requests []*http.Request
 	Outfiles []string
 }
 
 func (task *Task) String() string {
-	return fmt.Sprintf("%s (%d jobs)", task.Name, len(task.Requests))
+	return fmt.Sprintf("%s (%d jobs)", task.CN, len(task.Requests))
 }
 
 // EnqueueTasks creates a task per CN, with all the items that are
 // necessary for this CN. Bundling it per Domain has the advantage of a
 // transaction like processing of the results
-func enqueTasks(tasks chan<- Task, CNs UList, items []string) {
+func enqueTasks(tasks chan<- Task, CNs UList, format Format, items []string) {
 	for cn, _ := range CNs {
-		var task = Task{Name: cn}
+		var task = Task{CN: cn}
 		for _, item := range items {
-			req, err := http.NewRequest(`GET`, opt.Connect+`/v1`+path.Join(item, cn), nil)
+
+			req, err := http.NewRequest(`GET`, opt.Connect+path.Join(`/` + API_VERSION, item, cn), nil)
 			if err != nil {
 				panic(err)
 			}
-			task.Requests = append(task.Requests, req)
+			req.URL.RawQuery = "format=" + format.String()
 
-			var outfile = opt.Outfile
+			outfile := opt.Outfile
 			if outfile == "" {
-				outfile = filepath.Join(opt.Certbase, cn, item+`.pem`)
+				outfile = filepath.Join(opt.Certbase, cn, item+format.Ext())
 			}
-			task.Outfiles = append(task.Outfiles, outfile)
 
-			verbose("Enqueing: %s\n", req.URL.String())
+			task.Outfiles = append(task.Outfiles, outfile)
+			task.Requests = append(task.Requests, req)
+			verbose("Enqueing: %s ⇒ %s", req.URL.String(), outfile)
 		}
 		tasks <- task
 	}

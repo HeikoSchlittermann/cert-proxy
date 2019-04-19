@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"strconv"
 	"strings"
 )
 
@@ -32,6 +33,17 @@ func (format *Format) Set(value string) (err error) {
 		return errors.New("Wrong format spec")
 	}
 	return nil
+}
+
+func (format Format) Ext() string {
+	switch format {
+	case FormatPEM:
+		return `.pem`
+	case FormatPKCS12:
+		return `.p12`
+	default:
+		panic(`invalid format ` + strconv.Itoa(int(format)))
+	}
 }
 
 func (format Format) String() string {
