@@ -9,8 +9,9 @@ import (
 )
 
 const API_VERSION = `v1`
+
 var (
-	CNs = UList{}
+	CNs = UList{} // List of unique strings
 	opt = struct {
 		Certbase  string // where to put the output
 		CNfile    string // the CNs to fetch
@@ -28,7 +29,7 @@ var (
 )
 
 func main() {
-	defer verbose("done")
+	defer verbose("Done")
 
 	// Build the list of DNs (Domains) we need to fetch the
 	// certficates for
@@ -59,6 +60,7 @@ func main() {
 		}(),
 	}
 	// WTF is going on here, I need to explore this in more detail
+	// And this CloseIdleConnections doesn't seem to help either
 	defer http.DefaultClient.Transport.(*http.Transport).CloseIdleConnections()
 
 	verbose("Enqueing tasks")
