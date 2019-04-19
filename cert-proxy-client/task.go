@@ -78,7 +78,7 @@ TASK:
 				out = os.Stdout
 			} else {
 				dir, _ := filepath.Split(outfile)
-				if err := mkdir(dir); err != nil {
+				if err := Mkdir(dir); err != nil {
 					log.Fatal(err)
 				}
 				out, err = os.Create(outfile)
@@ -93,20 +93,4 @@ TASK:
 			}
 		}
 	}
-}
-
-func mkdir(dir string) error {
-
-	err := os.Mkdir(dir, 0777)
-
-	if err != nil && os.IsExist(err) {
-		stat, err := os.Stat(dir)
-		if err != nil {
-			return err
-		}
-		if stat.IsDir() {
-			return nil
-		}
-	}
-	return err
 }
