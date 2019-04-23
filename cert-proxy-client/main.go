@@ -20,7 +20,6 @@ var (
 		Connect  string      // Server address
 		Jobs     int         // parallel Jobs
 		Format   cert.Format // PEM|PKCS12
-		Outfile  string      // ignore certbase and output directly
 		SSLFile  string      // SSL auth file
 		ServerCN string      // X509 CN of the server
 		Verbose  bool

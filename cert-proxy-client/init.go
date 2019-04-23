@@ -29,7 +29,6 @@ func init() {
 	flag.StringVar(&opt.Certbase, "certbase", "certs", "Base dir for downloaded certs")
 	flag.StringVar(&opt.Connect, "connect", "https://localhost:4433", "Address of cert proxy server")
 	flag.StringVar(&opt.Hook, "hook", "hook", "hook script")
-	flag.StringVar(&opt.Outfile, "outfile", "", "Output file (use - for stdout)")
 	flag.StringVar(&opt.SSLFile, "sslfile", "ssl.pem", "SSL auth file (crt+key+ca) PEM")
 	flag.StringVar(&opt.ServerCN, "cert-proxy-cn", "cert-proxy", "CN of the cert proxy certificate")
 	flag.Var(&opt.Format, "format", "Format of the requested certificate(s)")
