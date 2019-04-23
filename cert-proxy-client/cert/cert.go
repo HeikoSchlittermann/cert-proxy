@@ -14,15 +14,15 @@ import (
 	"time"
 )
 
-type Role string
+type role string
 
 const (
-	RoleINVALID   Role = ``
-	RoleCRT       Role = `CERT`
-	RoleKEY       Role = `KEY`
-	RoleCHAIN     Role = `CHAIN`
-	RoleFULLCHAIN Role = `FULLCHAIN`
-	RoleBUNDLE    Role = `BUNDLE`
+	RoleINVALID   role = ``
+	RoleCRT       role = `CERT`
+	RoleKEY       role = `KEY`
+	RoleCHAIN     role = `CHAIN`
+	RoleFULLCHAIN role = `FULLCHAIN`
+	RoleBUNDLE    role = `BUNDLE`
 )
 
 type Format string
@@ -34,7 +34,7 @@ const (
 )
 
 // Each Format has a set of Files with specific Roles
-var ROLES = map[Format][]Role{
+var ROLES = map[Format][]role{
 	FormatPEM:    {RoleCRT, RoleKEY, RoleCHAIN, RoleFULLCHAIN},
 	FormatPKCS12: {RoleBUNDLE},
 }
@@ -44,7 +44,7 @@ type templates struct {
 	remote, local, env *template.Template
 }
 
-var TEMPLATES = map[Role]templates{
+var TEMPLATES = map[role]templates{
 	RoleCRT: {
 		remote: tt(`{{.Proxy}}/v1/cert/{{.Domain}}`),
 		local:  tt(`{{.Domain}}/crt.pem`),

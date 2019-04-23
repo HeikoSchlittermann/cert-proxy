@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// Set to satisfy flag.Value
+// Set satisfies the flag.Value interface
 func (format *Format) Set(value string) error {
 	switch s := strings.ToUpper(value); s {
 	case `PEM`:
@@ -18,7 +18,7 @@ func (format *Format) Set(value string) error {
 	return nil
 }
 
-// String to satisfy flag.Value
+// String satisfies the flag.Value interface
 func (format Format) String() string {
 	return string(format)
 }
