@@ -3,7 +3,6 @@ package cert
 import (
 	"bytes"
 	. "cert-proxy/internal/shared"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -41,35 +40,35 @@ var ROLES = map[Format][]Role{
 }
 
 // Each Roles has a fixed set of Templates
-type Templates struct {
-	Remote, Local, Env *template.Template
+type templates struct {
+	remote, local, env *template.Template
 }
 
-var TEMPLATES = map[Role]Templates{
+var TEMPLATES = map[Role]templates{
 	RoleCRT: {
-		Remote: tt(`{{.Proxy}}/v1/cert/{{.Domain}}`),
-		Local:  tt(`{{.Domain}}/crt.pem`),
-		Env:    tt(`CERTFILE={{.Local}}`),
+		remote: tt(`{{.Proxy}}/v1/cert/{{.Domain}}`),
+		local:  tt(`{{.Domain}}/crt.pem`),
+		env:    tt(`CERTFILE={{.Local}}`),
 	},
 	RoleKEY: {
-		Remote: tt(`{{.Proxy}}/v1/privkey/{{.Domain}}`),
-		Local:  tt(`{{.Domain}}/privkey.pem`),
-		Env:    tt(`KEYFILE={{.Local}}`),
+		remote: tt(`{{.Proxy}}/v1/privkey/{{.Domain}}`),
+		local:  tt(`{{.Domain}}/privkey.pem`),
+		env:    tt(`KEYFILE={{.Local}}`),
 	},
 	RoleCHAIN: {
-		Remote: tt(`{{.Proxy}}/v1/chain/{{.Domain}}`),
-		Local:  tt(`{{.Domain}}/chain.pem`),
-		Env:    tt(`CHAINFILE={{.Local}}`),
+		remote: tt(`{{.Proxy}}/v1/chain/{{.Domain}}`),
+		local:  tt(`{{.Domain}}/chain.pem`),
+		env:    tt(`CHAINFILE={{.Local}}`),
 	},
 	RoleFULLCHAIN: {
-		Remote: tt(`{{.Proxy}}/v1/fullchain/{{.Domain}}`),
-		Local:  tt(`{{.Domain}}/fullchain.pem`),
-		Env:    tt(`FULLCHAINFILE={{.Local}}`),
+		remote: tt(`{{.Proxy}}/v1/fullchain/{{.Domain}}`),
+		local:  tt(`{{.Domain}}/fullchain.pem`),
+		env:    tt(`FULLCHAINFILE={{.Local}}`),
 	},
 	RoleBUNDLE: {
-		Remote: tt(`{{.Proxy}}/v1/bundle/{{.Domain}}`),
-		Local:  tt(`{{.Domain}}/bundle.p12`),
-		Env:    tt(`BUNDLEFILE={{.Local}}`),
+		remote: tt(`{{.Proxy}}/v1/bundle/{{.Domain}}`),
+		local:  tt(`{{.Domain}}/bundle.p12`),
+		env:    tt(`BUNDLEFILE={{.Local}}`),
 	},
 }
 
@@ -102,15 +101,15 @@ func NewReq(domain, remote string, basedir string, format Format) (Req, error) {
 		} else {
 
 			var item = certItem{
-				local:   filepath.Join(basedir, mustExpand(templates.Local, ctx)),
+				local:   filepath.Join(basedir, mustExpand(templates.local, ctx)),
 				private: role == RoleKEY || role == RoleBUNDLE,
 			}
 
 			// The env needs the expanded item.local (file name)
 			ctx.Local = item.local
-			item.env = mustExpand(templates.Env, ctx)
+			item.env = mustExpand(templates.env, ctx)
 
-			if r, err := http.NewRequest(`GET`, mustExpand(templates.Remote, ctx), nil); err != nil {
+			if r, err := http.NewRequest(`GET`, mustExpand(templates.remote, ctx), nil); err != nil {
 				return Req{}, err
 			} else {
 				item.remote = r
@@ -204,28 +203,9 @@ func (req Req) String() string {
 	return fmt.Sprintf("%s (%d items)", req.domain, len(req.items))
 }
 
-// Set to satisfy flag.Value
-func (format *Format) Set(value string) error {
-	switch s := strings.ToUpper(value); s {
-	case `PEM`:
-		*format = FormatPEM
-	case `PKCS12`:
-		*format = FormatPKCS12
-	default:
-		return errors.New("Invalid format spec")
-	}
-	return nil
-}
-
-// String to satisfy flag.Value
-func (format Format) String() string {
-	return string(format)
-}
-
 func tt(txt string) *template.Template {
 	return template.Must(template.New(txt).Parse(txt))
 }
-
 func mustExpand(t *template.Template, ctx templateContext) string {
 	var b = &bytes.Buffer{}
 	if err := t.Execute(b, &ctx); err != nil {
