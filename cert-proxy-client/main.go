@@ -81,7 +81,7 @@ func main() {
 	Verbose("Enqueing tasks for %d CNs", len(CNs))
 
 	var pool = worker.NewPool(opt.Jobs)
-	pool.EnqueueTasks(CNs, opt.Connect, opt.Certbase, opt.Format)
+	pool.EnqueueTasks(CNs, opt.Connect, opt.Certbase, opt.Hook, opt.Format)
 	pool.Wait()
 
 }

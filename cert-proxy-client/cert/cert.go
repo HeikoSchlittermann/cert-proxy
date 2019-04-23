@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -75,6 +76,8 @@ var TEMPLATES = map[role]templates{
 type Req struct {
 	domain string
 	items  []certItem // depending on the Role…
+	hook   string
+    env    []string
 }
 
 type certItem struct {
@@ -90,8 +93,8 @@ type templateContext struct {
 	Local  string
 }
 
-func NewReq(domain, remote, basedir string, format Format) (Req, error) {
-	var req = Req{domain: domain}
+func NewReq(domain, remote, basedir, hook string, format Format) (Req, error) {
+	var req = Req{domain: domain, hook: hook, env: []string{`DOMAIN=` + domain}}
 	var ctx = templateContext{Domain: domain, Proxy: remote}
 
 	// This format may require RoleCRT, RoleKey, … or RoleBUNDLE
@@ -123,9 +126,14 @@ func NewReq(domain, remote, basedir string, format Format) (Req, error) {
 
 }
 
+type Mutex interface {
+	Lock()
+	Unlock()
+}
+
 // Execute is the Workhorse. It operats on a single "request", that is,
 // on all its files
-func (req *Req) Execute() error {
+func (req *Req) Execute(mtx Mutex) error {
 
 	// First request all the data we need, this can be done in parallel,
 	// but we'll wait until all are done
@@ -186,6 +194,7 @@ func (req *Req) Execute() error {
 	}
 
 	// Ok, and now create the symlinks
+    //
 	for link, file := range infixed {
 		os.Remove(link)
 		if err := os.Symlink(filepath.Base(file), link); err != nil {
@@ -193,8 +202,27 @@ func (req *Req) Execute() error {
 		}
 	}
 
-	// Now we've to care about the hooks
-	return nil
+	// Now it is time to run the hook
+    //
+	Verbose("Hook %s for %s", req.hook, req.domain)
+
+	var cmd = exec.Cmd{
+		Path: req.hook,
+		Args: []string{req.hook, `deploy_cert`},
+		Env: func(env []string) []string {
+            env = req.env
+			for _, item := range req.items {
+				env = append(env, item.env)
+			}
+			return env
+        }([]string{}),
+		//}(os.Environ()),
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+	mtx.Lock()
+	defer mtx.Unlock()
+	return cmd.Run()
 }
 
 func (req Req) String() string {
