@@ -90,7 +90,7 @@ type templateContext struct {
 	Local  string
 }
 
-func NewReq(domain, remote string, basedir string, format Format) (Req, error) {
+func NewReq(domain, remote, basedir string, format Format) (Req, error) {
 	var req = Req{domain: domain}
 	var ctx = templateContext{Domain: domain, Proxy: remote}
 
@@ -174,10 +174,8 @@ func (req *Req) Execute() error {
 			}
 			defer file.Close()
 
-			if n, err := file.Write(item.data); err != nil {
+			if _, err := file.Write(item.data); err != nil {
 				return err
-			} else {
-				Verbose("Wrote %d", n)
 			}
 			return nil
 		}()

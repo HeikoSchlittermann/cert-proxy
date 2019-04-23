@@ -34,11 +34,11 @@ func NewPool(workers int) Pool {
 			defer Verbose("Worker[%d] done", wid)
 			defer pool.wg.Done()
 			Verbose("Worker[%d] starting", wid)
-			for job := range pool.queue {
-				Verbose("Job %v\n", job)
-				if err := job.Execute(); err != nil {
-                    log.Fatal(err)
-                }
+			for req := range pool.queue {
+				Verbose("Job %v\n", req)
+				if err := req.Execute(); err != nil {
+					log.Fatal(err)
+				}
 			}
 
 		}(i)
