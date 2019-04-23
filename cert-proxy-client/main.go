@@ -1,12 +1,13 @@
 package main
 
 import (
+	"cert-proxy/cert-proxy-client/cert"
+	"cert-proxy/cert-proxy-client/worker"
 	. "cert-proxy/internal/shared"
 	"crypto/tls"
 	"log"
 	"net/http"
 	"path"
-	"sync"
 )
 
 const API_VERSION = `v1`
@@ -14,25 +15,25 @@ const API_VERSION = `v1`
 var (
 	CNs = UList{} // List of unique strings
 	opt = struct {
-		CNfile    string // the CNs to fetch
-		Certbase  string // where to put the output
-		Connect   string // Server address
-		Jobs      int    // parallel Jobs
-		OutFormat Format // PEM|PKCS12
-		Outfile   string // ignore certbase and output directly
-		SSLFile   string // SSL auth file
-		ServerCN  string // X509 CN of the server
-		Verbose   bool
-		Auto      bool // Fetch all (Issue /list first)
+		CNfile   string      // the CNs to fetch
+		Certbase string      // where to put the output
+		Connect  string      // Server address
+		Jobs     int         // parallel Jobs
+		Format   cert.Format // PEM|PKCS12
+		Outfile  string      // ignore certbase and output directly
+		SSLFile  string      // SSL auth file
+		ServerCN string      // X509 CN of the server
+		Verbose  bool
+		Hook     string // Hook file
+		Auto     bool   // Fetch all (Issue /list first)
 	}{
-		Auto:      true,
-		OutFormat: FORMAT, // platform dependend, PEM (*nix) vs PKCS12 (Win*)
+		Auto:   true,
+		Format: cert.FORMAT, // platform dependend, PEM (*nix) vs PKCS12 (Win*)
 	}
-	verbose func(string, ...interface{})
 )
 
 func main() {
-	defer verbose("Done")
+	defer Verbose("DONE")
 
 	// Build the list of DNs (Domains) we need to fetch the
 	// certficates for
@@ -67,9 +68,9 @@ func main() {
 	defer http.DefaultClient.Transport.(*http.Transport).CloseIdleConnections()
 
 	// In auto mode we fetch the list of domains from the proxy and add
-    // it to our own (possibly empty) list
+	// it to our own (possibly empty) list
 	if opt.Auto {
-		verbose("Getting list of CNs")
+		Verbose("Getting list of CNs")
 		resp, err := http.Get(opt.Connect + path.Join(`/`+API_VERSION, `list`))
 		if err != nil {
 			log.Fatal(err)
@@ -78,22 +79,10 @@ func main() {
 		resp.Body.Close()
 	}
 
-	verbose("Enqueing tasks for %d CNs", len(CNs))
-	var queue = make(chan Task, opt.Jobs+1)
-	go func() {
-		enqueTasks(queue, CNs, opt.OutFormat, ITEMS[opt.OutFormat])
-		close(queue)
-	}()
+	Verbose("Enqueing tasks for %d CNs", len(CNs))
 
-	verbose("Launching workers")
-	var wg = sync.WaitGroup{}
-	for i := 0; i < opt.Jobs; i++ {
-		wg.Add(1)
-		go func(wid int) {
-			defer wg.Done()
-			Worker(wid, queue)
-		}(i)
-	}
-	verbose("Waiting for completion")
-	wg.Wait()
+	var pool = worker.NewPool(opt.Jobs)
+	pool.EnqueueTasks(CNs, opt.Connect, opt.Certbase, opt.Format)
+	pool.Wait()
+
 }

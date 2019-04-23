@@ -1,6 +1,7 @@
 package main
 
 import (
+	. "cert-proxy/internal/shared"
 	"flag"
 	"fmt"
 	"log"
@@ -21,16 +22,17 @@ func init() {
 	// -outformat PEM    implies cert, chain, fullchain, privkey
 	// -outformat PKCS12 implies bundle
 
-	flag.BoolVar(&opt.Verbose, "verbose", false, "Verbose output")
 	flag.BoolVar(&opt.Auto, "auto", true, "Auto mode (fetch all CNs the server provides us)")
+	flag.BoolVar(&opt.Verbose, "verbose", false, "Verbose output")
 	flag.IntVar(&opt.Jobs, "jobs", 3, "Number of parallel running jobs")
 	flag.StringVar(&opt.CNfile, "cnfile", "", "CN list file (use - for stdin)")
 	flag.StringVar(&opt.Certbase, "certbase", "certs", "Base dir for downloaded certs")
 	flag.StringVar(&opt.Connect, "connect", "https://localhost:4433", "Address of cert proxy server")
+	flag.StringVar(&opt.Hook, "hook", "hook", "hook script")
 	flag.StringVar(&opt.Outfile, "outfile", "", "Output file (use - for stdout)")
 	flag.StringVar(&opt.SSLFile, "sslfile", "ssl.pem", "SSL auth file (crt+key+ca) PEM")
 	flag.StringVar(&opt.ServerCN, "cert-proxy-cn", "cert-proxy", "CN of the cert proxy certificate")
-	flag.Var(&opt.OutFormat, "format", "Format of the requested certificate(s)")
+	flag.Var(&opt.Format, "format", "Format of the requested certificate(s)")
 	flag.Parse()
 
 	if !opt.Auto && opt.CNfile == "" && flag.NArg() < 1 {
@@ -43,8 +45,6 @@ func init() {
 	}
 
 	if opt.Verbose {
-		verbose = log.Printf
-	} else {
-		verbose = func(string, ...interface{}) {}
+		Verbose = log.Printf
 	}
 }
