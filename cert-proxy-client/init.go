@@ -25,6 +25,7 @@ func init() {
 	flag.BoolVar(&opt.Auto, "auto", true, "Auto mode (fetch all CNs the server provides us)")
 	flag.BoolVar(&opt.Verbose, "verbose", false, "Verbose output")
 	flag.IntVar(&opt.Jobs, "jobs", 3, "Number of parallel running jobs")
+	flag.IntVar(&opt.Sleep, "sleep", 0, "Sleep between re-exec")
 	flag.StringVar(&opt.CNfile, "cnfile", "", "CN list file (use - for stdin)")
 	flag.StringVar(&opt.Certbase, "certbase", "certs", "Base dir for downloaded certs")
 	flag.StringVar(&opt.Connect, "connect", "https://localhost:4433", "Address of cert proxy server")

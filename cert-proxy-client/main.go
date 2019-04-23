@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"path"
+	"time"
 )
 
 const API_VERSION = `v1`
@@ -15,16 +16,17 @@ const API_VERSION = `v1`
 var (
 	CNs = UList{} // List of unique strings
 	opt = struct {
-		CNfile   string      // the CNs to fetch
+		Auto     bool        // Fetch all (Issue /list first)
 		Certbase string      // where to put the output
+		CNfile   string      // the CNs to fetch
 		Connect  string      // Server address
-		Jobs     int         // parallel Jobs
 		Format   cert.Format // PEM|PKCS12
-		SSLFile  string      // SSL auth file
+		Hook     string      // Hook file
+		Sleep    int         //
+		Jobs     int         // parallel Jobs
 		ServerCN string      // X509 CN of the server
+		SSLFile  string      // SSL auth file
 		Verbose  bool
-		Hook     string // Hook file
-		Auto     bool   // Fetch all (Issue /list first)
 	}{
 		Auto:   true,
 		Format: cert.FORMAT, // platform dependend, PEM (*nix) vs PKCS12 (Win*)
@@ -32,56 +34,66 @@ var (
 )
 
 func main() {
-	defer Verbose("DONE")
 
-	// Build the list of DNs (Domains) we need to fetch the
-	// certficates for
-	if err := AddItemsFromFile(&CNs, opt.CNfile); err != nil {
-		log.Fatal(err)
-	}
+	for {
 
-	// Setup the HTTP client, some more setup is necessary, as we need
-	// to send our certificate and we need to check the server's cert
-	// agains a non-public root CA.
-	// FIXME: is this really the right way?
+		defer Verbose("DONE")
 
-	http.DefaultClient.Transport = &http.Transport{
-		// Go behaves quite rude and just tears down the connections
-		// when the program stops (even the CloseIdleConnections
-		// doesn't seem to help
-		// If we want to be more polite, we should disable the long
-		// lived connections:
-		//DisableKeepAlives: true,
-		TLSClientConfig: func() *tls.Config {
-			cfg, err := TLSClientConfig(opt.SSLFile, &tls.Config{
-				ServerName: opt.ServerCN,
-			})
+		// Build the list of DNs (Domains) we need to fetch the
+		// certficates for
+		if err := AddItemsFromFile(&CNs, opt.CNfile); err != nil {
+			log.Fatal(err)
+		}
+
+		// Setup the HTTP client, some more setup is necessary, as we need
+		// to send our certificate and we need to check the server's cert
+		// agains a non-public root CA.
+		// FIXME: is this really the right way?
+
+		http.DefaultClient.Transport = &http.Transport{
+			// Go behaves quite rude and just tears down the connections
+			// when the program stops (even the CloseIdleConnections
+			// doesn't seem to help
+			// If we want to be more polite, we should disable the long
+			// lived connections:
+			//DisableKeepAlives: true,
+			TLSClientConfig: func() *tls.Config {
+				cfg, err := TLSClientConfig(opt.SSLFile, &tls.Config{
+					ServerName: opt.ServerCN,
+				})
+				if err != nil {
+					log.Fatal(err)
+				}
+				return cfg
+			}(),
+		}
+		// WTF is going on here, I need to explore this in more detail
+		// And this CloseIdleConnections doesn't seem to help either
+		defer http.DefaultClient.Transport.(*http.Transport).CloseIdleConnections()
+
+		// In auto mode we fetch the list of domains from the proxy and add
+		// it to our own (possibly empty) list
+		if opt.Auto {
+			Verbose("Getting list of CNs")
+			resp, err := http.Get(opt.Connect + path.Join(`/`+API_VERSION, `list`))
 			if err != nil {
 				log.Fatal(err)
 			}
-			return cfg
-		}(),
-	}
-	// WTF is going on here, I need to explore this in more detail
-	// And this CloseIdleConnections doesn't seem to help either
-	defer http.DefaultClient.Transport.(*http.Transport).CloseIdleConnections()
-
-	// In auto mode we fetch the list of domains from the proxy and add
-	// it to our own (possibly empty) list
-	if opt.Auto {
-		Verbose("Getting list of CNs")
-		resp, err := http.Get(opt.Connect + path.Join(`/`+API_VERSION, `list`))
-		if err != nil {
-			log.Fatal(err)
+			AddItemsFromReader(&CNs, resp.Body)
+			resp.Body.Close()
 		}
-		AddItemsFromReader(&CNs, resp.Body)
-		resp.Body.Close()
+
+		Verbose("Enqueing tasks for %d CNs", len(CNs))
+
+		var pool = worker.NewPool(opt.Jobs)
+		pool.EnqueueTasks(CNs, opt.Connect, opt.Certbase, opt.Hook, opt.Format)
+		pool.Wait()
+
+		if opt.Sleep > 0 {
+			time.Sleep(time.Duration(opt.Sleep) * time.Second)
+		} else {
+			break
+		}
 	}
-
-	Verbose("Enqueing tasks for %d CNs", len(CNs))
-
-	var pool = worker.NewPool(opt.Jobs)
-	pool.EnqueueTasks(CNs, opt.Connect, opt.Certbase, opt.Hook, opt.Format)
-	pool.Wait()
 
 }
