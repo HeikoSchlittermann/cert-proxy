@@ -8,7 +8,7 @@ import (
 	"log"
 	"net/http"
 	"path"
-    "time"
+	"time"
 )
 
 const API_VERSION = `v1`
@@ -22,54 +22,56 @@ var (
 		Connect  string      // Server address
 		Format   cert.Format // PEM|PKCS12
 		Hook     string      // Hook file
-		Sleep    int         //
-		Jobs     int         // parallel Jobs
-		ServerCN string      // X509 CN of the server
-		SSLFile  string      // SSL auth file
+		Sleep    duration
+		Jobs     int    // parallel Jobs
+		ServerCN string // X509 CN of the server
+		SSLFile  string // SSL auth file
 		Verbose  bool
 	}{
 		Auto:   true,
 		Format: cert.FORMAT, // platform dependend, PEM (*nix) vs PKCS12 (Win*)
+		Sleep:  duration(24 * time.Hour),
 	}
 )
 
 func main() {
+	defer Verbose("DONE")
 
+	if err := AddItemsFromFile(&CNs, opt.CNfile); err != nil {
+		log.Fatal(err)
+	}
+
+	// Setup the HTTP client, some more setup is necessary, as we need
+	// to send our certificate and we need to check the server's cert
+	// agains a non-public root CA.
+	// FIXME: is this really the right way?
+
+	http.DefaultClient.Transport = &http.Transport{
+		// Go behaves quite rude and just tears down the connections
+		// when the program stops (even the CloseIdleConnections
+		// doesn't seem to help
+		// If we want to be more polite, we should disable the long
+		// lived connections:
+		//DisableKeepAlives: true,
+		TLSClientConfig: func() *tls.Config {
+			cfg, err := TLSClientConfig(opt.SSLFile, &tls.Config{
+				ServerName: opt.ServerCN,
+			})
+			if err != nil {
+				log.Fatal(err)
+			}
+			return cfg
+		}(),
+	}
+	// WTF is going on here, I need to explore this in more detail
+	// And this CloseIdleConnections doesn't seem to help either
+	defer http.DefaultClient.Transport.(*http.Transport).CloseIdleConnections()
+
+	Verbose("Starting service loop (interval: %s", opt.Sleep)
 	for {
-
-		defer Verbose("DONE")
 
 		// Build the list of DNs (Domains) we need to fetch the
 		// certficates for
-		if err := AddItemsFromFile(&CNs, opt.CNfile); err != nil {
-			log.Fatal(err)
-		}
-
-		// Setup the HTTP client, some more setup is necessary, as we need
-		// to send our certificate and we need to check the server's cert
-		// agains a non-public root CA.
-		// FIXME: is this really the right way?
-
-		http.DefaultClient.Transport = &http.Transport{
-			// Go behaves quite rude and just tears down the connections
-			// when the program stops (even the CloseIdleConnections
-			// doesn't seem to help
-			// If we want to be more polite, we should disable the long
-			// lived connections:
-			//DisableKeepAlives: true,
-			TLSClientConfig: func() *tls.Config {
-				cfg, err := TLSClientConfig(opt.SSLFile, &tls.Config{
-					ServerName: opt.ServerCN,
-				})
-				if err != nil {
-					log.Fatal(err)
-				}
-				return cfg
-			}(),
-		}
-		// WTF is going on here, I need to explore this in more detail
-		// And this CloseIdleConnections doesn't seem to help either
-		defer http.DefaultClient.Transport.(*http.Transport).CloseIdleConnections()
 
 		// In auto mode we fetch the list of domains from the proxy and add
 		// it to our own (possibly empty) list
@@ -89,11 +91,10 @@ func main() {
 		pool.EnqueueTasks(CNs, opt.Connect, opt.Certbase, opt.Hook, opt.Format)
 		pool.Wait()
 
-		if opt.Sleep > 0 {
-			time.Sleep(time.Duration(opt.Sleep) * time.Second)
-		} else {
+		if opt.Sleep <= 0 {
 			break
 		}
+		time.Sleep(time.Duration(opt.Sleep))
 	}
 
 }
