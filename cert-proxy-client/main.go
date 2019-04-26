@@ -22,15 +22,15 @@ var (
 		Connect  string      // Server address
 		Format   cert.Format // PEM|PKCS12
 		Hook     string      // Hook file
-		Sleep    duration
+		Interval duration
 		Jobs     int    // parallel Jobs
 		ServerCN string // X509 CN of the server
 		SSLFile  string // SSL auth file
 		Verbose  bool
 	}{
-		Auto:   true,
-		Format: cert.FORMAT, // platform dependend, PEM (*nix) vs PKCS12 (Win*)
-		Sleep:  duration(24 * time.Hour),
+		Auto:     true,
+		Format:   cert.FORMAT, // platform dependend, PEM (*nix) vs PKCS12 (Win*)
+		Interval:  duration(24 * time.Hour),
 	}
 )
 
@@ -67,8 +67,12 @@ func main() {
 	// And this CloseIdleConnections doesn't seem to help either
 	defer http.DefaultClient.Transport.(*http.Transport).CloseIdleConnections()
 
-	Verbose("Starting service loop (interval: %s", opt.Sleep)
+	var ticker <-chan time.Time
+	if opt.Interval > 0 {
+		ticker = time.Tick(time.Duration(opt.Interval))
+	}
 	for {
+		now := time.Now()
 
 		// Build the list of DNs (Domains) we need to fetch the
 		// certficates for
@@ -91,10 +95,13 @@ func main() {
 		pool.EnqueueTasks(CNs, opt.Connect, opt.Certbase, opt.Hook, opt.Format)
 		pool.Wait()
 
-		if opt.Sleep <= 0 {
+		if ticker != nil {
+			Verbose("Next run %s", now.Add(time.Duration(opt.Interval)).Format(time.RFC1123))
+			<-ticker
+		} else {
 			break
 		}
-		time.Sleep(time.Duration(opt.Sleep))
+
 	}
 
 }
