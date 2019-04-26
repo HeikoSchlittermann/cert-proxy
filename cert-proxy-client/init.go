@@ -43,6 +43,6 @@ func init() {
 	}
 
 	if opt.Verbose {
-		Verbose = log.Printf
+		Verbose = log.New(os.Stderr, ``, 0).Printf
 	}
 }
