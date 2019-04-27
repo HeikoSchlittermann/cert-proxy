@@ -77,7 +77,7 @@ type Req struct {
 	domain string
 	items  []certItem // depending on the Role…
 	hook   string
-    env    []string
+	env    []string
 }
 
 type certItem struct {
@@ -194,7 +194,7 @@ func (req *Req) Execute(mtx Mutex) error {
 	}
 
 	// Ok, and now create the symlinks
-    //
+	//
 	for link, file := range infixed {
 		os.Remove(link)
 		if err := os.Symlink(filepath.Base(file), link); err != nil {
@@ -203,19 +203,19 @@ func (req *Req) Execute(mtx Mutex) error {
 	}
 
 	// Now it is time to run the hook
-    //
+	//
 	Verbose("Hook %s for %s", req.hook, req.domain)
 
 	var cmd = exec.Cmd{
 		Path: req.hook,
 		Args: []string{req.hook, `deploy_cert`},
 		Env: func(env []string) []string {
-            env = req.env
+			env = req.env
 			for _, item := range req.items {
 				env = append(env, item.env)
 			}
 			return env
-        }([]string{}),
+		}([]string{}),
 		//}(os.Environ()),
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,

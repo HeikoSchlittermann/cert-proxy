@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"path"
+	"time"
 )
 
 const API_VERSION = `v1`
@@ -15,27 +16,27 @@ const API_VERSION = `v1`
 var (
 	CNs = UList{} // List of unique strings
 	opt = struct {
-		CNfile   string      // the CNs to fetch
+		Auto     bool        // Fetch all (Issue /list first)
 		Certbase string      // where to put the output
+		CNfile   string      // the CNs to fetch
 		Connect  string      // Server address
-		Jobs     int         // parallel Jobs
 		Format   cert.Format // PEM|PKCS12
-		SSLFile  string      // SSL auth file
-		ServerCN string      // X509 CN of the server
+		Hook     string      // Hook file
+		Interval duration
+		Jobs     int    // parallel Jobs
+		ServerCN string // X509 CN of the server
+		SSLFile  string // SSL auth file
 		Verbose  bool
-		Hook     string // Hook file
-		Auto     bool   // Fetch all (Issue /list first)
 	}{
-		Auto:   true,
-		Format: cert.FORMAT, // platform dependend, PEM (*nix) vs PKCS12 (Win*)
+		Auto:     true,
+		Format:   cert.FORMAT, // platform dependend, PEM (*nix) vs PKCS12 (Win*)
+		Interval:  duration(24 * time.Hour),
 	}
 )
 
 func main() {
 	defer Verbose("DONE")
 
-	// Build the list of DNs (Domains) we need to fetch the
-	// certficates for
 	if err := AddItemsFromFile(&CNs, opt.CNfile); err != nil {
 		log.Fatal(err)
 	}
@@ -66,22 +67,41 @@ func main() {
 	// And this CloseIdleConnections doesn't seem to help either
 	defer http.DefaultClient.Transport.(*http.Transport).CloseIdleConnections()
 
-	// In auto mode we fetch the list of domains from the proxy and add
-	// it to our own (possibly empty) list
-	if opt.Auto {
-		Verbose("Getting list of CNs")
-		resp, err := http.Get(opt.Connect + path.Join(`/`+API_VERSION, `list`))
-		if err != nil {
-			log.Fatal(err)
-		}
-		AddItemsFromReader(&CNs, resp.Body)
-		resp.Body.Close()
+	var ticker <-chan time.Time
+	if opt.Interval > 0 {
+		ticker = time.Tick(time.Duration(opt.Interval))
 	}
+	for {
+		now := time.Now()
 
-	Verbose("Enqueing tasks for %d CNs", len(CNs))
+		// Build the list of DNs (Domains) we need to fetch the
+		// certficates for
 
-	var pool = worker.NewPool(opt.Jobs)
-	pool.EnqueueTasks(CNs, opt.Connect, opt.Certbase, opt.Hook, opt.Format)
-	pool.Wait()
+		// In auto mode we fetch the list of domains from the proxy and add
+		// it to our own (possibly empty) list
+		if opt.Auto {
+			Verbose("Getting list of CNs")
+			resp, err := http.Get(opt.Connect + path.Join(`/`+API_VERSION, `list`))
+			if err != nil {
+				log.Fatal(err)
+			}
+			AddItemsFromReader(&CNs, resp.Body)
+			resp.Body.Close()
+		}
+
+		Verbose("Enqueing tasks for %d CNs", len(CNs))
+
+		var pool = worker.NewPool(opt.Jobs)
+		pool.EnqueueTasks(CNs, opt.Connect, opt.Certbase, opt.Hook, opt.Format)
+		pool.Wait()
+
+		if ticker != nil {
+			Verbose("Next run %s", now.Add(time.Duration(opt.Interval)).Format(time.RFC1123))
+			<-ticker
+		} else {
+			break
+		}
+
+	}
 
 }
