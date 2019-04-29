@@ -19,6 +19,7 @@ var (
 		ClientConfigDir string
 		Verbose         bool
 	}
+	Version string = "<unversioned>"
 )
 
 func serveWelcome(w http.ResponseWriter, r *http.Request) {

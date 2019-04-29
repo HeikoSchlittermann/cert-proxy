@@ -1,7 +1,5 @@
-DESTDIR = /
 .PHONY: all clean
-all: ; go build
+v = $(shell git describe --always --dirty=+)
+d = $(shell date)
+all: ; go build -ldflags '-X main.Version=$v'
 clean: ; go clean
-
-install:	all
-	install -m 0755 -d ${DESTDIR}/etc/cert-proxy

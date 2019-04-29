@@ -21,8 +21,11 @@ func init() {
 	// -outformat PEM    implies cert, chain, fullchain, privkey
 	// -outformat PKCS12 implies bundle
 
+	var version bool
+
 	flag.BoolVar(&opt.Auto, "auto", true, "Auto mode (fetch all CNs the server provides us)")
 	flag.BoolVar(&opt.Verbose, "verbose", false, "Verbose output")
+	flag.BoolVar(&version, "version", false, "current version")
 	flag.IntVar(&opt.Jobs, "jobs", runtime.NumCPU(), "Number of parallel running jobs")
 	flag.StringVar(&opt.CNfile, "cnfile", "", "CN list file (use - for stdin)")
 	flag.StringVar(&opt.Certbase, "certbase", "certs", "Base dir for downloaded certs")
@@ -33,6 +36,11 @@ func init() {
 	flag.Var(&opt.Format, "format", "Format of the requested certificate(s) (PEM|PKCS12)")
 	flag.Var(&opt.Tick, "tick", "time between re-connects (time Duration)")
 	flag.Parse()
+
+	if version {
+		fmt.Println(Version)
+		os.Exit(0)
+	}
 
 	if !opt.Auto && opt.CNfile == "" && flag.NArg() < 1 {
 		flag.Usage()

@@ -31,6 +31,7 @@ var (
 		Format: cert.FORMAT, // platform dependend, PEM (*nix) vs PKCS12 (Win*)
 		Tick:   duration(24 * time.Hour),
 	}
+	Version string = "<unversioned>"
 )
 
 func main() {
