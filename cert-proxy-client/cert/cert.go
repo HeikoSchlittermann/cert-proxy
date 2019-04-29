@@ -178,9 +178,14 @@ func (req *Req) Execute(mtx Mutex) error {
 
 	// Ok, and now create the symlinks
 	//
-	for link, file := range infixed {
-		os.Remove(link)
-		if err := os.Symlink(filepath.Base(file), link); err != nil {
+	for name, _ := range infixed {
+		/*
+			os.Remove(link)
+			if err := os.Symlink(filepath.Base(file), link); err != nil {
+				return err
+			}
+		*/
+		if err := os.Rename(infixed[name], name); err != nil {
 			return err
 		}
 	}
