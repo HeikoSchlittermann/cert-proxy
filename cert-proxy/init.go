@@ -1,10 +1,10 @@
 package main
 
 import (
+    . "cert-proxy/internal/shared"
 	"flag"
 	"log"
 )
-
 
 func init() {
 	log.SetFlags(log.Flags() | log.Lmicroseconds)
@@ -15,9 +15,9 @@ func init() {
 	flag.BoolVar(&opt.Verbose, "verbose", false, "Verbose operation")
 	flag.Parse()
 
-    if opt.Verbose {
-        verbose = log.Printf
-    } else {
-        verbose = func(string, ...interface{}) { }
-    }
+	if opt.Verbose {
+		Verbose = log.Printf
+	} else {
+		Verbose = func(string, ...interface{}) {}
+	}
 }

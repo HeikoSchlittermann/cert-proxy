@@ -19,7 +19,6 @@ var (
 		ClientConfigDir string
 		Verbose         bool
 	}
-	verbose func(string, ...interface{})
 )
 
 func serveWelcome(w http.ResponseWriter, r *http.Request) {
@@ -32,7 +31,7 @@ func servePublic(w http.ResponseWriter, r *http.Request) {
 	cn := r.TLS.PeerCertificates[0].Subject.CommonName
 	parts := strings.Split(r.URL.Path, "/")[2:]
 	req, parts := parts[0], parts[1:]
-	verbose("Serving cn=%s %s\n", cn, r.URL)
+	Verbose("Serving cn=%s %s\n", cn, r.URL)
 
 	// return the list of domains this client is allowed to fetch the
 	// certificiates
@@ -71,7 +70,7 @@ func servePrivate(w http.ResponseWriter, r *http.Request) {
 	// and return http.StatusNotAcceptable)
 	cn := r.TLS.PeerCertificates[0].Subject.CommonName
 	parts := strings.Split(r.URL.Path, "/")[2:]
-	verbose("Serving cn=%s %s\n", cn, r.URL)
+	Verbose("Serving cn=%s %s\n", cn, r.URL)
 
 	allowedDomains, err := cnList(cn)
 	if err != nil {
@@ -127,6 +126,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	verbose("Starting listener\n")
+	Verbose("Starting listener\n")
 	http.Serve(listener, nil)
 }
