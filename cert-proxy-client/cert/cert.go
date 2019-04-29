@@ -171,24 +171,7 @@ func (req *Req) Execute(mtx Mutex) error {
 		}(item.local)
 
 		// Write the file (optionally create the directory first)
-		err := func() error {
-			if err := Mkdir(filepath.Dir(item.local)); err != nil {
-				return err
-			}
-
-			file, err := os.Create(infixed[item.local])
-			if err != nil {
-				return err
-			}
-			defer file.Close()
-
-			if _, err := file.Write(item.data); err != nil {
-				return err
-			}
-			return nil
-		}()
-
-		if err != nil {
+		if err := writeFile(infixed[item.local], item.data); err != nil {
 			return err
 		}
 	}
@@ -238,4 +221,22 @@ func mustExpand(t *template.Template, ctx templateContext) string {
 		panic(err)
 	}
 	return b.String()
+}
+
+func writeFile(name string, data []byte) error {
+
+	if err := Mkdir(filepath.Dir(name)); err != nil {
+		return err
+	}
+
+	// We do not use ioutil.WriteFile, as this would overwrite
+	// an existing file
+	file, err := os.Create(name)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	_, err = file.Write(data)
+	return err
 }
