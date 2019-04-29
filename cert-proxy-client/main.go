@@ -22,15 +22,15 @@ var (
 		Connect  string      // Server address
 		Format   cert.Format // PEM|PKCS12
 		Hook     string      // Hook file
-		Interval duration
+		Tick     duration
 		Jobs     int    // parallel Jobs
 		ServerCN string // X509 CN of the server
 		SSLFile  string // SSL auth file
 		Verbose  bool
 	}{
-		Auto:     true,
-		Format:   cert.FORMAT, // platform dependend, PEM (*nix) vs PKCS12 (Win*)
-		Interval:  duration(24 * time.Hour),
+		Auto:   true,
+		Format: cert.FORMAT, // platform dependend, PEM (*nix) vs PKCS12 (Win*)
+		Tick:   duration(24 * time.Hour),
 	}
 )
 
@@ -67,11 +67,11 @@ func main() {
 	// And this CloseIdleConnections doesn't seem to help either
 	defer http.DefaultClient.Transport.(*http.Transport).CloseIdleConnections()
 
-    // Start the ticker now, to be independend on the runtime of
-    // the jobs
+	// Start the ticker now, to be independend on the runtime of
+	// the jobs
 	var ticker <-chan time.Time
-	if opt.Interval > 0 {
-		ticker = time.Tick(time.Duration(opt.Interval))
+	if opt.Tick > 0 {
+		ticker = time.Tick(time.Duration(opt.Tick))
 	}
 	for {
 		now := time.Now()
@@ -98,7 +98,7 @@ func main() {
 		pool.Wait()
 
 		if ticker != nil {
-			Verbose("Next run %s", now.Add(time.Duration(opt.Interval)).Format(time.RFC1123))
+			Verbose("Next run %s", now.Add(time.Duration(opt.Tick)).Format(time.RFC1123))
 			<-ticker
 		} else {
 			break
