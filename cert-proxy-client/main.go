@@ -67,6 +67,8 @@ func main() {
 	// And this CloseIdleConnections doesn't seem to help either
 	defer http.DefaultClient.Transport.(*http.Transport).CloseIdleConnections()
 
+    // Start the ticker now, to be independend on the runtime of
+    // the jobs
 	var ticker <-chan time.Time
 	if opt.Interval > 0 {
 		ticker = time.Tick(time.Duration(opt.Interval))
