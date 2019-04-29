@@ -70,7 +70,7 @@ func servePrivate(w http.ResponseWriter, r *http.Request) {
 	// and return http.StatusNotAcceptable)
 	cn := r.TLS.PeerCertificates[0].Subject.CommonName
 	parts := strings.Split(r.URL.Path, "/")[2:]
-	Verbose("Serving cn=%s %s\n", cn, r.URL)
+	Verbose("Serving cn=%s %v", cn, r.URL)
 
 	allowedDomains, err := cnList(cn)
 	if err != nil {
@@ -81,7 +81,16 @@ func servePrivate(w http.ResponseWriter, r *http.Request) {
 
 	req, parts := parts[0], parts[1:]
 	domain, parts := parts[0], parts[1:]
-	filename := filepath.Join(domain, req+".pem")
+	filename := filepath.Join(domain, req+func() string {
+		switch strings.ToUpper(r.URL.Query().Get("format")) {
+		case `PKCS12`:
+			return `.p12`
+		case `PEM`:
+			fallthrough
+		default:
+			return `.pem`
+		}
+	}())
 
 	// now check, if the current cn is allowed to access the domain,
 	// that is, we check, if the config file (already opened) contains

@@ -67,7 +67,7 @@ var TEMPLATES = map[role]templates{
 		env:    tt(`FULLCHAINFILE={{.Local}}`),
 	},
 	RoleBUNDLE: {
-		remote: tt(`{{.Proxy}}/v1/bundle/{{.Domain}}`),
+		remote: tt(`{{.Proxy}}/v1/bundle/{{.Domain}}?format=PKCS12`),
 		local:  tt(`{{.Domain}}/bundle.p12`),
 		env:    tt(`BUNDLEFILE={{.Local}}`),
 	},
