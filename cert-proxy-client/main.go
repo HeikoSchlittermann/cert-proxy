@@ -28,7 +28,6 @@ var (
 		SSLFile  string // SSL auth file
 		Verbose  bool
 	}{
-		Auto:   true,
 		Format: cert.FORMAT, // platform dependend, PEM (*nix) vs PKCS12 (Win*)
 		Tick:   duration(24 * time.Hour),
 	}
