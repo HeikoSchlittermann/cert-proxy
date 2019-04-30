@@ -1,0 +1,8 @@
+[Unit]
+Description=cert-proxy-server service
+
+[Service]
+ExecStart=/usr/local/go/bin/cert-proxy-server -sslfile /etc/cert-proxy/ssl.pem -certbase /var/lib/dehydrated/certs -ccd /etc/cert-proxy/clients -serve :443
+
+[Install]
+WantedBy=network.target
