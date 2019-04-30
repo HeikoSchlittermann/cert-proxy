@@ -1,4 +1,4 @@
-.PHONY: all clean install
+.PHONY: all build install clean
 v = $(shell git describe --always --dirty=+)
-all:		; go build -ldflags '-X main.Version=$v'
-clean install:	; go $@
+all:			build
+build install clean:	; go $@ -ldflags '-X main.Version=$v'
