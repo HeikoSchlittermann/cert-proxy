@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"text/template"
@@ -16,6 +17,8 @@ import (
 )
 
 type role string
+
+var UseSymlink = runtime.GOOS != "windows"
 
 const (
 	RoleINVALID   role = ``
@@ -179,13 +182,14 @@ func (req *Req) Execute(mtx Mutex) error {
 	// Ok, and now create the symlinks
 	//
 	for name, _ := range infixed {
-		/*
-			os.Remove(link)
-			if err := os.Symlink(filepath.Base(file), link); err != nil {
-				return err
-			}
-		*/
-		if err := os.Rename(infixed[name], name); err != nil {
+		var err error
+		if UseSymlink {
+			os.Remove(name)
+			err = os.Symlink(filepath.Base(infixed[name]), name)
+		} else {
+			err = os.Rename(infixed[name], name)
+		}
+		if err != nil {
 			return err
 		}
 	}

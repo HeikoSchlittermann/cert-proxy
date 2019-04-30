@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cert-proxy/cert-proxy-client/cert"
 	. "cert-proxy/internal/shared"
 	"flag"
 	"fmt"
@@ -26,6 +27,7 @@ func init() {
 	flag.BoolVar(&opt.Auto, "auto", true, "Auto mode (fetch all CNs the server provides us)")
 	flag.BoolVar(&opt.Verbose, "verbose", false, "Verbose output")
 	flag.BoolVar(&version, "version", false, "current version")
+	flag.BoolVar(&cert.UseSymlink, "symlink", cert.UseSymlink, "Use symlinks for current files")
 	flag.IntVar(&opt.Jobs, "jobs", runtime.NumCPU(), "Number of parallel running jobs")
 	flag.StringVar(&opt.CNfile, "cnfile", "", "CN list file (use - for stdin)")
 	flag.StringVar(&opt.Certbase, "certbase", "certs", "Base dir for downloaded certs")
