@@ -136,6 +136,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	Verbose("Starting listener\n")
+	log.Printf("Starting listener %v\n", listener.Addr())
 	http.Serve(listener, nil)
 }
