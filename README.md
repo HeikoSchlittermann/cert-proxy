@@ -16,32 +16,100 @@ the clients.
 	 | v
 	 | |
        LE helper (dehydrated)---> DNS
-       cert-proxy
+       cert-proxy-server
          | |
 	 ^ v
 	 | |
        cert-proxy-client
 
-As the cert-proxy may send sensitive information to the client, the
+As the cert-proxy-server may send sensitive information to the client, the
 client has to authenticate itself. As the client has to trust the
 information from the proxy, the server needs to authenticate with the
 client.
 
+## Installation
+
+### Prepare the build environment
+
+The cert-proxy is written in Go. If you need to build the binaries, you
+need to install a Go [build environment](https://golang.org).
+
+Next you need to setup the your local system to use a "go workspace":
+Create a `/etc/profile.d/local.sh` and add these two lines:
+
+    export GOPATH=/usr/local/go
+    PATH+=$GOPATH/bin
+
+Logout and login again.
+Next create the Go workspace:
+
+    install -d $GOPATH
+
+### Get the source and build and install the binaries
+
+Clone the Git repository:
+
+    cd /usr/local/go/src
+    git clone http://git.schlittermann.de/user/heiko/cert-proxy
+
+To build the binaries, change your working directory into the project
+dir and build the binaries for your platforms:
+
+    cd /usr/local/go/src/git-proxy
+    make			    (1)
+    GOOS=windows make		    (2)
+
+(1) Without the GOOS environment variable, the binaries for the current
+platform (probably "linux") are built.
+
+(2) With setting the *GOOS* environment variable, you can build the
+binaries for alternative platforms.
+
+The last step is installing the binaries for the current platform:
+
+    make install
+
+This should install the cert-proxy-server and cert-proxy-client into Go's bin
+directory ($GOPATH/bin). If you want to install *only* the server or
+*only* the client, use `make install-server` or `make install-client`
+
+### Setup the CA
+
+For mutual authentication X509 is used. To support you, a simple CA is
+part of the cert-proxy package. You may install this minimalistic CA:
+
+    make install-ca
+
+This installs the CA into `/etc/cert-proxy/ca`. You may override the
+root directory by setting the *DESTDIR* environment variable.
+
+## Updates
+
+Once the cert-proxy sub-packages (server, client, ca) are installed, you
+may regularly check for updates:
+
+    cd /usr/local/go/src/cert-proxy
+    git pull
+
+and repeat the installation steps.
+
 
 ## Operation
 
-### Setup the server
+### Initial setup of the CA
 
-First install the binaries.  For authentication betwenn client and proxy
-X509 is used (in both directions). Client and Proxy use a single file
-containing the information they need (default name: ssl.pem). You're
-encouraged to use the provided minimalistic CA.
+If you run your own CA, you may skip this step.
+
+For authentication between client and proxy X509 is used (in both
+directions).  Client and Proxy use a single file containing the
+information they need (default name: ssl.pem). You're encouraged to use
+the provided minimalistic CA.
 
 First create the CA:
 
-    cd CA
-    cp lib/vars.sh.example
-    <edit> lib/.vars.sh
+    cd /etc/cert-proxy/ca
+    cp lib/vars.sh.example lib/vars.sh
+    <edit> lib/vars.sh
     ./lib/mkca
 
 Once the CA is created, create a ssl bundle for the cert proxy:

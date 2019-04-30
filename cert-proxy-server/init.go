@@ -9,8 +9,14 @@ import (
 )
 
 func init() {
+
+	// Running as a systemd unit?
+	if os.Getenv(`INVOCATION_ID`) != "" {
+		log.SetFlags(0)
+	}
+	//	    log.SetPrefix(filepath.Base(os.Args[0]) + `: `)
+
 	var version bool
-	log.SetFlags(log.Flags() | log.Lmicroseconds)
 	flag.BoolVar(&version, "version", false, "current version")
 	flag.StringVar(&opt.SSLFile, "sslfile", "ssl.pem", "SSL auth file (crt+key+ca) PEM")
 	flag.StringVar(&opt.Serve, "serve", ":4433", "Listener [host]:port")

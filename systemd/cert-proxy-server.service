@@ -2,6 +2,7 @@
 Description=cert-proxy-server service
 
 [Service]
+ProtectSystem=strict
 ExecStart=/usr/local/go/bin/cert-proxy-server -sslfile /etc/cert-proxy/ssl.pem -certbase /var/lib/dehydrated/certs -ccd /etc/cert-proxy/clients -serve :443 -verbose
 
 [Install]
