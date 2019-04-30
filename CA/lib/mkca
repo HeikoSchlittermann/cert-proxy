@@ -7,7 +7,7 @@ umask 077
 BINDIR=$(dirname $0)
 : ${BINDIR:=.}
 
-VARSFILE="$BINDIR/.vars.sh"
+VARSFILE="$BINDIR/vars.sh"
 
 if ! test -f "$VARSFILE"; then
     echo "$0: $VARSFILE not found. Please create it from the example in $BINDIR/" >&2

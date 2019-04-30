@@ -4,7 +4,7 @@ umask 077
 BINDIR=$(dirname $0)
 : ${BINDIR:=.}
 LIBDIR=$(readlink -f "$BINDIR"/../lib)
-VARSFILE="$LIBDIR"/.vars.sh
+VARSFILE="$LIBDIR"/vars.sh
 
 test -f "$VARSFILE" || {
     echo "$0: Can't source $VARSFILE" >&2
