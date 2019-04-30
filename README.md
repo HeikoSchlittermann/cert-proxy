@@ -31,41 +31,42 @@ client.
 
 ### Prepare the build environment
 
-The cert-proxy is written in Go. If you need to build the binaries, you
-need to install a Go [build environment](https://golang.org).
+* The cert-proxy is written in Go. If you need to build the binaries, you
+  need to install a Go [build environment](https://golang.org).
 
-Next you need to setup the your local system to use a "go workspace":
-Create a `/etc/profile.d/local.sh` and add these two lines:
+* Next you need to setup the your local system to use a "go workspace":
+  Create a `/etc/profile.d/local.sh` and add these two lines:
 
     export GOPATH=/usr/local/go
     PATH+=$GOPATH/bin
 
-Logout and login again.
-Next create the Go workspace:
+  Logout and login again.
+
+* Next create the Go workspace:
 
     install -d $GOPATH
 
-### Get the source and build and install the binaries
+### Get the source, build, and install the binaries
 
-Clone the Git repository:
+* Clone the Git repository:
 
     cd /usr/local/go/src
     git clone http://git.schlittermann.de/user/heiko/cert-proxy
 
-To build the binaries, change your working directory into the project
-dir and build the binaries for your platforms:
+* To build the binaries, change your working directory into the project
+  dir and build the binaries for your platforms:
 
     cd /usr/local/go/src/git-proxy
     make			    (1)
     GOOS=windows make		    (2)
 
-(1) Without the GOOS environment variable, the binaries for the current
-platform (probably "linux") are built.
+  (1) Without the GOOS environment variable, the binaries for the current
+  platform (probably "linux") are built.
 
-(2) With setting the *GOOS* environment variable, you can build the
-binaries for alternative platforms.
+  (2) With setting the *GOOS* environment variable, you can build the
+  binaries for alternative platforms.
 
-The last step is installing the binaries for the current platform:
+* The last step is installing the binaries for the current platform:
 
     make install
 
@@ -73,80 +74,65 @@ This should install the cert-proxy-server and cert-proxy-client into Go's bin
 directory ($GOPATH/bin). If you want to install *only* the server or
 *only* the client, use `make install-server` or `make install-client`
 
-### Setup the CA
+## Setup the cert-proxy-server
 
-For mutual authentication X509 is used. To support you, a simple CA is
-part of the cert-proxy package. You may install this minimalistic CA:
+* You may want to use the supplied systemd-service files from `systemd/`.
+
+    systemctl enable systemd/cert-proxy-server.service
+
+* For mutual authentication X509 is used. To support you, a simple CA is
+  part of the cert-proxy package. You may install this minimalistic CA:
 
     make install-ca
 
-This installs the CA into `/etc/cert-proxy/ca`. You may override the
-root directory by setting the *DESTDIR* environment variable.
+  This installs the CA into `/etc/cert-proxy/ca`. You may override the
+  root directory by setting the *DESTDIR* environment variable.
 
-## Updates
-
-Once the cert-proxy sub-packages (server, client, ca) are installed, you
-may regularly check for updates:
-
-    cd /usr/local/go/src/cert-proxy
-    git pull
-
-and repeat the installation steps.
-
-
-## Operation
-
-### Initial setup of the CA
-
-If you run your own CA, you may skip this step.
-
-For authentication between client and proxy X509 is used (in both
-directions).  Client and Proxy use a single file containing the
-information they need (default name: ssl.pem). You're encouraged to use
-the provided minimalistic CA.
-
-First create the CA:
+* Once you have the CA, you can create the cert-proxy-ca
 
     cd /etc/cert-proxy/ca
-    cp lib/vars.sh.example lib/vars.sh
-    <edit> lib/vars.sh
-    ./lib/mkca
+    ./bin/mkssl-pem cert-proxy
 
-Once the CA is created, create a ssl bundle for the cert proxy:
+* Copy the resulting file (`ca/cert-proxy.pem`) as
+  `/etc/cert-proxy/ssl.pem`.
 
-    ./bin/mkssl-pem <proxy-host-name>
+* Create the client-config-directory
 
-The proxy's hostname does not matter, as you can override the expected
-name on the client. The client's hostname is used as an authorization
-key to access the certificates. Copy the resulting files to a safe place
-for later use by the cert proxy server.
+    install -d /etc/cert-proxy/clients
 
-    cert-proxy -serve :443
+* Start the service
 
-### Setup a client
+    systemctl start cert-proxy-server
 
-Login to the server and make use of it's CA:
+## Setup the Client
 
-    cd CA
-    ./bin/mkssl-pem <proxy-client-name>
+* Create a client authentication file
 
-The proxy-client-name doesn't matter as long as it is uniq among all
-clients. Copy the resulting -ssl.pem file to your client. (WARNING: It
-contains private *unprotected* key material)
+    cd /etc/cert-proxy/ca
+    bin/mkssl-pem <client-name>
 
-Create a client access configuration on the server:
+* Copy the <client-name>-ssl.pem as ssl.pem, and the cert-proxy-client(.exe) to the
+  client system (the binaries are located in $GOPATH/bin/)
 
-    cd <working-dir-of the server>
-    mkdir clients
-    <edit> clients/<proxy-client-name>
+* Create the directory *certbase* for the downloaded clients
+
+* Start the client
+
+    cert-proxy-client [-sslfile ssl.pem] -certbase <certbase-dir> -verbose
+
+  This will start the client, download the certs and re-download the
+  certs once per tick interval (option -tick)
+
+## Daily operation
+
+Whenever a new cert should be made available for a client (or a number
+of clients), add the new cert domain to the client-config file
+`/etc/cert-proxy/clients/<client>`.
 
 Add (line by line) the CNs for certificates the client is allowd to
 access. Comments (#) are allowed
 
-Login to the client. Install the cert-proxy-client binary, and start it.
-
-    cert-proxy-client -connect https://proxy example.com
-
+No restart required.
 
 ## The API
 
