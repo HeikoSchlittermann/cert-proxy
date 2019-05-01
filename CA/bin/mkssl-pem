@@ -71,10 +71,11 @@ ssl=(
  "$(openssl rsa  -in "$REQ_DIR/$cn/key.pem")"
  "$(openssl x509 -in "$CA_DIR/cacert.pem")"
 )
-IFS=$'\x0a'; echo "${ssl[*]}" >"$REQ_DIR/$cn/ssl.pem"
+IFS=$'\x0a'; echo "${ssl[*]}" | tee "$cn-ssl.pem" >"$REQ_DIR/$cn/ssl.pem"
 gitfiles+=("$REQ_DIR/$cn/ssl.pem")
 
-IFS=$'\x0a'; echo "${ssl[*]}" >"$cn-ssl.pem"
+openssl x509 -in "$CA_DIR/certs/$cn.pem" >"$REQ_DIR/$cn/crt.pem"
+gitfiles+=("$REQ_DIR/$cn/crt.pem")
 
 _git add "${gitfiles[@]}"
 _git add -u
