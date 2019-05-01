@@ -93,7 +93,7 @@ func main() {
 
 		Verbose("Enqueing tasks for %d CNs", len(CNs))
 
-		var pool = worker.NewPool(opt.Jobs)
+		var pool = worker.NewPool(min(opt.Jobs, len(CNs)))
 		pool.EnqueueTasks(CNs, opt.Connect, opt.Certbase, opt.Hook, opt.Format)
 		pool.Wait()
 
@@ -106,4 +106,10 @@ func main() {
 
 	}
 
+func min(a, b int) int {
+    if a < b {
+        return a
+    } else {
+        return b
+    }
 }
