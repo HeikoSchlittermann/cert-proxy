@@ -2,6 +2,7 @@ package worker
 
 import (
 	"cert-proxy/cert-proxy-client/cert"
+	"cert-proxy/internal/list"
 	. "cert-proxy/internal/shared"
 	"log"
 	"sync"
@@ -58,7 +59,7 @@ func NewPool(workers int) *Pool {
 // EnqueueTasks creates a task per CN, with all the items that are
 // necessary for this CN. Bundling it per Domain has the advantage of a
 // transaction like processing of the results
-func (pool *Pool) EnqueueTasks(CNs UList, proxy, certbase, hook string, format cert.Format) {
+func (pool *Pool) EnqueueTasks(CNs list.UniqStrings, proxy, certbase, hook string, format cert.Format) {
 	go func() {
 		for cn := range CNs {
 			if req, err := cert.NewReq(cn, proxy, certbase, hook, format); err != nil {

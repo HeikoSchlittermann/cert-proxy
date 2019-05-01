@@ -3,6 +3,7 @@ package main
 import (
 	"cert-proxy/cert-proxy-client/cert"
 	"cert-proxy/cert-proxy-client/worker"
+	"cert-proxy/internal/list"
 	. "cert-proxy/internal/shared"
 	"crypto/tls"
 	"log"
@@ -14,7 +15,7 @@ import (
 const API_VERSION = `v1`
 
 var (
-	CNs = UList{} // List of unique strings
+	CNs = list.UniqStrings{}
 	opt = struct {
 		Auto     bool        // Fetch all (Issue /list first)
 		Certbase string      // where to put the output
@@ -37,7 +38,7 @@ var (
 func main() {
 	defer Verbose("DONE")
 
-	if err := AddItemsFromFile(&CNs, opt.CNfile); err != nil {
+	if err := list.AddItemsFromFile(&CNs, opt.CNfile); err != nil {
 		log.Fatal(err)
 	}
 
@@ -107,9 +108,9 @@ func main() {
 	}
 
 func min(a, b int) int {
-    if a < b {
-        return a
-    } else {
-        return b
-    }
+	if a < b {
+		return a
+	} else {
+		return b
+	}
 }

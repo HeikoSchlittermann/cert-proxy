@@ -1,13 +1,13 @@
 package main
 
 import (
-	. "cert-proxy/internal/shared"
+	"cert-proxy/internal/list"
 	"net/http"
 )
 
 // cnList reads the client config file and returns
 // the list of allowed domains
-func cnList(cn string) (UList, error) {
+func cnList(cn string) (list.UniqStrings, error) {
 
 	cc, err := http.Dir(opt.ClientConfigDir).Open(cn)
 	if err != nil {
@@ -15,8 +15,8 @@ func cnList(cn string) (UList, error) {
 	}
 	defer cc.Close()
 
-	cns := UList{}
-	if err = AddItemsFromReader(&cns, cc); err != nil {
+	cns := list.UniqStrings{}
+	if err = list.AddItemsFromReader(&cns, cc); err != nil {
 		return nil, err
 	}
 
