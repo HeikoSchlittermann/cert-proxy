@@ -70,7 +70,7 @@ var TEMPLATES = map[role]templates{
 		env:    tt(`FULLCHAINFILE={{.Local}}`),
 	},
 	RoleBUNDLE: {
-		remote: tt(`{{.Proxy}}/v1/bundle/{{.Domain}}?format=PKCS12`),
+		remote: tt(`{{.Proxy}}/v1/bundle/{{.Domain}}?format=PKCS12{{with.Pass}}&pass={{.}}{{end}}`),
 		local:  tt(`{{.Domain}}/bundle.p12`),
 		env:    tt(`BUNDLEFILE={{.Local}}`),
 	},
@@ -95,11 +95,12 @@ type templateContext struct {
 	Domain string
 	Proxy  string
 	Local  string
+	Pass   string
 }
 
-func NewReq(domain, remote, basedir, hook string, format Format) (Req, error) {
+func NewReq(domain, remote, basedir, hook string, format Format, pass string) (Req, error) {
 	var req = Req{domain: domain, hook: hook, env: []string{`DOMAIN=` + domain}}
-	var ctx = templateContext{Domain: domain, Proxy: remote}
+	var ctx = templateContext{Domain: domain, Proxy: remote, Pass: pass}
 
 	// This format may require RoleCRT, RoleKey, … or RoleBUNDLE
 	for _, role := range ROLES[format] {

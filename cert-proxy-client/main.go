@@ -26,6 +26,7 @@ var (
 		Format   cert.Format // PEM|PKCS12
 		Hook     string      // Hook file
 		Jobs     int         // parallel Jobs
+		Passout  string      // PKC12 password
 		ServerCN string      // X509 CN of the server
 		SSLFile  string      // SSL auth file
 		Verbose  bool
@@ -84,7 +85,7 @@ func main() {
 	Verbose("Enqueing tasks for %d domains %v", len(CNs), CNs)
 
 	var pool = worker.NewPool(min(opt.Jobs, len(CNs)))
-	pool.EnqueueTasks(CNs, opt.Connect, opt.Certbase, opt.Hook, opt.Format)
+	pool.EnqueueTasks(CNs, opt.Connect, opt.Certbase, opt.Hook, opt.Format, opt.Passout)
 	pool.Wait()
 
 }
