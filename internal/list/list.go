@@ -11,7 +11,7 @@ import (
 
 // List implements a collection we can add to and list
 type List interface {
-	Add(string)
+	Add(...string)
 	Items() []string
 }
 
@@ -45,8 +45,8 @@ func AddItemsFromReader(items List, r io.Reader) error {
 // Type List implents a ordered list
 type OrderedStrings []string
 
-func (list *OrderedStrings) Add(v string) {
-	*list = append(*list, v)
+func (list *OrderedStrings) Add(v ...string) {
+	*list = append(*list, v...)
 }
 func (list OrderedStrings) Items() []string {
 	sort.Strings(list)
@@ -56,8 +56,10 @@ func (list OrderedStrings) Items() []string {
 // Type UniqList implements a list of uniq items
 type UniqStrings map[string]interface{}
 
-func (list *UniqStrings) Add(v string) {
-	(*list)[v] = nil
+func (list *UniqStrings) Add(v ...string) {
+	for _, v := range v {
+		(*list)[v] = nil
+	}
 }
 func (list UniqStrings) Items() []string {
 	var items = make([]string, 0, len(list))
