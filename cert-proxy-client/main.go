@@ -4,6 +4,7 @@ import (
 	"cert-proxy/cert-proxy-client/cert"
 	"cert-proxy/cert-proxy-client/worker"
 	"cert-proxy/internal/list"
+	"cert-proxy/internal/program"
 	. "cert-proxy/internal/shared"
 	"crypto/tls"
 	"log"
@@ -32,11 +33,11 @@ var (
 		Format: cert.FORMAT, // platform dependend, PEM (*nix) vs PKCS12 (Win*)
 		Tick:   duration(24 * time.Hour),
 	}
-	Version string = "<unversioned>"
 )
 
 func main() {
 	defer Verbose("DONE")
+	Verbose("Starting %s: %s", program.Name, program.Version)
 
 	if err := list.AddItemsFromFile(&CNs, opt.CNfile); err != nil {
 		log.Fatal(err)

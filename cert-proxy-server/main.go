@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cert-proxy/internal/program"
 	. "cert-proxy/internal/shared"
 	"crypto/tls"
 	"fmt"
@@ -19,7 +20,6 @@ var (
 		ClientConfigDir string
 		Verbose         bool
 	}
-	Version string = "<unversioned>"
 )
 
 func serveWelcome(w http.ResponseWriter, r *http.Request) {
@@ -136,6 +136,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	log.Printf("Starting listener %v\n", listener.Addr())
+	log.Printf("Starting listener %v (%s: %s)\n", listener.Addr(), program.Name, program.Version)
 	http.Serve(listener, nil)
 }

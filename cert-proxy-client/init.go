@@ -2,6 +2,7 @@ package main
 
 import (
 	"cert-proxy/cert-proxy-client/cert"
+	"cert-proxy/internal/program"
 	. "cert-proxy/internal/shared"
 	"flag"
 	"fmt"
@@ -40,7 +41,7 @@ func init() {
 	flag.Parse()
 
 	if version {
-		fmt.Println(Version)
+		fmt.Println(program.Version)
 		os.Exit(0)
 	}
 
