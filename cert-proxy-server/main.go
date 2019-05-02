@@ -1,13 +1,17 @@
 package main
 
 import (
+	"bytes"
 	"cert-proxy/internal/program"
 	. "cert-proxy/internal/shared"
 	"crypto/tls"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 )
@@ -63,15 +67,15 @@ func servePublic(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func servePrivate(w http.ResponseWriter, r *http.Request) {
+func servePrivate(w http.ResponseWriter, req *http.Request) {
 
 	// do not allow .., but as we use http.Dir(), we should be
 	// protected, as http.Dir() does not accept .. in the path on it's
-	// own. (Otherwise check string.Contains(r.URL.Path, `..`)
+	// own. (Otherwise check string.Contains(req.URL.Path, `..`)
 	// and return http.StatusNotAcceptable)
-	cn := r.TLS.PeerCertificates[0].Subject.CommonName
-	parts := strings.Split(r.URL.Path, "/")[2:]
-	Verbose("Serving cn=%s %v", cn, r.URL)
+	cn := req.TLS.PeerCertificates[0].Subject.CommonName
+	parts := strings.Split(req.URL.Path, "/")[2:]
+	Verbose("Serving cn=%s %v", cn, req.URL)
 
 	allowedDomains, err := cnList(cn)
 	if err != nil {
@@ -80,10 +84,10 @@ func servePrivate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	req, parts := parts[0], parts[1:]
+	role, parts := parts[0], parts[1:]
 	domain, parts := parts[0], parts[1:]
-	filename := filepath.Join(domain, req+func() string {
-		switch strings.ToUpper(r.URL.Query().Get("format")) {
+	filename := filepath.Join(domain, role+func() string {
+		switch strings.ToUpper(req.URL.Query().Get("format")) {
 		case `PKCS12`:
 			return `.p12`
 		case `PEM`:
@@ -102,15 +106,19 @@ func servePrivate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	file, err := http.Dir(opt.Certbase).Open(filename)
-	if err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), http.StatusNotFound)
-		return
+	var r io.ReadCloser
+	if r, err = http.Dir(opt.Certbase).Open(filename); err != nil {
+		if os.IsNotExist(err) {
+			r, err = createPKCS12(opt.Certbase, domain)
+		}
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
 	}
-	defer file.Close()
+	defer r.Close()
 
-	if _, err := io.Copy(w, file); err != nil {
+	if _, err := io.Copy(w, r); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -138,4 +146,24 @@ func main() {
 
 	log.Printf("Starting listener %v (%s: %s)\n", listener.Addr(), program.Name, program.Version)
 	http.Serve(listener, nil)
+}
+
+func createPKCS12(certbase, domain string) (io.ReadCloser, error) {
+	var cert = filepath.Join(certbase, domain, `cert.pem`)
+	var key = filepath.Join(certbase, domain, `privkey.pem`)
+	var chain = filepath.Join(certbase, domain, `chain.pem`)
+
+	var cmd = exec.Command(`openssl`, `pkcs12`,
+		`-export`,
+		`-passout`, `pass:`,
+		`-inkey`, key,
+		`-in`, cert,
+		`-certfile`, chain)
+	Verbose("Starting %s", cmd.Path)
+	pkcs12, err := cmd.Output()
+	if err != nil {
+		err := err.(*exec.ExitError)
+		log.Fatalf("%s %v: %s", cmd.Path, cmd.Args, err.Stderr)
+	}
+	return ioutil.NopCloser(bytes.NewReader(pkcs12)), err
 }
