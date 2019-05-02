@@ -2,6 +2,7 @@ package list
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"os"
 	"sort"
@@ -49,7 +50,7 @@ func (list *OrderedStrings) Add(v string) {
 }
 func (list OrderedStrings) Items() []string {
 	sort.Strings(list)
-    return list
+	return list
 }
 
 // Type UniqList implements a list of uniq items
@@ -65,6 +66,8 @@ func (list UniqStrings) Items() []string {
 	}
 	return items
 }
+
+// String returns the string representation of the list
 func (list UniqStrings) String() string {
-	return strings.Join(list.Items(), ", ")
+	return fmt.Sprint(list.Items())
 }
