@@ -109,7 +109,7 @@ func servePrivate(w http.ResponseWriter, req *http.Request) {
 	var r io.ReadCloser
 	if r, err = http.Dir(opt.Certbase).Open(filename); err != nil {
 		if os.IsNotExist(err) {
-			r, err = createPKCS12(opt.Certbase, domain)
+			r, err = createPKCS12(opt.Certbase, domain, req.URL.Query().Get("pass"))
 		}
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
@@ -148,14 +148,14 @@ func main() {
 	http.Serve(listener, nil)
 }
 
-func createPKCS12(certbase, domain string) (io.ReadCloser, error) {
+func createPKCS12(certbase, domain, pass string) (io.ReadCloser, error) {
 	var cert = filepath.Join(certbase, domain, `cert.pem`)
 	var key = filepath.Join(certbase, domain, `privkey.pem`)
 	var chain = filepath.Join(certbase, domain, `chain.pem`)
 
 	var cmd = exec.Command(`openssl`, `pkcs12`,
 		`-export`,
-		`-passout`, `pass:`,
+		`-passout`, `pass:` + pass,
 		`-inkey`, key,
 		`-in`, cert,
 		`-certfile`, chain)

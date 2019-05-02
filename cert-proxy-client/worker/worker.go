@@ -59,10 +59,10 @@ func NewPool(workers int) *Pool {
 // EnqueueTasks creates a task per CN, with all the items that are
 // necessary for this CN. Bundling it per Domain has the advantage of a
 // transaction like processing of the results
-func (pool *Pool) EnqueueTasks(CNs list.UniqStrings, proxy, certbase, hook string, format cert.Format) {
+func (pool *Pool) EnqueueTasks(CNs list.UniqStrings, proxy, certbase, hook string, format cert.Format, pass string) {
 	go func() {
 		for cn := range CNs {
-			if req, err := cert.NewReq(cn, proxy, certbase, hook, format); err != nil {
+			if req, err := cert.NewReq(cn, proxy, certbase, hook, format, pass); err != nil {
 				panic(err) // this is not supposed to fail
 			} else {
 				pool.queue <- req
