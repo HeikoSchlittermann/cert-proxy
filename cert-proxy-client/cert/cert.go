@@ -84,6 +84,7 @@ type Req struct {
 }
 
 type certItem struct {
+	role       role
 	remote     *http.Request
 	local, env string
 	private    bool
@@ -107,6 +108,7 @@ func NewReq(domain, remote, basedir, hook string, format Format) (Req, error) {
 		} else {
 
 			var item = certItem{
+				role:    role,
 				local:   filepath.Join(basedir, mustExpand(templates.local, ctx)),
 				private: role == RoleKEY || role == RoleBUNDLE,
 			}
@@ -195,26 +197,45 @@ func (req *Req) Execute(mtx Mutex) error {
 	}
 
 	// Now it is time to run the hook
-	//
-	Verbose("Hook %s for %s", req.hook, req.domain)
+	// hook deploy_cert DOMAIN KEYFILE CERTFILE FULLCHAINFILE CHAINFILE TIMESTAMP
+	// 0    1           2      3       4        5             6         7
+	// These positional parameters appear as environment variables too,
+	// plus an additional variable BUNDLEFILE
+	if req.hook != "" {
+		Verbose("Hook %s for %s", req.hook, req.domain)
 
-	var cmd = exec.Cmd{
-		Path: req.hook,
-		Args: []string{req.hook, `deploy_cert`},
-		Env: func(env []string) []string {
-			env = req.env
-			for _, item := range req.items {
-				env = append(env, item.env)
+		var cmd = exec.Cmd{
+			Path: req.hook,
+			Env:  append(os.Environ(), req.env...),
+			Args: []string{
+				0: req.hook,
+				1: `deploy_cert`,
+				2: req.domain,
+				//3..6: to be filled below
+				7: fmt.Sprint(time.Now().Unix()),
+			},
+			Stdout: os.Stdout,
+			Stderr: os.Stderr,
+		}
+		for _, i := range req.items {
+			cmd.Env = append(cmd.Env, i.env)
+			switch i.role {
+			case RoleKEY:
+				cmd.Args[3] = i.local
+			case RoleCRT:
+				cmd.Args[4] = i.local
+			case RoleFULLCHAIN:
+				cmd.Args[5] = i.local
+			case RoleCHAIN:
+				cmd.Args[6] = i.local
 			}
-			return env
-		}([]string{}),
-		//}(os.Environ()),
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
+		}
+		mtx.Lock()
+		defer mtx.Unlock()
+		return cmd.Run()
+	} else {
+		return nil
 	}
-	mtx.Lock()
-	defer mtx.Unlock()
-	return cmd.Run()
 }
 
 func (req Req) String() string {
