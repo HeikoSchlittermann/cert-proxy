@@ -45,7 +45,7 @@ func NewPool(workers int) *Pool {
 			for req := range pool.queue {
 				Verbose("Req %v\n", req)
 				if err := req.Execute(mtx); err != nil {
-					log.Fatal(err)
+					log.Print(err)
 				}
 			}
 
@@ -63,7 +63,7 @@ func (pool *Pool) EnqueueTasks(CNs list.UniqStrings, proxy, certbase, hook strin
 	go func() {
 		for cn := range CNs {
 			if req, err := cert.NewReq(cn, proxy, certbase, hook, format); err != nil {
-				log.Fatal(err)
+				panic(err) // this is not supposed to fail
 			} else {
 				pool.queue <- req
 			}

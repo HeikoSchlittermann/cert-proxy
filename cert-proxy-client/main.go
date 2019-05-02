@@ -1,12 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"cert-proxy/cert-proxy-client/cert"
 	"cert-proxy/cert-proxy-client/worker"
 	"cert-proxy/internal/list"
 	"cert-proxy/internal/program"
 	. "cert-proxy/internal/shared"
 	"crypto/tls"
+	"errors"
 	"log"
 	"net/http"
 	"path"
@@ -72,41 +74,65 @@ func main() {
 	// Start the ticker now, to be independend on the runtime of
 	// the jobs
 	var ticker <-chan time.Time
-	if opt.Tick > 0 {
-		ticker = time.Tick(time.Duration(opt.Tick))
-	}
 	for {
 		now := time.Now()
-
-		// Build the list of DNs (Domains) we need to fetch the
-		// certficates for
-
-		// In auto mode we fetch the list of domains from the proxy and add
-		// it to our own (possibly empty) list
-		if opt.Auto {
-			Verbose("Getting list of CNs")
-			resp, err := http.Get(opt.Connect + path.Join(`/`+API_VERSION, `list`))
-			if err != nil {
-				log.Fatal(err)
-			}
-			AddItemsFromReader(&CNs, resp.Body)
-			resp.Body.Close()
-		}
-
-		Verbose("Enqueing tasks for %d CNs", len(CNs))
-
-		var pool = worker.NewPool(min(opt.Jobs, len(CNs)))
-		pool.EnqueueTasks(CNs, opt.Connect, opt.Certbase, opt.Hook, opt.Format)
-		pool.Wait()
 
 		if ticker != nil {
 			Verbose("Next run %s", now.Add(time.Duration(opt.Tick)).Format(time.RFC1123))
 			<-ticker
-		} else {
-			break
+		} else if opt.Tick > 0 {
+			ticker = time.Tick(time.Duration(opt.Tick))
 		}
 
+		// Build the list of DNs (Domains) we need to fetch the
+		// certficates for
+
+		// In auto mode fetch the list of available domains and
+		// append this list to the static list we may have in CNs
+		var domains list.UniqStrings
+		if opt.Auto {
+			domains = CNs.Copy()
+			if pushed, err := fetchCNs(); err != nil {
+				log.Print(err)
+				continue
+			} else {
+				domains.Add(pushed...)
+			}
+		} else {
+			domains = CNs
+		}
+
+		Verbose("Enqueing tasks for %d domains %v", len(domains), domains)
+
+		var pool = worker.NewPool(min(opt.Jobs, len(domains)))
+		pool.EnqueueTasks(domains, opt.Connect, opt.Certbase, opt.Hook, opt.Format)
+		pool.Wait()
+
+		if ticker == nil {
+			break
+		}
 	}
+
+}
+
+func fetchCNs() ([]string, error) {
+	Verbose("Getting list of domains")
+	resp, err := http.Get(opt.Connect + path.Join(`/`+API_VERSION, `list`))
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New(resp.Status)
+	}
+	defer resp.Body.Close()
+	var domains []string
+
+	s := bufio.NewScanner(resp.Body)
+	for s.Scan() {
+		domains = append(domains, s.Text())
+	}
+	return domains, s.Err()
+}
 
 func min(a, b int) int {
 	if a < b {
