@@ -68,6 +68,11 @@ func (list UniqStrings) Items() []string {
 	}
 	return items
 }
+func (list UniqStrings) Copy() UniqStrings {
+	copy := UniqStrings{}
+	copy.Add(list.Items()...)
+	return copy
+}
 
 // String returns the string representation of the list
 func (list UniqStrings) String() string {

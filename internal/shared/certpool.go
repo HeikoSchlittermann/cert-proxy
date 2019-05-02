@@ -11,11 +11,11 @@ import (
 func CertPool(files ...string) (pool *x509.CertPool, err error) {
 	pool = x509.NewCertPool()
 	for _, f := range files {
-        var pem []byte
+		var pem []byte
 		pem, err = ioutil.ReadFile(f)
-        if err != nil {
-            return
-        }
+		if err != nil {
+			return
+		}
 		if !pool.AppendCertsFromPEM(pem) {
 			panic("Can't append to ca cert pool")
 		}

@@ -35,6 +35,6 @@ func TLSConfig(sslFile string, config *tls.Config) (pool *x509.CertPool, err err
 		return
 	}
 
-    config.Certificates = []tls.Certificate{cert}
+	config.Certificates = []tls.Certificate{cert}
 	return
 }

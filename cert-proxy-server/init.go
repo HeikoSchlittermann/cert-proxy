@@ -1,8 +1,8 @@
 package main
 
 import (
+	"cert-proxy/internal/program"
 	. "cert-proxy/internal/shared"
-    "cert-proxy/internal/program"
 	"flag"
 	"fmt"
 	"log"
