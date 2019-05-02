@@ -12,7 +12,6 @@ import (
 	"log"
 	"net/http"
 	"path"
-	"time"
 )
 
 const API_VERSION = `v1`
@@ -26,14 +25,12 @@ var (
 		Connect  string      // Server address
 		Format   cert.Format // PEM|PKCS12
 		Hook     string      // Hook file
-		Tick     duration
-		Jobs     int    // parallel Jobs
-		ServerCN string // X509 CN of the server
-		SSLFile  string // SSL auth file
+		Jobs     int         // parallel Jobs
+		ServerCN string      // X509 CN of the server
+		SSLFile  string      // SSL auth file
 		Verbose  bool
 	}{
 		Format: cert.FORMAT, // platform dependend, PEM (*nix) vs PKCS12 (Win*)
-		Tick:   duration(24 * time.Hour),
 	}
 )
 
@@ -71,47 +68,24 @@ func main() {
 	// And this CloseIdleConnections doesn't seem to help either
 	defer http.DefaultClient.Transport.(*http.Transport).CloseIdleConnections()
 
-	// Start the ticker now, to be independend on the runtime of
-	// the jobs
-	var ticker <-chan time.Time
-	for {
-		now := time.Now()
+	// Build the list of DNs (Domains) we need to fetch the
+	// certficates for
 
-		if ticker != nil {
-			Verbose("Next run %s", now.Add(time.Duration(opt.Tick)).Format(time.RFC1123))
-			<-ticker
-		} else if opt.Tick > 0 {
-			ticker = time.Tick(time.Duration(opt.Tick))
-		}
-
-		// Build the list of DNs (Domains) we need to fetch the
-		// certficates for
-
-		// In auto mode fetch the list of available domains and
-		// append this list to the static list we may have in CNs
-		var domains list.UniqStrings
-		if opt.Auto {
-			domains = CNs.Copy()
-			if pushed, err := fetchCNs(); err != nil {
-				log.Print(err)
-				continue
-			} else {
-				domains.Add(pushed...)
-			}
+	// In auto mode fetch the list of available domains and
+	// append this list to the static list we may have in CNs
+	if opt.Auto {
+		if pushed, err := fetchCNs(); err != nil {
+			log.Fatal(err)
 		} else {
-			domains = CNs
-		}
-
-		Verbose("Enqueing tasks for %d domains %v", len(domains), domains)
-
-		var pool = worker.NewPool(min(opt.Jobs, len(domains)))
-		pool.EnqueueTasks(domains, opt.Connect, opt.Certbase, opt.Hook, opt.Format)
-		pool.Wait()
-
-		if ticker == nil {
-			break
+			CNs.Add(pushed...)
 		}
 	}
+
+	Verbose("Enqueing tasks for %d domains %v", len(CNs), CNs)
+
+	var pool = worker.NewPool(min(opt.Jobs, len(CNs)))
+	pool.EnqueueTasks(CNs, opt.Connect, opt.Certbase, opt.Hook, opt.Format)
+	pool.Wait()
 
 }
 

@@ -37,7 +37,6 @@ func init() {
 	flag.StringVar(&opt.SSLFile, "sslfile", "ssl.pem", "SSL auth file (crt+key+ca) PEM")
 	flag.StringVar(&opt.ServerCN, "cert-proxy-cn", "cert-proxy", "CN of the cert proxy certificate")
 	flag.Var(&opt.Format, "format", "Format of the requested certificate(s) (PEM|PKCS12)")
-	flag.Var(&opt.Tick, "tick", "time between re-connects (time Duration)")
 	flag.Parse()
 
 	if version {
