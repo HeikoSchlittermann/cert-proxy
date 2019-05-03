@@ -17,6 +17,19 @@ func init() {
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] [<CN>]...\n", os.Args[0])
 		flag.PrintDefaults()
+		fmt.Print(`
+¹) The hook script gets called as
+       <script> deploy_cert <DOMAIN> <KEYFILE> <CERTFILE> <CHAINFILE> <TIMESTAMP>
+    or
+       <script> deploy_cert <DOMAIN> <BUNDLEFILE> <TIMESTAMP>
+    Additionally the corresponding environment variables are set (possibly overriding
+    existing environment variables with the same name.
+
+²) The password for protecting the P12 file may be given in one of the following notations:
+    - pass:<password>
+    - file:<file containing the password>
+    - env:<environment variable containing the password>
+`)
 	}
 
 	// On Windows: outFormat is PKCS12 and Item is "bundle"
