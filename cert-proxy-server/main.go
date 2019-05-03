@@ -144,7 +144,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	log.Printf("Starting listener %v (%s: %s)\n", listener.Addr(), program.Name, program.Version)
+	log.Printf("Starting listener %v (%s: %s)\n", listener.Addr(), program.Path, program.Version)
 	http.Serve(listener, nil)
 }
 
