@@ -17,17 +17,17 @@ func init() {
 	}
 	//	    log.SetPrefix(filepath.Base(os.Args[0]) + `: `)
 
-	var version bool
-	flag.BoolVar(&version, "version", false, "current version")
+	var printVersion bool
 	flag.StringVar(&opt.SSLFile, "sslfile", "ssl.pem", "SSL auth file (crt+key+ca) PEM")
 	flag.StringVar(&opt.Serve, "serve", ":4433", "Listener [host]:port")
 	flag.StringVar(&opt.Certbase, "certbase", "certs", "Base dir for certificates")
 	flag.StringVar(&opt.ClientConfigDir, "ccd", "clients", "Client configuration dir")
 	flag.BoolVar(&opt.Verbose, "verbose", false, "Verbose operation")
+	flag.BoolVar(&printVersion, "version", false, "Version information ("+program.Version+")")
 	flag.Parse()
 
-	if version {
-		fmt.Println(program.Version)
+	if printVersion {
+		fmt.Println(program.Version, program.Name, program.Path)
 		os.Exit(0)
 	}
 

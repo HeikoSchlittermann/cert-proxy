@@ -37,25 +37,25 @@ func init() {
 	// -outformat PEM    implies cert, chain, fullchain, privkey
 	// -outformat PKCS12 implies bundle
 
-	var version bool
+	var printVersion bool
 
 	flag.BoolVar(&cert.UseSymlink, "symlink", cert.UseSymlink, "Use symlinks for current files")
 	flag.BoolVar(&opt.Auto, "auto", true, "Auto mode (fetch all CNs the server provides us)")
 	flag.BoolVar(&opt.Verbose, "verbose", false, "Verbose output")
-	flag.BoolVar(&version, "version", false, "current version")
+	flag.BoolVar(&printVersion, "version", false, "current version ("+program.Version+")")
 	flag.IntVar(&opt.Jobs, "jobs", runtime.NumCPU(), "Maximum number of parallel running jobs")
 	flag.StringVar(&opt.Certbase, "certbase", "certs", "Base dir for downloaded certs")
 	flag.StringVar(&opt.CNfile, "cnfile", "", "CN list file (use - for stdin)")
 	flag.StringVar(&opt.Connect, "connect", "https://localhost:4433", "Address of cert proxy server")
-	flag.StringVar(&opt.Hook, "hook", "", "hook script")
-	flag.StringVar(&opt.Passout, "passout", "", "Passwort to protect the PKCS12 (pass:, file:, env:)")
+	flag.StringVar(&opt.Hook, "hook", "", "Hook script¹")
+	flag.StringVar(&opt.Passout, "passout", "", "Passwort to protect the PKCS12²")
 	flag.StringVar(&opt.ServerCN, "cert-proxy-cn", "cert-proxy", "CN of the cert proxy certificate")
 	flag.StringVar(&opt.SSLFile, "sslfile", "ssl.pem", "SSL auth file (crt+key+ca) PEM")
 	flag.Var(&opt.Format, "format", "Format of the requested certificate(s) (PEM|PKCS12)")
 	flag.Parse()
 
-	if version {
-		fmt.Println(program.Version)
+	if printVersion {
+		fmt.Println(program.Version, program.Name, program.Path)
 		os.Exit(0)
 	}
 
