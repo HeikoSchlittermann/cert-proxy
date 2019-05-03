@@ -72,11 +72,11 @@ func init() {
 		Verbose = log.New(os.Stderr, ``, log.Flags()).Printf
 	}
 
-    if opt.Passout != "" {
-        var err error
-        opt.Passout, err = secret.Read(opt.Passout)
-        if err != nil {
-            log.Fatal(err)
-        }
-    }
+	if opt.Passout != "" {
+		var err error
+		opt.Passout, err = secret.Read(opt.Passout)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
 }
