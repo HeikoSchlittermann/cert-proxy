@@ -49,7 +49,7 @@ func init() {
 	flag.StringVar(&opt.Connect, "connect", "https://localhost:4433", "Address of cert proxy server")
 	flag.StringVar(&opt.Hook, "hook", "", "Hook script¹")
 	flag.StringVar(&opt.Passout, "passout", "", "Passwort to protect the PKCS12²")
-	flag.StringVar(&opt.ServerCN, "cert-proxy-cn", "cert-proxy", "CN of the cert proxy certificate")
+	flag.StringVar(&opt.ServerCN, "servername", "cert-proxy", "Name (CN) of the cert proxy certificate")
 	flag.StringVar(&opt.SSLFile, "sslfile", "ssl.pem", "SSL auth file (crt+key+ca) PEM")
 	flag.Var(&opt.Format, "format", "Format of the requested certificate(s) (PEM|PKCS12)")
 	flag.Parse()
