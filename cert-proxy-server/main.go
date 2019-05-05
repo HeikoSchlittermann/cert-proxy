@@ -36,7 +36,7 @@ func servePublic(w http.ResponseWriter, req *http.Request) {
 	cn := req.TLS.PeerCertificates[0].Subject.CommonName
 	parts := strings.Split(req.URL.Path, "/")[2:]
 	role, parts := parts[0], parts[1:]
-	Verbose("Serving cn=%s %s\n", cn, req.URL)
+	Verbose("Serving cn=%s %s ims:%s\n", cn, req.URL, req.Header.Get(`if-modified-since`))
 
 	// return the list of domains this client is allowed to fetch the
 	// certificiates
@@ -83,7 +83,7 @@ func servePrivate(w http.ResponseWriter, req *http.Request) {
 	// and return http.StatusNotAcceptable)
 	cn := req.TLS.PeerCertificates[0].Subject.CommonName
 	parts := strings.Split(req.URL.Path, "/")[2:]
-	Verbose("Serving cn=%s %v", cn, req.URL)
+	Verbose("Serving cn=%s %s ims:%s\n", cn, req.URL, req.Header.Get(`if-modified-since`))
 
 	allowedDomains, err := cnList(cn)
 	if err != nil {

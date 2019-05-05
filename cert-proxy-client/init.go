@@ -43,6 +43,7 @@ func init() {
 	flag.BoolVar(&opt.Auto, "auto", true, "Auto mode (fetch all CNs the server provides us)")
 	flag.BoolVar(&opt.Verbose, "verbose", false, "Verbose output")
 	flag.BoolVar(&printVersion, "version", false, "current version ("+program.Version+")")
+	flag.BoolVar(&cert.Force, "force", false, "Force download, even if not modified")
 	flag.IntVar(&opt.Jobs, "jobs", runtime.NumCPU(), "Maximum number of parallel running jobs")
 	flag.StringVar(&opt.Certbase, "certbase", "certs", "Base dir for downloaded certs")
 	flag.StringVar(&opt.CNfile, "cnfile", "", "CN list file (use - for stdin)")

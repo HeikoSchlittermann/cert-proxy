@@ -19,6 +19,7 @@ import (
 type role string
 
 var UseSymlink = runtime.GOOS != "windows"
+var Force = false
 
 const (
 	RoleINVALID   role = ``
@@ -144,13 +145,16 @@ func (req *Req) Execute(mtx Mutex) error {
 	// First request all the data we need, this can be done in parallel,
 	// but we'll wait until all are done
 	for i, item := range req.items {
-		Verbose("Requesting %s", item.remote.URL)
 
 		// The file may exist already, use its timestamp for i-m-s
 		// header
-		if fi, err := os.Stat(item.local); err == nil {
-			item.remote.Header.Set(`if-modified-since`, fi.ModTime().Format(http.TimeFormat))
+		if !Force {
+			if fi, err := os.Stat(item.local); err == nil {
+				item.remote.Header.Set(`if-modified-since`, fi.ModTime().Format(http.TimeFormat))
+			}
 		}
+
+		Verbose("Requesting %s ims:%s", item.remote.URL, item.remote.Header.Get(`if-modified-since`))
 
 		resp, err := http.DefaultClient.Do(item.remote)
 		if err != nil {
