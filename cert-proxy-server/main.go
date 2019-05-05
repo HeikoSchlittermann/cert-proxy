@@ -7,13 +7,13 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 var (
@@ -31,16 +31,16 @@ func serveWelcome(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Welcome", cn, r.URL.Path)
 }
 
-func servePublic(w http.ResponseWriter, r *http.Request) {
+func servePublic(w http.ResponseWriter, req *http.Request) {
 
-	cn := r.TLS.PeerCertificates[0].Subject.CommonName
-	parts := strings.Split(r.URL.Path, "/")[2:]
-	req, parts := parts[0], parts[1:]
-	Verbose("Serving cn=%s %s\n", cn, r.URL)
+	cn := req.TLS.PeerCertificates[0].Subject.CommonName
+	parts := strings.Split(req.URL.Path, "/")[2:]
+	role, parts := parts[0], parts[1:]
+	Verbose("Serving cn=%s %s ims:%s\n", cn, req.URL, req.Header.Get(`if-modified-since`))
 
 	// return the list of domains this client is allowed to fetch the
 	// certificiates
-	if req == "list" {
+	if role == "list" {
 		if allowedDomains, err := cnList(cn); err != nil {
 			log.Println(err)
 			http.Error(w, err.Error(), http.StatusNotFound)
@@ -52,19 +52,27 @@ func servePublic(w http.ResponseWriter, r *http.Request) {
 	}
 
 	domain, parts := parts[0], parts[1:]
-	fn := filepath.Join(domain, req+".pem")
+	fn := filepath.Join(domain, role+".pem")
 
-	file, err := http.Dir(opt.Certbase).Open(fn)
-	if err != nil {
+	var content io.ReadSeeker
+	var mtime time.Time
+
+	if file, err := http.Dir(opt.Certbase).Open(fn); err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
+	} else {
+		defer file.Close()
+		if fi, err := file.Stat(); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		} else {
+			mtime = fi.ModTime()
+		}
+		content = file
 	}
-	defer file.Close()
 
-	if _, err := io.Copy(w, file); err != nil {
-		log.Fatal(err)
-	}
+	http.ServeContent(w, req, domain, mtime, content)
 }
 
 func servePrivate(w http.ResponseWriter, req *http.Request) {
@@ -75,7 +83,7 @@ func servePrivate(w http.ResponseWriter, req *http.Request) {
 	// and return http.StatusNotAcceptable)
 	cn := req.TLS.PeerCertificates[0].Subject.CommonName
 	parts := strings.Split(req.URL.Path, "/")[2:]
-	Verbose("Serving cn=%s %v", cn, req.URL)
+	Verbose("Serving cn=%s %s ims:%s\n", cn, req.URL, req.Header.Get(`if-modified-since`))
 
 	allowedDomains, err := cnList(cn)
 	if err != nil {
@@ -106,21 +114,30 @@ func servePrivate(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	var r io.ReadCloser
-	if r, err = http.Dir(opt.Certbase).Open(filename); err != nil {
+	var content io.ReadSeeker
+	var mtime time.Time
+
+	if file, err := http.Dir(opt.Certbase).Open(filename); err != nil {
 		if os.IsNotExist(err) {
-			r, err = createPKCS12(opt.Certbase, domain, req.URL.Query().Get("pass"))
+			content, mtime, err = createPKCS12(opt.Certbase, domain, req.URL.Query().Get("pass"))
 		}
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
+	} else {
+		defer file.Close()
+		if fi, err := file.Stat(); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		} else {
+			mtime = fi.ModTime()
+		}
+		content = file
 	}
-	defer r.Close()
 
-	if _, err := io.Copy(w, r); err != nil {
-		log.Fatal(err)
-	}
+	http.ServeContent(w, req, "FOO", mtime, content)
+
 }
 
 func main() {
@@ -148,14 +165,25 @@ func main() {
 	http.Serve(listener, nil)
 }
 
-func createPKCS12(certbase, domain, pass string) (io.ReadCloser, error) {
+func createPKCS12(certbase, domain, pass string) (*bytes.Reader, time.Time, error) {
+
 	var cert = filepath.Join(certbase, domain, `cert.pem`)
 	var key = filepath.Join(certbase, domain, `privkey.pem`)
 	var chain = filepath.Join(certbase, domain, `chain.pem`)
+	var mtime time.Time
+
+	// Get the symlinked names
+	adjustPath(&cert, &key, &chain)
+
+	if fi, err := os.Stat(cert); err != nil {
+		return nil, mtime, err
+	} else {
+		mtime = fi.ModTime()
+	}
 
 	var cmd = exec.Command(`openssl`, `pkcs12`,
 		`-export`,
-		`-passout`, `pass:` + pass,
+		`-passout`, `pass:`+pass,
 		`-inkey`, key,
 		`-in`, cert,
 		`-certfile`, chain)
@@ -165,5 +193,24 @@ func createPKCS12(certbase, domain, pass string) (io.ReadCloser, error) {
 		err := err.(*exec.ExitError)
 		log.Fatalf("%s %v: %s", cmd.Path, cmd.Args, err.Stderr)
 	}
-	return ioutil.NopCloser(bytes.NewReader(pkcs12)), err
+	return bytes.NewReader(pkcs12), mtime, err
+}
+
+// If the first item has an infix (-<xxxxx>.pem), we adjust all names to
+// posess this infix
+
+func adjustPath(names ...*string) {
+	l, err := os.Readlink(*names[0])
+
+	if err != nil {
+		return
+	} // not a link
+
+	infix := l[strings.LastIndex(l, `-`):strings.LastIndex(l, `.`)]
+
+	for _, v := range names {
+		dot := strings.LastIndex(*v, `.`)
+		*v = (*v)[0:dot] + infix + (*v)[dot:]
+	}
+
 }
