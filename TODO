@@ -1,0 +1,15 @@
+- Atomic fetch
+  When fetching cert, chain, key it may happen that on the server side
+  one of these items changed in between, thus having a mismatch between
+  cert and key.
+
+  Possible Solutions:
+
+  - The server may send a cookie (using the infix of the specified
+    file), the client then may use this cookie to ask for the
+    timestamped variant of the related file(s)
+
+  - Send all items in a multipart Response
+
+	GET /v1/all/example.com?format=PEM	 # get cert, chain, key as multipart
+	GET /v1/bundle/example.com?format=PKCS12 # get the all-in-one file
