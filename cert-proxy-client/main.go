@@ -82,9 +82,11 @@ func main() {
 		}
 	}
 
-	Verbose("Enqueing tasks for %d domains %v", len(CNs), CNs)
-
-	var pool = worker.NewPool(min(opt.Jobs, len(CNs)))
+	// Now we get all startup information and can start working
+	// in parallel
+	opt.Jobs = min(opt.Jobs, len(CNs))
+	Verbose("Enqueing %d tasks for %d domains %v", opt.Jobs, len(CNs), CNs)
+	var pool = worker.NewPool(opt.Jobs)
 	pool.EnqueueTasks(CNs, opt.Connect, opt.Certbase, opt.Hook, opt.Format, opt.Passout)
 	if err := pool.Wait(); err != nil {
 		log.Fatal(err)
