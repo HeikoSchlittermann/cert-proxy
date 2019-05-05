@@ -86,8 +86,9 @@ func main() {
 
 	var pool = worker.NewPool(min(opt.Jobs, len(CNs)))
 	pool.EnqueueTasks(CNs, opt.Connect, opt.Certbase, opt.Hook, opt.Format, opt.Passout)
-	pool.Wait()
-
+	if err := pool.Wait(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func fetchCNs() ([]string, error) {

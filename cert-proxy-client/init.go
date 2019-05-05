@@ -18,6 +18,10 @@ func init() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] [<CN>]...\n", os.Args[0])
 		flag.PrintDefaults()
 		fmt.Print(`
+
+The cert-proxy-client exits with 0 on success, and with any other value if there
+is a problem.
+
 ¹) The hook script gets called as
        <script> deploy_cert <DOMAIN> <KEYFILE> <CERTFILE> <CHAINFILE> <TIMESTAMP>
     or

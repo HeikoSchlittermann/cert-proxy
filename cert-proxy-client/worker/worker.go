@@ -4,6 +4,7 @@ import (
 	"cert-proxy/cert-proxy-client/cert"
 	"cert-proxy/internal/list"
 	. "cert-proxy/internal/shared"
+	"fmt"
 	"log"
 	"sync"
 )
@@ -16,6 +17,7 @@ type queue chan cert.Req
 type Pool struct {
 	wg *sync.WaitGroup
 	queue
+	errors chan error
 }
 
 type fakeMutex struct{}
@@ -29,14 +31,16 @@ func (*fakeMutex) Unlock() {}
 func NewPool(workers int) *Pool {
 
 	var pool = Pool{
-		wg:    new(sync.WaitGroup),
-		queue: make(queue, workers),
+		wg:     new(sync.WaitGroup),
+		queue:  make(queue, workers),
+		errors: make(chan error),
 	}
 	var mtx = &sync.Mutex{}
 	//var mtx = fakeMutex{}
 
 	Verbose("Launching %d workers", workers)
 	for i := 0; i < workers; i++ {
+
 		pool.wg.Add(1)
 		go func(wid int) {
 			defer Verbose("Worker[%d] done", wid)
@@ -45,10 +49,10 @@ func NewPool(workers int) *Pool {
 			for req := range pool.queue {
 				Verbose("Req %v\n", req)
 				if err := req.Execute(mtx); err != nil {
-					log.Print(err)
+					//log.Print(err)
+					pool.errors <- err
 				}
 			}
-
 		}(i)
 	}
 
@@ -73,6 +77,31 @@ func (pool *Pool) EnqueueTasks(CNs list.UniqStrings, proxy, certbase, hook strin
 }
 
 // Wait until all jobs are done
-func (pool Pool) Wait() {
-	pool.wg.Wait()
+func (pool Pool) Wait() error {
+
+	var errors int
+
+	// Collect and output the error messages
+	go func() {
+		for err := range pool.errors {
+			log.Println(err)
+			errors++
+		}
+	}()
+
+	pool.wg.Wait()     // for for all workers to complete
+	close(pool.errors) // this terminates the above goroutine, but we don't care to wait for it
+
+	if errors != 0 {
+		return fmt.Errorf("Got %d error%s", errors, plural(errors))
+	} else {
+		return nil
+	}
+}
+
+func plural(i int) (s string) {
+	if i != 1 {
+		s = `s`
+	}
+	return
 }
