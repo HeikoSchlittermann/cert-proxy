@@ -17,7 +17,7 @@ type queue chan cert.Req
 type Pool struct {
 	wg *sync.WaitGroup
 	queue
-	errors chan error
+	errors chan int
 }
 
 type fakeMutex struct{}
@@ -33,7 +33,7 @@ func NewPool(workers int) *Pool {
 	var pool = Pool{
 		wg:     new(sync.WaitGroup),
 		queue:  make(queue, workers),
-		errors: make(chan error),
+		errors: make(chan int),
 	}
 	var mtx = &sync.Mutex{}
 	//var mtx = fakeMutex{}
@@ -49,7 +49,8 @@ func NewPool(workers int) *Pool {
 			for req := range pool.queue {
 				Verbose("Req %v\n", req)
 				if err := req.Execute(mtx); err != nil {
-					pool.errors <- err
+					log.Println(err)
+					pool.errors <- 1
 				}
 			}
 		}(i)
@@ -78,21 +79,20 @@ func (pool *Pool) EnqueueTasks(CNs list.UniqStrings, proxy, certbase, hook strin
 // Wait until all jobs are done
 func (pool Pool) Wait() error {
 
-	var errors int
-	var done = make(chan bool)
+	var done = make(chan int)
 
 	// Collect and output the error messages
 	go func() {
-		for err := range pool.errors {
-			log.Println(err)
-			errors++
+		var errors int
+		for n := range pool.errors {
+			errors += n
 		}
-		done <- true
+		done <- errors
 	}()
 
 	pool.wg.Wait()     // for for all workers to complete
 	close(pool.errors) // this terminates the above goroutine, but we don't care to wait for it
-	<- done
+	errors := <- done
 
 	if errors != 0 {
 		return fmt.Errorf("Got %d error%s", errors, plural(errors))
