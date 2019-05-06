@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"cert-proxy/cert-proxy-client/cert"
+	"cert-proxy/cert-proxy-client/jar"
 	"cert-proxy/cert-proxy-client/worker"
 	"cert-proxy/internal/list"
 	"cert-proxy/internal/program"
@@ -65,6 +66,7 @@ func main() {
 			return cfg
 		}(),
 	}
+	http.DefaultClient.Jar = jar.InMemory()
 	// WTF is going on here, I need to explore this in more detail
 	// And this CloseIdleConnections doesn't seem to help either
 	defer http.DefaultClient.Transport.(*http.Transport).CloseIdleConnections()
