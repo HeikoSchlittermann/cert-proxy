@@ -136,7 +136,7 @@ func servePrivate(w http.ResponseWriter, req *http.Request) {
 		content = file
 	}
 
-	http.ServeContent(w, req, "FOO", mtime, content)
+	http.ServeContent(w, req, domain, mtime, content)
 
 }
 
