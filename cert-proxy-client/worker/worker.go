@@ -49,7 +49,6 @@ func NewPool(workers int) *Pool {
 			for req := range pool.queue {
 				Verbose("Req %v\n", req)
 				if err := req.Execute(mtx); err != nil {
-					//log.Print(err)
 					pool.errors <- err
 				}
 			}
@@ -80,6 +79,7 @@ func (pool *Pool) EnqueueTasks(CNs list.UniqStrings, proxy, certbase, hook strin
 func (pool Pool) Wait() error {
 
 	var errors int
+	var done = make(chan bool)
 
 	// Collect and output the error messages
 	go func() {
@@ -87,10 +87,12 @@ func (pool Pool) Wait() error {
 			log.Println(err)
 			errors++
 		}
+		done <- true
 	}()
 
 	pool.wg.Wait()     // for for all workers to complete
 	close(pool.errors) // this terminates the above goroutine, but we don't care to wait for it
+	<- done
 
 	if errors != 0 {
 		return fmt.Errorf("Got %d error%s", errors, plural(errors))
