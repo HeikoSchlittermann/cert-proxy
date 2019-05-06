@@ -35,8 +35,8 @@ func servePublic(w http.ResponseWriter, req *http.Request) {
 
 	cn := req.TLS.PeerCertificates[0].Subject.CommonName
 	parts := strings.Split(req.URL.Path, "/")[2:]
-	role, parts := parts[0], parts[1:]
-	Verbose("Serving cn=%s %s ims:%s\n", cn, req.URL, req.Header.Get(`if-modified-since`))
+	role := parts[0]
+	Verbose("Serving cn=%s %s ims:%s", cn, req.URL, req.Header.Get(`if-modified-since`))
 
 	// return the list of domains this client is allowed to fetch the
 	// certificiates
@@ -51,28 +51,53 @@ func servePublic(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	domain, parts := parts[0], parts[1:]
-	fn := filepath.Join(domain, role+".pem")
-
-	var content io.ReadSeeker
+	domain := parts[1]
 	var mtime time.Time
 
-	if file, err := http.Dir(opt.Certbase).Open(fn); err != nil {
+	if c, err := req.Cookie(`timestamp`); err == nil {
+		role += `-` + c.Value
+	}
+
+	// follow the symlinks and make it relative again, to get protection
+	// from http.Dir
+	fn, err := filepath.EvalSymlinks(filepath.Clean(filepath.Join(opt.Certbase, domain, role+".pem")))
+
+	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
-	} else {
-		defer file.Close()
-		if fi, err := file.Stat(); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		} else {
-			mtime = fi.ModTime()
-		}
-		content = file
+	}
+	fn, err = filepath.Rel(opt.Certbase, fn)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
 	}
 
-	http.ServeContent(w, req, domain, mtime, content)
+	Verbose("Sending %s", fn)
+	file, err := http.Dir(opt.Certbase).Open(fn)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	defer file.Close()
+	if fi, err := file.Stat(); err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	} else {
+		if ifx := infix(fi.Name(), `-`, `.`); len(ifx) > 1 { // -[digit]
+			//			Verbose("Setting cookie timestamp=%s", ifx)
+			http.SetCookie(w, &http.Cookie{
+				Name:    `timestamp`,
+				Value:   ifx,
+				Expires: time.Now().Add(5 * time.Minute),
+			})
+		}
+		mtime = fi.ModTime()
+	}
+	http.ServeContent(w, req, domain, mtime, file)
 }
 
 func servePrivate(w http.ResponseWriter, req *http.Request) {
@@ -117,6 +142,13 @@ func servePrivate(w http.ResponseWriter, req *http.Request) {
 	var content io.ReadSeeker
 	var mtime time.Time
 
+	if c, err := req.Cookie(`timestamp`); err == nil {
+		dot := strings.LastIndex(filename, `.`)
+		filename = filename[0:dot] + `-` + c.Value + filename[dot:]
+	}
+
+	Verbose("Sending %s", filename)
+
 	if file, err := http.Dir(opt.Certbase).Open(filename); err != nil {
 		if os.IsNotExist(err) {
 			content, mtime, err = createPKCS12(opt.Certbase, domain, req.URL.Query().Get("pass"))
@@ -150,7 +182,7 @@ func main() {
 	http.HandleFunc("/v1/bundle/", servePrivate)
 
 	tlsConfig, err := TLSServerConfig(opt.SSLFile, &tls.Config{
-		ClientAuth: tls.RequireAndVerifyClientCert,
+		ClientAuth: tls.VerifyClientCertIfGiven,
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -191,9 +223,23 @@ func createPKCS12(certbase, domain, pass string) (*bytes.Reader, time.Time, erro
 	pkcs12, err := cmd.Output()
 	if err != nil {
 		err := err.(*exec.ExitError)
-		log.Fatalf("%s %v: %s", cmd.Path, cmd.Args, err.Stderr)
+		log.Printf("%s %v: %s", cmd.Path, cmd.Args, err.Stderr)
 	}
 	return bytes.NewReader(pkcs12), mtime, err
+}
+
+func infix(s, a, b string) string {
+	if i := strings.LastIndex(s, a); i == -1 {
+		return ""
+	} else {
+		s = s[i:]
+	}
+
+	if i := strings.LastIndex(s, b); i == -1 {
+		return ""
+	} else {
+		return s[1:i]
+	}
 }
 
 // If the first item has an infix (-<xxxxx>.pem), we adjust all names to
@@ -203,14 +249,15 @@ func adjustPath(names ...*string) {
 	l, err := os.Readlink(*names[0])
 
 	if err != nil {
-		return
-	} // not a link
-
-	infix := l[strings.LastIndex(l, `-`):strings.LastIndex(l, `.`)]
-
-	for _, v := range names {
-		dot := strings.LastIndex(*v, `.`)
-		*v = (*v)[0:dot] + infix + (*v)[dot:]
+		return // not a link or other problem
 	}
 
+	if ifx := infix(l, `-`, `.`); ifx == "" {
+		return // infix not found
+	} else {
+		for _, v := range names {
+			dot := strings.LastIndex(*v, `.`)
+			*v = (*v)[0:dot] + `-` + ifx + (*v)[dot:]
+		}
+	}
 }
