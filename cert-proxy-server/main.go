@@ -175,9 +175,6 @@ func createPKCS12(certbase, domain, pass string) (*bytes.Reader, time.Time, erro
 	var chain = filepath.Join(certbase, domain, `chain.pem`)
 	var mtime time.Time
 
-	// Get the symlinked names
-	adjustPath(&cert, &key, &chain)
-
 	if fi, err := os.Stat(cert); err != nil {
 		return nil, mtime, err
 	} else {
@@ -197,25 +194,6 @@ func createPKCS12(certbase, domain, pass string) (*bytes.Reader, time.Time, erro
 		log.Printf("%s %v: %s", cmd.Path, cmd.Args, err.Stderr)
 	}
 	return bytes.NewReader(pkcs12), mtime, err
-}
-
-// If the first item has an infix (-<xxxxx>.pem), we adjust all names to
-// posess this infix
-
-func adjustPath(names ...*string) {
-	l, err := os.Readlink(*names[0])
-
-	if err != nil {
-		return
-	} // not a link
-
-	infix := l[strings.LastIndex(l, `-`):strings.LastIndex(l, `.`)]
-
-	for _, v := range names {
-		dot := strings.LastIndex(*v, `.`)
-		*v = (*v)[0:dot] + infix + (*v)[dot:]
-	}
-
 }
 
 func versionCheck(w http.ResponseWriter, req *http.Request) {
