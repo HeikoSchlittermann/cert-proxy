@@ -28,6 +28,8 @@ is a problem.
     Additionally the corresponding environment variables are set (possibly overriding
     existing environment variables with the same name.
 
+	Note for Windows Powershell: You may wish to "set-executionpolicy remotesigned"
+
 ²) The password for protecting the P12 file may be given in one of the following notations:
     - pass:<password>
     - file:<file containing the password>
