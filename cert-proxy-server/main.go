@@ -33,6 +33,10 @@ func serveWelcome(w http.ResponseWriter, r *http.Request) {
 
 func servePublic(w http.ResponseWriter, req *http.Request) {
 
+	if req.TLS.PeerCertificates == nil {
+		http.Error(w, "Sorry", http.StatusUnauthorized)
+		return
+	}
 	cn := req.TLS.PeerCertificates[0].Subject.CommonName
 	parts := strings.Split(req.URL.Path, "/")[2:]
 	role, parts := parts[0], parts[1:]
@@ -83,6 +87,11 @@ func servePrivate(w http.ResponseWriter, req *http.Request) {
 	// protected, as http.Dir() does not accept .. in the path on it's
 	// own. (Otherwise check string.Contains(req.URL.Path, `..`)
 	// and return http.StatusNotAcceptable)
+
+	if req.TLS.PeerCertificates == nil {
+		http.Error(w, "Sorry", http.StatusUnauthorized)
+		return
+	}
 	cn := req.TLS.PeerCertificates[0].Subject.CommonName
 	parts := strings.Split(req.URL.Path, "/")[2:]
 	Verbose("Serving cn=%s %s ims:%s\n", cn, req.URL, req.Header.Get(`if-modified-since`))
