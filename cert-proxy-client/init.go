@@ -34,6 +34,13 @@ is a problem.
     - pass:<password>
     - file:<file containing the password>
     - env:<environment variable containing the password>
+
+Example:
+
+	cert-proxy-client -connect https://cert-proxy/ \
+					  -servernae certs.example.com \
+					  -sslfile client.pem \
+					  -verbose
 `)
 	}
 
