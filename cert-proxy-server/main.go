@@ -33,7 +33,7 @@ func serveWelcome(w http.ResponseWriter, r *http.Request) {
 
 func servePublic(w http.ResponseWriter, req *http.Request) {
 
-	if req.TLS.PeerCertificates == nil {
+	if len(req.TLS.PeerCertificates) > 0 {
 		http.Error(w, "Sorry", http.StatusUnauthorized)
 		return
 	}
@@ -88,7 +88,7 @@ func servePrivate(w http.ResponseWriter, req *http.Request) {
 	// own. (Otherwise check string.Contains(req.URL.Path, `..`)
 	// and return http.StatusNotAcceptable)
 
-	if req.TLS.PeerCertificates == nil {
+	if len(req.TLS.PeerCertificates) > 0 {
 		http.Error(w, "Sorry", http.StatusUnauthorized)
 		return
 	}
