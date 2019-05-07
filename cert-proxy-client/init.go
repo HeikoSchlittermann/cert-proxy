@@ -17,8 +17,7 @@ func init() {
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] [<CN>]...\n", os.Args[0])
 		flag.PrintDefaults()
-		fmt.Print(`
-
+		fmt.Fprint(os.Stderr, `
 The cert-proxy-client exits with 0 on success, and with any other value if there
 is a problem.
 
@@ -42,6 +41,7 @@ is a problem.
 	// -outformat PKCS12 implies bundle
 
 	var printVersion bool
+	var logOutput out = STDERR
 
 	flag.BoolVar(&cert.UseSymlink, "symlink", cert.UseSymlink, "Use symlinks for current files")
 	flag.BoolVar(&opt.Auto, "auto", true, "Auto mode (fetch all CNs the server provides us)")
@@ -56,8 +56,13 @@ is a problem.
 	flag.StringVar(&opt.Passout, "passout", "", "Passwort to protect the PKCS12²")
 	flag.StringVar(&opt.ServerCN, "servername", "cert-proxy", "Name (CN) of the cert proxy certificate")
 	flag.StringVar(&opt.SSLFile, "sslfile", "ssl.pem", "SSL auth file (crt+key+ca) PEM")
+	flag.Var(&logOutput, "stderr", "Redirect stderr (stderr|stdout)")
 	flag.Var(&opt.Format, "format", "Format of the requested certificate(s) (PEM|PKCS12)")
 	flag.Parse()
+
+	if logOutput == `STDOUT` {
+		*os.Stderr = *os.Stdout
+	}
 
 	if printVersion {
 		fmt.Println(program.Version, program.Name, program.Path)
