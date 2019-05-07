@@ -194,7 +194,7 @@ func createPKCS12(certbase, domain, pass string) (*bytes.Reader, time.Time, erro
 	pkcs12, err := cmd.Output()
 	if err != nil {
 		err := err.(*exec.ExitError)
-		log.Fatalf("%s %v: %s", cmd.Path, cmd.Args, err.Stderr)
+		log.Printf("%s %v: %s", cmd.Path, cmd.Args, err.Stderr)
 	}
 	return bytes.NewReader(pkcs12), mtime, err
 }
