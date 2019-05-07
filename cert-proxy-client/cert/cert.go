@@ -2,6 +2,7 @@ package cert
 
 import (
 	"bytes"
+	"cert-proxy/internal/program"
 	. "cert-proxy/internal/shared"
 	"fmt"
 	"io/ioutil"
@@ -122,6 +123,7 @@ func NewReq(domain, remote, basedir, hook string, format Format, pass string) (R
 			if r, err := http.NewRequest(`GET`, mustExpand(templates.remote, ctx), nil); err != nil {
 				return Req{}, err
 			} else {
+				r.Header.Add(`x-version`, program.Version)
 				item.remote = r
 			}
 

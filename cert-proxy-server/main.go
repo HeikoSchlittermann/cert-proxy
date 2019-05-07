@@ -38,6 +38,8 @@ func servePublic(w http.ResponseWriter, req *http.Request) {
 	role := parts[0]
 	Verbose("Serving cn=%s %s ims:%s", cn, req.URL, req.Header.Get(`if-modified-since`))
 
+	versionCheck(w, req)
+
 	// return the list of domains this client is allowed to fetch the
 	// certificiates
 	if role == "list" {
@@ -110,6 +112,7 @@ func servePrivate(w http.ResponseWriter, req *http.Request) {
 	parts := strings.Split(req.URL.Path, "/")[2:]
 	Verbose("Serving cn=%s %s ims:%s\n", cn, req.URL, req.Header.Get(`if-modified-since`))
 
+	versionCheck(w, req)
 	allowedDomains, err := cnList(cn)
 	if err != nil {
 		log.Println(err)
@@ -260,4 +263,12 @@ func adjustPath(names ...*string) {
 			*v = (*v)[0:dot] + `-` + ifx + (*v)[dot:]
 		}
 	}
+}
+
+func versionCheck(w http.ResponseWriter, req *http.Request) {
+	if program.Version != req.Header.Get(`x-version`) {
+		log.Printf("Version mismatch: server:%s client:%s",
+			program.Version, req.Header.Get(`x-version`))
+	}
+	w.Header().Add(`x-version`, program.Version)
 }

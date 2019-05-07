@@ -97,7 +97,13 @@ func main() {
 
 func fetchCNs() ([]string, error) {
 	Verbose("Getting list of domains")
-	resp, err := http.Get(opt.Connect + path.Join(`/`+API_VERSION, `list`))
+	req, err := http.NewRequest(`GET`, opt.Connect + path.Join(`/`+API_VERSION, `list`), nil)
+	req.Header.Add(`x-version`, program.Version)
+	if err != nil {
+		return nil, err
+	}
+	//resp, err := http.Get(opt.Connect + path.Join(`/`+API_VERSION, `list`))
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -106,6 +112,12 @@ func fetchCNs() ([]string, error) {
 	}
 	defer resp.Body.Close()
 	var domains []string
+
+	// check remote version
+	if program.Version != resp.Header.Get(`x-version`) {
+		log.Printf("Version mismatch: server:%s client:%s",
+			resp.Header.Get(`x-version`), program.Version)
+	}
 
 	s := bufio.NewScanner(resp.Body)
 	for s.Scan() {
