@@ -152,4 +152,4 @@ specific commands
 
 ¹) a ?format=[pem|pkcs12] may be appended. The default format is "pem"
 
-Yes, for PEM, multiple requests are used.
+Yes, for PEM, multiple requests are used currently.

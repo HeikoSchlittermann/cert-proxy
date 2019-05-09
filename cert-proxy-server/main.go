@@ -1,19 +1,11 @@
 package main
 
 import (
-	"bytes"
 	"cert-proxy/internal/program"
 	. "cert-proxy/internal/shared"
 	"crypto/tls"
-	"fmt"
-	"io"
 	"log"
 	"net/http"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"strings"
-	"time"
 )
 
 var (
@@ -26,143 +18,40 @@ var (
 	}
 )
 
-func serveWelcome(w http.ResponseWriter, r *http.Request) {
-	cn := r.TLS.PeerCertificates[0].Subject.CommonName
-	fmt.Fprintln(w, "Welcome", cn, r.URL.Path)
-}
+type contextKey int
 
-func servePublic(w http.ResponseWriter, req *http.Request) {
+const (
+	REMOTE contextKey = iota
+	DOMAIN
+)
 
-	if len(req.TLS.PeerCertificates) > 0 {
-		http.Error(w, "Sorry", http.StatusUnauthorized)
-		return
-	}
-	cn := req.TLS.PeerCertificates[0].Subject.CommonName
-	parts := strings.Split(req.URL.Path, "/")[2:]
-	role, parts := parts[0], parts[1:]
-	Verbose("Serving cn=%s %s ims:%s\n", cn, req.URL, req.Header.Get(`if-modified-since`))
+type context map[contextKey]string
+type handleFunc func(http.ResponseWriter, *http.Request)
+type handleFuncCTX func(context, http.ResponseWriter, *http.Request) error
 
-	versionCheck(w, req)
-
-	// return the list of domains this client is allowed to fetch the
-	// certificiates
-	if role == "list" {
-		if allowedDomains, err := cnList(cn); err != nil {
-			log.Println(err)
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return
-		} else {
-			fmt.Fprintln(w, strings.Join(allowedDomains.Items(), "\n"))
-			return
+func use(handlers ...handleFuncCTX) handleFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		ctx := make(context)
+		for _, f := range handlers {
+			if err := f(ctx, w, req); err != nil {
+				log.Printf("Remote %v: %v", req.RemoteAddr, err)
+				return
+			}
 		}
 	}
-
-	domain, parts := parts[0], parts[1:]
-	fn := filepath.Join(domain, role+".pem")
-
-	var content io.ReadSeeker
-	var mtime time.Time
-
-	if file, err := http.Dir(opt.Certbase).Open(fn); err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), http.StatusNotFound)
-		return
-	} else {
-		defer file.Close()
-		if fi, err := file.Stat(); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		} else {
-			mtime = fi.ModTime()
-		}
-		content = file
-	}
-
-	http.ServeContent(w, req, domain, mtime, content)
-}
-
-func servePrivate(w http.ResponseWriter, req *http.Request) {
-
-	// do not allow .., but as we use http.Dir(), we should be
-	// protected, as http.Dir() does not accept .. in the path on it's
-	// own. (Otherwise check string.Contains(req.URL.Path, `..`)
-	// and return http.StatusNotAcceptable)
-
-	if len(req.TLS.PeerCertificates) > 0 {
-		http.Error(w, "Sorry", http.StatusUnauthorized)
-		return
-	}
-	cn := req.TLS.PeerCertificates[0].Subject.CommonName
-	parts := strings.Split(req.URL.Path, "/")[2:]
-	Verbose("Serving cn=%s %s ims:%s\n", cn, req.URL, req.Header.Get(`if-modified-since`))
-
-	versionCheck(w, req)
-	allowedDomains, err := cnList(cn)
-	if err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), http.StatusForbidden)
-		return
-	}
-
-	role, parts := parts[0], parts[1:]
-	domain, parts := parts[0], parts[1:]
-	filename := filepath.Join(domain, role+func() string {
-		switch strings.ToUpper(req.URL.Query().Get("format")) {
-		case `PKCS12`:
-			return `.p12`
-		case `PEM`:
-			fallthrough
-		default:
-			return `.pem`
-		}
-	}())
-
-	// now check, if the current cn is allowed to access the domain,
-	// that is, we check, if the config file (already opened) contains
-	// a line with the current domain
-	if _, ok := allowedDomains[domain]; !ok {
-		log.Printf("Client cn=%s is not authorized for %s\n", cn, domain)
-		http.Error(w, "You are not authorized", http.StatusForbidden)
-		return
-	}
-
-	var content io.ReadSeeker
-	var mtime time.Time
-
-	if file, err := http.Dir(opt.Certbase).Open(filename); err != nil {
-		if os.IsNotExist(err) {
-			content, mtime, err = createPKCS12(opt.Certbase, domain, req.URL.Query().Get("pass"))
-		}
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return
-		}
-	} else {
-		defer file.Close()
-		if fi, err := file.Stat(); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		} else {
-			mtime = fi.ModTime()
-		}
-		content = file
-	}
-
-	http.ServeContent(w, req, domain, mtime, content)
-
 }
 
 func main() {
 
-	http.HandleFunc("/v1/list", servePublic)
-	http.HandleFunc("/v1/cert/", servePublic)
-	http.HandleFunc("/v1/chain/", servePublic)
-	http.HandleFunc("/v1/fullchain/", servePublic)
-	http.HandleFunc("/v1/privkey/", servePrivate)
-	http.HandleFunc("/v1/bundle/", servePrivate)
+	http.HandleFunc("/v1/list", use(authn, serve))
+	http.HandleFunc("/v1/cert/", use(serve))
+	http.HandleFunc("/v1/chain/", use(serve))
+	http.HandleFunc("/v1/fullchain/", use(serve))
+	http.HandleFunc("/v1/privkey/", use(authz, serve))
+	http.HandleFunc("/v1/bundle/", use(authz, serve))
 
 	tlsConfig, err := TLSServerConfig(opt.SSLFile, &tls.Config{
-		ClientAuth: tls.RequireAndVerifyClientCert,
+		ClientAuth: tls.VerifyClientCertIfGiven,
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -175,40 +64,4 @@ func main() {
 
 	log.Printf("Starting listener %v (%s: %s)\n", listener.Addr(), program.Path, program.Version)
 	http.Serve(listener, nil)
-}
-
-func createPKCS12(certbase, domain, pass string) (*bytes.Reader, time.Time, error) {
-
-	var cert = filepath.Join(certbase, domain, `cert.pem`)
-	var key = filepath.Join(certbase, domain, `privkey.pem`)
-	var chain = filepath.Join(certbase, domain, `chain.pem`)
-	var mtime time.Time
-
-	if fi, err := os.Stat(cert); err != nil {
-		return nil, mtime, err
-	} else {
-		mtime = fi.ModTime()
-	}
-
-	var cmd = exec.Command(`openssl`, `pkcs12`,
-		`-export`,
-		`-passout`, `pass:`+pass,
-		`-inkey`, key,
-		`-in`, cert,
-		`-certfile`, chain)
-	Verbose("Starting %s", cmd.Path)
-	pkcs12, err := cmd.Output()
-	if err != nil {
-		err := err.(*exec.ExitError)
-		log.Printf("%s %v: %s", cmd.Path, cmd.Args, err.Stderr)
-	}
-	return bytes.NewReader(pkcs12), mtime, err
-}
-
-func versionCheck(w http.ResponseWriter, req *http.Request) {
-	if program.Version != req.Header.Get(`x-version`) {
-		log.Printf("Version mismatch: server:%s client:%s",
-			program.Version, req.Header.Get(`x-version`))
-	}
-	w.Header().Add(`x-version`, program.Version)
 }
