@@ -9,7 +9,7 @@ import (
 
 func authn(ctx context, w http.ResponseWriter, req *http.Request) error {
 	if c := req.TLS.PeerCertificates; len(c) == 0 {
-		err := errors.New("no (valid) certificate")
+		err := errors.New("no (valid) cert certificate")
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return err
 	} else {
