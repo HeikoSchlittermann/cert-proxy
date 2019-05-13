@@ -1,0 +1,19 @@
+.PHONY: all build install clean
+prefix ?= /usr/local
+bindir ?= ${DESTDIR}/${prefix}/bin
+
+export GOPATH=${PWD}/../../go
+
+v = $(shell git describe --always --dirty=+)
+build clean:	../../go/src/cert-proxy
+		go $@ -ldflags '-X cert-proxy/internal/program.Version=$v'
+distclean:	clean
+	-rm -rf ../../go
+
+install: build
+	install -d ${bindir}
+	install --strip ${PACKAGE} ${bindir}/
+
+../../go/src/cert-proxy:
+	install -d ../../go/src
+	ln -sf ../.. ../../go/src/cert-proxy
