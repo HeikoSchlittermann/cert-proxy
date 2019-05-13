@@ -9,7 +9,7 @@ bindir := ${bindir}/windows_$(shell go env GOARCH)
 endif
 
 
-export GOPATH=${PWD}/../../go
+export GOPATH=${shell pwd}/../../go
 
 v = $(shell git describe --always --dirty=+)
 
