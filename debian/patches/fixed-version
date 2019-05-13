@@ -1,0 +1,11 @@
+--- a/cmd/.makefile.common
++++ b/cmd/.makefile.common
+@@ -10,7 +10,7 @@
+ 
+ export GOPATH = $(shell pwd)/../../go
+ 
+-v = $(shell git describe --always --dirty=+)
++v = 1.3
+ 
+ all: build
+ 

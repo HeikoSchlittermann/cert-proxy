@@ -1,0 +1,11 @@
+--- a/systemd/cert-proxy-server.service
++++ b/systemd/cert-proxy-server.service
+@@ -3,7 +3,7 @@
+ 
+ [Service]
+ ProtectSystem=strict
+-ExecStart=/usr/local/bin/cert-proxy-server -sslfile /etc/cert-proxy/ssl.pem -certbase /var/lib/dehydrated/certs -ccd /etc/cert-proxy/clients -serve :443 -verbose
++ExecStart=/usr/sbin/cert-proxy-server -sslfile /etc/cert-proxy/ssl.pem -certbase /var/lib/dehydrated/certs -ccd /etc/cert-proxy/clients -serve :443 -verbose
+ 
+ [Install]
+ WantedBy=network.target
