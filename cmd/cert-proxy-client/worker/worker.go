@@ -1,7 +1,7 @@
 package worker
 
 import (
-	"cert-proxy/cert-proxy-client/cert"
+	"cert-proxy/cmd/cert-proxy-client/cert"
 	"cert-proxy/internal/list"
 	. "cert-proxy/internal/shared"
 	"fmt"

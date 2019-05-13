@@ -1,8 +1,8 @@
 package main
 
 import (
-	"cert-proxy/cert-proxy-client/cert"
-	"cert-proxy/cert-proxy-client/secret"
+	"cert-proxy/cmd/cert-proxy-client/cert"
+	"cert-proxy/cmd/cert-proxy-client/secret"
 	"cert-proxy/internal/program"
 	. "cert-proxy/internal/shared"
 	"flag"

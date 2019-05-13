@@ -2,8 +2,8 @@ package main
 
 import (
 	"bufio"
-	"cert-proxy/cert-proxy-client/cert"
-	"cert-proxy/cert-proxy-client/worker"
+	"cert-proxy/cmd/cert-proxy-client/cert"
+	"cert-proxy/cmd/cert-proxy-client/worker"
 	"cert-proxy/internal/list"
 	"cert-proxy/internal/program"
 	. "cert-proxy/internal/shared"
