@@ -2,6 +2,12 @@
 prefix ?= /usr/local
 bindir ?= ${DESTDIR}/${prefix}/bin
 
+ifeq (${GOOS},windows)
+PACKAGE := ${PACKAGE}.exe
+bindir := ${bindir}/windows_$(shell go env GOARCH)
+endif
+
+
 export GOPATH=${PWD}/../../go
 
 v = $(shell git describe --always --dirty=+)
