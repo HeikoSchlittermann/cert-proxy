@@ -1,0 +1,6 @@
+tmp/
+cert-proxy-client/
+cert-proxy-server/
+*.debhelper.log
+*.substvars
+*-stamp

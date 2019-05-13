@@ -1,0 +1,3 @@
+#!/usr/bin/dh-exec
+debian/tmp/usr/bin/cert-proxy-server => /usr/sbin/cert-proxy-server
+systemd/cert-proxy-server.service => /usr/lib/systemd/system/cert-proxy-server.service
