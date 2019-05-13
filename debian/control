@@ -1,0 +1,21 @@
+Source: cert-proxy
+Section: unknown
+Priority: optional
+Maintainer: Heiko Schlittermann (HS12-RIPE) <hs@schlittermann.de>
+Build-Depends: debhelper (>= 9)
+Standards-Version: 3.9.8
+Homepage: <insert the upstream URL, if relevant>
+#Vcs-Git: https://anonscm.debian.org/collab-maint/cert-proxy.git
+#Vcs-Browser: https://anonscm.debian.org/cgit/collab-maint/cert-proxy.git
+
+Package: cert-proxy-client
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: <insert up to 60 chars description>
+ <insert long description, indented with spaces>
+
+Package: cert-proxy-server
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: <insert up to 60 chars description>
+ <insert long description, indented with spaces>

@@ -1,0 +1,176 @@
+cert-proxy (1.2-2~1.gbp25375d) UNRELEASED; urgency=medium
+
+  ** SNAPSHOT build @25375d110b1f412696eac564cc7df058897d3dab **
+
+  [ Heiko Schlittermann (HS12-RIPE) ]
+  * initial commit
+  * Add minimalistic CA
+  * Fix CA
+  * Create CA:True ca cert
+  * New editorconfig
+  * TLS Server talking to tls client
+  * No extra options in sign, need -in and -out as openssl ca does
+  * Aggretage client and proxy into one project
+  * Use shared/ package in all places
+  * Download the cert
+  * Remove cert-proxy-client binary
+  * Ignore *pem files (they are here for testing)
+  * [tidy]
+  * CAFile instead of CaFile
+  * Deliver certificate
+  * Update shared package
+  * Get all public files
+  * Fix shared CertPool return value
+  * Serve all public files
+  * Request privkey along with all other files
+  * Deliver private key (if authorized)
+  * Remove .pem files from repo
+  * Do not use the item list, but keep it for later
+  * Silence the logging (no timestamp)
+  * Use single SSL file for authentication to the proxy
+  * Ignore .pem files
+  * OS specific certbase dir (linux, windows)
+  * Shorter filename for constants file
+  * Reorder the options and make the explanation more useful
+  * Allow output format option. WIP
+  * Minimalistic CA redesign
+  * Default Output format depends on Platform
+  * Use -sslfile option
+  * [tidy]
+  * Add cnlist.go
+  * Use ./certs as default certbase
+  * Do not stop on error
+  * Use list.go
+  * Set umask to 077
+  * More details for README.md
+  * Make it parallel
+  * [tidy]
+  * Do not put the config dir (clients/) into the repo
+  * Logging with microseconds
+  * More comments, and a closure to initialize a variable
+  * Remove unnecessary checking for .., add deferred file.Close()
+  * Ignore example cns file
+  * Move shared to internal/shared to follow go's directory guidelines
+  * Add verbose operation to cert-proxy
+  * Specifiy the API calls, introduce API version
+  * Use value methods where possible, as the lists are already pointers
+  * Add String() method for UList
+  * Comment global vars
+  * Move TLS(Client|Server)Config to a shared file
+  * Rework internal/shared/tls
+  * [tidy]
+  * Use v1 API
+  * Add shared/mkdir for Mkdir
+  * Create task with the proper extension for local output
+  * Use "bundle" as default item with pkc12
+  * Can't panic with invalid format (zero value)
+  * New option -jobs for parallel execution
+  * More comments
+  * proxy: major rework
+  * Reorder the options
+  * Add auto mode (fetch list of domains first)
+  * [tidy]
+  * Major rework client
+  * Move flag relevant parts of cert to cert/flag.go
+  * Hide more details of the certs package
+  * Tidying
+  * Commenting
+  * Do not allow -outfile anymore
+  * Run hooks (in sequence)
+  * Add Interval (-sleep)
+  * [cosmetic]
+  * Add -sleep for repetitive execution
+  * Use own logger for Verbose output
+  * Add -interval for repetitive execution
+  * Add explanative comment to the timer ticker
+  * Fix the name of the constants file for Windows
+  * Add Makefiles
+  * -interval -> -tick
+  * Default NumCPU() jobs
+  * Use shared.Verbose
+  * Use the right format<->extension mapping
+  * [tidy]
+  * Ignore local files (hook, certs)
+  * Add -version
+  * Split complexity by creating writeFile
+  * Use os.Rename instead of os.Symlink
+  * Add -symlink
+  * Move cert-proxy to cert-proxy-server to have more symmetry
+  * Makefiles: Add install target
+  * Use lib/vars.sh instead of lib/.vars.sh
+  * Add Makefile for install
+  * Makefile: Add CA install
+  * Add systemd unit for cert-proxy-server.service
+  * systemd: add -verbose flag for cert-proxy-server
+  * Supress timestamp in logs if running under systemd
+  * Always log listener address on startup
+  * ignore the built binary
+  * Update README.md
+  * Add version to installed files
+  * Use -jobs as maximum number of parallel running workers
+  * CA: write the cert (only) file
+  * Move OList, UList to internal/list as OrderedList and UniqList
+  * Add program package for Name and Version
+  * Simplify the String() method
+  * list: Allow Add(...) for multiple values
+  * [fmt]
+  * client: make it robust against failures in "tick" mode
+  * Ignore vim temporary files
+  * Change default: no hook
+  * Mimic the dehydrated hook (pass args on the commandline)
+  * Remove -tick (interval mode)
+  * Create the PKCS12 on-the-fly (unencrypted)
+  * Auto-encrypt the generated PKCS12 with the password supplied by the client
+  * Remove needless file
+  * More Usage output
+  * Output version, name and path on -version
+  * [tidy]
+  * server: output program.Path, not program.Name at startup
+  * Use -servername instead of -cert-proxy-cn
+  * Server: Send last modification time
+  * Client: send If-Modified-Since
+  * Client: add -force to force download, even if not modified
+  * Use tab for indent to avoid excessive reformatting
+  * Add TODO
+  * Client: collect all errors and exit(1) if *any* error occurred
+  * tidy
+  * Server: Use meaningful name for ServeContent
+  * Client: wait for correct finish
+  * Client: report error at origin
+  * CA: tighten the policy to match everything except the CN
+  * Use Cooke (timestamp=) to keep related files together (cert, chain, privkey)
+  * Add -stderr option to allow stderr output redirection to stdout
+  * Client: Add note about Powershell scripts to explicitly allowed
+  * Add version check for client/server
+  * Revert "Use Cooke (timestamp=) to keep related files together (cert, chain, privkey)"
+
+  [ Heiko Schlittermann ]
+  * Server: do not die if openssl fails
+  * Completly supress symlink processing
+
+  [ Heiko Schlittermann (HS12-RIPE) ]
+  * Cert check: do not crash if there is no client cert
+  * Client: add example
+  * Use len() and not comparison with nil for client certs in request
+  * Server: complete rework do avoid duplicate code
+  * Server auth: better explanation for missing client cert
+  * typo
+  * Update Documentation (README.md)
+  * Update Makefile(s) to enable a build outside of the GO tree
+  * Add "distclean" target to CA
+  * Remove references to the GO workspace
+  * Add OS/ARCH specific install path when compiling for Windows
+  * Add missing build target
+  * Makefile [tidy]
+  * Makefile: Use the *current* directory
+  * Fix location of installed server for systemd
+  * Ignore *.exe built
+  * [tidy] .makefile.common
+
+ -- Heiko Schlittermann (HS12-RIPE) <hs@schlittermann.de>  Mon, 13 May 2019 22:34:26 +0200
+
+cert-proxy (1.2-1) unstable; urgency=medium
+
+  * Initial release (Closes: #nnnn)  <nnnn is the bug number of your ITP>
+
+ -- Heiko Schlittermann (HS12-RIPE) <hs@schlittermann.de>  Mon, 13 May 2019 22:31:51 +0200
