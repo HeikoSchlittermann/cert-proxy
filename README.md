@@ -39,21 +39,6 @@ by using cross compilation. It is easy. Read on.
 * You need to install a Go [build environment](https://golang.org).
   I used Go 1.7.4.
 
-* Next you need to setup the your local system to use a "go workspace".
-  While you can do it ad-hoc by setting the GOPATH environment variable,
-  I recommend setting it statically:
-
-  Create a `/etc/profile.d/local.sh` and add these two lines:
-
-    export GOPATH=/usr/local/go
-    PATH+=$GOPATH/bin
-
-  Logout and login again to make these settings available.
-
-* Next create the Go workspace:
-
-    install -d $GOPATH
-
 ### Get the source, build, and install the binaries
 
 The source is published in a GIT
@@ -61,28 +46,27 @@ The source is published in a GIT
 
 * Clone the Git repository:
 
-    cd /usr/local/go/src
+    cd /usr/local/src
     git clone http://git.schlittermann.de/user/heiko/cert-proxy
 
 * To build and install the binaries for the current, change your working
   directory into the project dir and build the binaries for your
   platforms:
 
-    [ /usr/local/go/src ]
+    [ /usr/local/src ]
     cd cert-proxy
     make install
 
-  This should install the cert-proxy-server and cert-proxy-client into Go's bin
-  directory ($GOPATH/bin). If you want to install *only* the server or
+  This should install the cert-proxy-server and cert-proxy-client into
+  `/usr/local/bin/`. If you want to install *only* the server or
   *only* the client, use `make install-server` or `make install-client`
 
 * Now build the binaries for the alternate platforms (e.g. windows)
 
-    [ /usr/local/go/src ]
-    GOOS=windows make
+    [ /usr/local/src/cert-proxy ]
+    GOOS=windows make install
 
-  This leaves the executables in cert-proxy/cert-proxy-{server,client/
-  directories.
+  This leaves the executables `/usr/local/bin/windows_amd64/`.
 
 ## Setup the cert-proxy-server
 
@@ -95,7 +79,7 @@ setup, setup the cert-proxy-server and systemd startup scripts and start the ser
   used. To support you, a simple CA is part of the cert-proxy package.
   You may install this minimalistic CA:
 
-    [ /usr/local/go/src/cert-proxy ]
+    [ /usr/local/src/cert-proxy ]
     make install-ca
 
   This installs the CA into `/etc/cert-proxy/ca`.
@@ -136,7 +120,7 @@ files. This directory needs to exist:
 
 * You may want to use the supplied systemd-service files from `systemd/`.
 
-    [ /usr/local/go/src ]
+    [ /usr/local/src/cert-proxy ]
     systemctl enable $PWD/systemd/cert-proxy-server.service
 
 Alternativly you may copy this file to /etc/systemd/system and then just
@@ -165,8 +149,8 @@ restricted in access.
 
   Take the binaries from one of the following places:
 
-  - for linux: `/usr/local/go/bin/cert-proxy-client`
-  - for windows: `/usr/local/go/bin/windows_amd64/cert-proxy-client.exe`
+  - for linux: `/usr/local/bin/cert-proxy-client`
+  - for windows: `/usr/local/bin/windows_amd64/cert-proxy-client.exe`
 
 ### Client side
 
