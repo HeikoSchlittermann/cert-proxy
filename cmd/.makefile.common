@@ -8,14 +8,13 @@ PACKAGE := ${PACKAGE}.exe
 bindir := ${bindir}/windows_$(shell go env GOARCH)
 endif
 
-
-export GOPATH=${shell pwd}/../../go
+export GOPATH = $(shell pwd)/../../go
 
 v = $(shell git describe --always --dirty=+)
 
 all: build
 
-build clean:	../../go/src/cert-proxy
+build clean:	${GOPATH}/src/cert-proxy
 		go $@ -ldflags '-X cert-proxy/internal/program.Version=$v'
 
 install: build
@@ -23,8 +22,10 @@ install: build
 	install --strip ${PACKAGE} ${bindir}/
 
 distclean:	clean
-	-rm -rf ../../go
+	-rm -rf ${GOPATH}
 
-../../go/src/cert-proxy:
-	install -d ../../go/src
-	ln -sf ../.. ../../go/src/cert-proxy
+${GOPATH}/src/cert-proxy:
+	install -d ${GOPATH}/src
+	ln -sf `readlink -f ../..` ${GOPATH}/src/cert-proxy
+
+# vim:ft=make:
