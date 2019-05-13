@@ -1,4 +1,5 @@
 .PHONY: all build install clean
+
 prefix ?= /usr/local
 bindir ?= ${DESTDIR}/${prefix}/bin
 
@@ -16,12 +17,13 @@ all: build
 
 build clean:	../../go/src/cert-proxy
 		go $@ -ldflags '-X cert-proxy/internal/program.Version=$v'
-distclean:	clean
-	-rm -rf ../../go
 
 install: build
 	install -d ${bindir}
 	install --strip ${PACKAGE} ${bindir}/
+
+distclean:	clean
+	-rm -rf ../../go
 
 ../../go/src/cert-proxy:
 	install -d ../../go/src
