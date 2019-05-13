@@ -5,7 +5,7 @@ SUBDIRS = cmd/cert-proxy-${SERVER} cmd/cert-proxy-${CLIENT} CA
 
 .PHONY: all clean distclean install install-${SERVER} install-${CLIENT} install-ca
 
-all clean distclean: ; @for d in ${SUBDIRS}; do make -C $$d $@; done
+all build clean distclean: ; @for d in ${SUBDIRS}; do make -C $$d $@; done
 
 install:	     install-client install-server
 install-client:      ; make -C cmd/cert-proxy-${CLIENT} install

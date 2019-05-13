@@ -11,6 +11,9 @@ endif
 export GOPATH=${PWD}/../../go
 
 v = $(shell git describe --always --dirty=+)
+
+all: build
+
 build clean:	../../go/src/cert-proxy
 		go $@ -ldflags '-X cert-proxy/internal/program.Version=$v'
 distclean:	clean
