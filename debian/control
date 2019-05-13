@@ -16,6 +16,6 @@ Description: <insert up to 60 chars description>
 
 Package: cert-proxy-server
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}, openssl
 Description: <insert up to 60 chars description>
  <insert long description, indented with spaces>
