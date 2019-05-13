@@ -1,6 +1,4 @@
-cert-proxy (1.3-0.gbp7976e6~1.gbpa8e969) UNRELEASED; urgency=medium
-
-  ** SNAPSHOT build @a8e969c91035f7b4198443df97a708022d843c07 **
+cert-proxy (1.3-0) unstable; urgency=medium
 
   [ Heiko Schlittermann (HS12-RIPE) ]
   * initial commit
@@ -169,8 +167,11 @@ cert-proxy (1.3-0.gbp7976e6~1.gbpa8e969) UNRELEASED; urgency=medium
   * debianize
   * Update gbp.conf: upstream-tree=BRANCH
   * Add debianization files and prepare debian build
+  * use pbuilder
+  * quilt: add debian patches
+  * Done to some extent for version 1.3
 
- -- Heiko Schlittermann (HS12-RIPE) <hs@schlittermann.de>  Mon, 13 May 2019 23:33:00 +0200
+ -- Heiko Schlittermann (HS12-RIPE) <hs@schlittermann.de>  Tue, 14 May 2019 00:15:19 +0200
 
 cert-proxy (1.2-1) unstable; urgency=medium
 
