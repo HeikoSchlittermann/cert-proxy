@@ -1,0 +1,9 @@
+[Unit]
+Description=Timer for cert-proxy-client
+
+[Timer]
+OnCalendar=daily
+RandomizedDelaySec=2h
+
+[Install]
+WantedBy=timers.target

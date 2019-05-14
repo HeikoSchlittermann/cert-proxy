@@ -107,7 +107,7 @@ setup, setup the cert-proxy-server and systemd startup scripts and start the ser
   cert-proxy-server (when started by systemd) expects it.
 
     [ /etc/cert-proxy/ca ]
-    cp cert-proxy-ssl.pem /etc/cert-proxy/ssl.pem
+    cp cert-proxy-ssl.pem /etc/cert-proxy/server-ssl.pem
 
 ### Create the config directory
 
@@ -165,6 +165,9 @@ This will start the client and download the certs. For mor options and
 their respective defaults, see the output of
 
     cert-proxy-client -help
+
+To support you, we provide a systemd timer, and service unit in the
+source's `systemd/` directory.
 
 ## Daily operation
 
