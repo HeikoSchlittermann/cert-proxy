@@ -30,9 +30,15 @@ case "$1" in
 
     if test "$2" = ""		# fresh install?
     then
-	_systemctl preset cert-proxy-server.service
-	_systemctl is-enabled \
-	&& _systemctl restart cert-proxy-server.service
+
+	if test -f /etc/cert-proxy-server/ssl.pem; then
+	    _systemctl preset cert-proxy-server.service
+	    _systemctl is-enabled && _systemctl restart cert-proxy-server.service
+	else
+	    # The ssl.pem is pre-condition to start the server
+	    _systemctl disable cert-proxy-server.service
+	fi
+
     else
 	_systemctl try-restart cert-proxy-server.service
     fi
