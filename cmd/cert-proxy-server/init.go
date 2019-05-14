@@ -18,7 +18,7 @@ func init() {
 	//	    log.SetPrefix(filepath.Base(os.Args[0]) + `: `)
 
 	var printVersion bool
-	flag.StringVar(&opt.SSLFile, "sslfile", "ssl.pem", "SSL auth file (crt+key+ca) PEM")
+	flag.StringVar(&opt.SSLFile, "sslfile", "server-ssl.pem", "SSL auth file (crt+key+ca) PEM")
 	flag.StringVar(&opt.Serve, "serve", ":4433", "Listener [host]:port")
 	flag.StringVar(&opt.Certbase, "certbase", "certs", "Base dir for certificates")
 	flag.StringVar(&opt.ClientConfigDir, "ccd", "clients", "Client configuration dir")
