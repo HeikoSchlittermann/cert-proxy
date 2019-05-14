@@ -1,1 +1,3 @@
-/usr/bin/cert-proxy-client
+#!/usr/bin/dh-exec
+/usr/bin/cert-proxy-client => /usr/bin
+debian/hook.example =>/etc/cert-proxy/hook

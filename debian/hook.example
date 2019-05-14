@@ -1,0 +1,4 @@
+#!/bin/bash
+# called as <hook> deploy_cert <DOMAIN> <KEY> <CHAIN> <FULLCHAIN> <TIMESAMP>
+# The values are in the positional parameters *AND* in environment vars
+# of the same name
