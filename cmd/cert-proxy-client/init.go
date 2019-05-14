@@ -13,6 +13,10 @@ import (
 )
 
 func init() {
+	// Running as a systemd unit?
+	if os.Getenv(`INVOCATION_ID`) != "" {
+		log.SetFlags(0)
+	}
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] [<CN>]...\n", os.Args[0])
@@ -39,7 +43,7 @@ Example:
 
 	cert-proxy-client -connect https://cert-proxy/ \
 					  -servernae certs.example.com \
-					  -sslfile client.pem \
+					  -sslfile client-ssl.pem \
 					  -verbose
 `)
 	}
@@ -64,7 +68,7 @@ Example:
 	flag.StringVar(&opt.Hook, "hook", "", "Hook script¹")
 	flag.StringVar(&opt.Passout, "passout", "", "Passwort to protect the PKCS12²")
 	flag.StringVar(&opt.ServerCN, "servername", "cert-proxy", "Name (CN) of the cert proxy certificate")
-	flag.StringVar(&opt.SSLFile, "sslfile", "ssl.pem", "SSL auth file (crt+key+ca) PEM")
+	flag.StringVar(&opt.SSLFile, "sslfile", "client-ssl.pem", "SSL auth file (crt+key+ca) PEM")
 	flag.Var(&logOutput, "stderr", "Redirect stderr (stderr|stdout)")
 	flag.Var(&opt.Format, "format", "Format of the requested certificate(s) (PEM|PKCS12)")
 	flag.Parse()
