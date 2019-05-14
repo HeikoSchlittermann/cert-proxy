@@ -25,7 +25,10 @@ _systemctl() {
 
 case "$1" in
     configure)
-    if test "$2" = "" # fresh install?
+
+    _systemctl daemon-reload	# we installed or updated the unit file
+
+    if test "$2" = ""		# fresh install?
     then
 	_systemctl preset cert-proxy-server.service
 	_systemctl is-enabled \
