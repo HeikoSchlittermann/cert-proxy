@@ -1,3 +1,10 @@
+cert-proxy (1.4-1) stable unstable; urgency=medium
+
+  * Fix *.install
+  * Add more systemd invocation to postinst/prerm
+
+ -- Heiko Schlittermann (HS12-RIPE) <hs@schlittermann.de>  Wed, 15 May 2019 10:32:06 +0200
+
 cert-proxy (1.4-0) stable unstable; urgency=medium
 
   * Name the ssl files server-ssl.pem and client-ssl.pem
