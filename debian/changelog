@@ -1,3 +1,14 @@
+cert-proxy (1.4-0) stable unstable; urgency=medium
+
+  * Name the ssl files server-ssl.pem and client-ssl.pem
+  * Add systemd units (timer, service) for the client side
+  * Install hook file
+  * Rename systemd patch for server
+  * Add systemd unit file patch for client
+  * Refresh patches
+
+ -- Heiko Schlittermann (HS12-RIPE) <hs@schlittermann.de>  Wed, 15 May 2019 09:51:43 +0200
+
 cert-proxy (1.3-4) stable unstable; urgency=medium
 
   * Do not start the cert-proxy-server if no ssl.pem is available
