@@ -1,8 +1,8 @@
 --- a/systemd/cert-proxy-client.service
 +++ b/systemd/cert-proxy-client.service
-@@ -3,4 +3,4 @@
- 
+@@ -4,4 +4,4 @@
  [Service]
  Type=oneshot
--ExecStart=/usr/local/bin/cert-proxy-client -verbose -sslfile /etc/cert-proxy/client-ssl.pem -certs /var/lib/cert-proxy/certs
-+ExecStart=/usr/bin/cert-proxy-client -verbose -sslfile /etc/cert-proxy/client-ssl.pem -certs /var/lib/cert-proxy/certs
+ EnvironmentFile=-/etc/default/cert-proxy-client
+-ExecStart=/usr/local/bin/cert-proxy-client -verbose -sslfile /etc/cert-proxy/client-ssl.pem -certs /var/lib/cert-proxy/certs $OPTS
++ExecStart=/usr/bin/cert-proxy-client -verbose -sslfile /etc/cert-proxy/client-ssl.pem -certs /var/lib/cert-proxy/certs $OPTS
