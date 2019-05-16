@@ -1,0 +1,2 @@
+# Options for cert-proxy-client
+#OPTS="-connect https://localhost:4433"
