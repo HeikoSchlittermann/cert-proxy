@@ -15,5 +15,8 @@
 	GET /v1/bundle/example.com?format=PKCS12 # get the all-in-one file
 
 (2019-05-16) done
-- if the server doesn't find the client auth file: do not respond with
+- Server: if the server doesn't find the client auth file: do not respond with
   internal server error but with unauthorized
+
+(2019-05-16) done
+- Client: Privkey should not be world readable
