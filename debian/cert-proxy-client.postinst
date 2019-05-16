@@ -28,11 +28,10 @@ case "$1" in
 
 	_systemctl daemon-reload	# we installed or updated the unit file
 
-	if test "$2" = ""
+	if test "$2" = "" && test -f /etc/cert-proxy/client-ssl.pem
 	then
 	    _systemctl preset cert-proxy-client.timer
-	    test -f /etc/cert-proxy/client-ssl.pem \
-	    && _systemctl is-enabled \
+	    systemctl is-enabled cert-proxy-client.timer \
 	    && _systemctl restart cert-proxy-client.timer
 	fi
 
