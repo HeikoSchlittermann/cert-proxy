@@ -5,7 +5,7 @@
  export GOPATH = $(shell pwd)/../../go
  
 -v = $(shell git describe --always --dirty=+)
-+v = 1.4
++v = 1.5
  
  all: build
  
