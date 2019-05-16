@@ -1,3 +1,28 @@
+cert-proxy (1.5-1) stable unstable; urgency=medium
+
+  * client: fix shorthelp about hook
+  * Report missing client as "NotAuthorized" instead of "InternalServerError"
+  * Systemd: add example default for cert-proxy-client
+  * Add systemd defaults for cert-proxy-server
+  * Create private files w/o read access for others
+  * Name the ssl files server-ssl.pem and client-ssl.pem
+  * Add systemd units (timer, service) for the client side
+  * Install hook file
+  * Rename systemd patch for server
+  * Add systemd unit file patch for client
+  * Refresh patches
+  * Update changelog for 1.4-0 release
+  * Fix *.install
+  * Add more systemd invocation to postinst/prerm
+  * Update changelog for 1.4-1 release
+  * Add statoverride for /var/lib/cert-proxy/certs
+  * Fix hook file example
+  * Fix install of cert-proxy-timer
+  * Hook script example should not be executable
+  * Refresh the patches
+
+ -- Heiko Schlittermann (HS12-RIPE) <hs@schlittermann.de>  Fri, 17 May 2019 00:07:31 +0200
+
 cert-proxy (1.4-1) stable unstable; urgency=medium
 
   * Fix *.install
