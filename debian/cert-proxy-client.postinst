@@ -36,6 +36,9 @@ case "$1" in
 	    && _systemctl restart cert-proxy-client.timer
 	fi
 
+	dpkg-statoverride --list /var/lib/cert-proxy/certs \
+	|| dpkg-statoverride --update --add root ssl-cert 0750 /var/lib/cert-proxy/certs
+
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
