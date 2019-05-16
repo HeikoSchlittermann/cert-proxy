@@ -1,3 +1,4 @@
 #!/usr/bin/dh-exec
-debian/tmp/usr/bin/cert-proxy-server => /usr/sbin/cert-proxy-server
+/usr/bin/cert-proxy-server /usr/sbin/
 systemd/cert-proxy-server.service => /usr/lib/systemd/system/cert-proxy-server.service
+systemd/cert-proxy-server.default => /etc/default/cert-proxy-server

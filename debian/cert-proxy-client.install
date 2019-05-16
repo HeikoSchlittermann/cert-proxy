@@ -3,3 +3,4 @@
 debian/hook.example => /etc/cert-proxy/hook
 systemd/cert-proxy-client.timer /usr/lib/systemd/system/
 systemd/cert-proxy-client.service /usr/lib/systemd/system/
+systemd/cert-proxy-client.default => /etc/default/cert-proxy-client
