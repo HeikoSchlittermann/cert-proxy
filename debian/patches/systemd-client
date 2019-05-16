@@ -5,4 +5,4 @@
  Type=oneshot
  EnvironmentFile=-/etc/default/cert-proxy-client
 -ExecStart=/usr/local/bin/cert-proxy-client -verbose -sslfile /etc/cert-proxy/client-ssl.pem -certs /var/lib/cert-proxy/certs $OPTS
-+ExecStart=/usr/bin/cert-proxy-client -verbose -sslfile /etc/cert-proxy/client-ssl.pem -certs /var/lib/cert-proxy/certs $OPTS
++ExecStart=/usr/bin/cert-proxy-client -verbose -sslfile /etc/cert-proxy/client-ssl.pem -certbase /var/lib/cert-proxy/certs $OPTS
