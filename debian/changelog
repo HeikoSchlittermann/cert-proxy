@@ -1,3 +1,9 @@
+cert-proxy (1.5-2) stable unstable; urgency=medium
+
+  * Update reported version to 1.5
+
+ -- Heiko Schlittermann (HS12-RIPE) <hs@schlittermann.de>  Fri, 17 May 2019 00:14:50 +0200
+
 cert-proxy (1.5-1) stable unstable; urgency=medium
 
   * client: fix shorthelp about hook
