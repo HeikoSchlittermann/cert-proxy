@@ -3,7 +3,8 @@ Description=cert-proxy-server service
 
 [Service]
 ProtectSystem=strict
-ExecStart=/usr/local/bin/cert-proxy-server -sslfile /etc/cert-proxy/server-ssl.pem -certbase /var/lib/dehydrated/certs -ccd /etc/cert-proxy/clients -serve :443 -verbose
+EnvironmentFile=-/etc/default/cert-proxy-server
+ExecStart=/usr/local/bin/cert-proxy-server -verbose -sslfile /etc/cert-proxy/server-ssl.pem -certbase /var/lib/dehydrated/certs -ccd /etc/cert-proxy/clients $OPTS
 
 [Install]
 WantedBy=network.target
