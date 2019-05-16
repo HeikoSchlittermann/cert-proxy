@@ -1,3 +1,9 @@
+cert-proxy (1.5-3) stable unstable; urgency=medium
+
+  * Install default files /etc/default/*
+
+ -- Heiko Schlittermann (HS12-RIPE) <hs@schlittermann.de>  Fri, 17 May 2019 00:27:59 +0200
+
 cert-proxy (1.5-2) stable unstable; urgency=medium
 
   * Update reported version to 1.5
