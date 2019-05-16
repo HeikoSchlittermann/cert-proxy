@@ -289,7 +289,7 @@ func writeFile(name string, data []byte, private bool) error {
 	} else {
 		mode = 0666
 	}
-	file, err := os.OpenFile(name, os.O_RDWR, mode)
+	file, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE, mode)
 	if err != nil {
 		return err
 	}
