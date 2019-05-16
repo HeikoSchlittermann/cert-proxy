@@ -3,4 +3,5 @@ Description=cert-proxy-client
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/bin/cert-proxy-client -verbose -sslfile /etc/cert-proxy/client-ssl.pem -certs /var/lib/cert-proxy/certs
+EnvironmentFile=-/etc/default/cert-proxy-client
+ExecStart=/usr/local/bin/cert-proxy-client -verbose -sslfile /etc/cert-proxy/client-ssl.pem -certs /var/lib/cert-proxy/certs $OPTS

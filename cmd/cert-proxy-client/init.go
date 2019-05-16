@@ -26,7 +26,7 @@ The cert-proxy-client exits with 0 on success, and with any other value if there
 is a problem.
 
 ¹) The hook script gets called as
-       <script> deploy_cert <DOMAIN> <KEYFILE> <CERTFILE> <CHAINFILE> <TIMESTAMP>
+       <script> deploy_cert <DOMAIN> <KEYFILE> <CERTFILE> <FULLCHAIN> <CHAINFILE> <TIMESTAMP>
     or
        <script> deploy_cert <DOMAIN> <BUNDLEFILE> <TIMESTAMP>
     Additionally the corresponding environment variables are set (possibly overriding

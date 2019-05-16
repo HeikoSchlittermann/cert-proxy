@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -35,7 +36,11 @@ func authz(ctx context, w http.ResponseWriter, req *http.Request) error {
 
 	allowedDomains, err := cnList(ctx[REMOTE])
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		status := http.StatusInternalServerError
+		if os.IsNotExist(err) {
+			status = http.StatusUnauthorized
+		}
+		http.Error(w, err.Error(), status)
 		return err
 	}
 
