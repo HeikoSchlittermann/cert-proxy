@@ -107,6 +107,6 @@ Example:
 		log.Fatalf("invalid argument in -connect \"%s\"", opt.Connect)
 	}
 	for opt.Connect[len(opt.Connect)-1] == '/' {
-		opt.Connect = opt.Connect[0:len(opt.Connect)-1]
+		opt.Connect = opt.Connect[0 : len(opt.Connect)-1]
 	}
 }

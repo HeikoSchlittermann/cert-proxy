@@ -14,7 +14,20 @@ import (
 
 func serve(ctx context, w http.ResponseWriter, req *http.Request) error {
 
-	Verbose("Serving url=%s ims=%s cn=%s\n", req.URL, req.Header.Get(`if-modified-since`), ctx[REMOTE])
+	Verbose("Serving url=%v%s%s\n",
+		req.URL,
+		func() string {
+			if s := req.Header.Get(`if-modified-since`); s != "" {
+				return " ims=" + s
+			}
+			return ""
+		}(),
+		func() string {
+			if s := ctx[REMOTE]; s != "" {
+				return " cn=" + s
+			}
+			return ""
+		}())
 	versionCheck(w, req)
 
 	var ext string
@@ -72,9 +85,9 @@ func serve(ctx context, w http.ResponseWriter, req *http.Request) error {
 				return err
 			}
 		} else {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return err
-			}
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return err
+		}
 	case `cert`, `chain`, `fullchain`, `privkey`:
 		fn := filepath.Join(domain, role+ext)
 		if file, err := http.Dir(opt.Certbase).Open(fn); err != nil {

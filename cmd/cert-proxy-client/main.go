@@ -95,7 +95,7 @@ func main() {
 
 func fetchCNs() ([]string, error) {
 	Verbose("Getting list of domains")
-	req, err := http.NewRequest(`GET`, opt.Connect + path.Join(`/`+API_VERSION, `list`), nil)
+	req, err := http.NewRequest(`GET`, opt.Connect+path.Join(`/`+API_VERSION, `list`), nil)
 	req.Header.Add(`x-version`, program.Version)
 	if err != nil {
 		return nil, err
