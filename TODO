@@ -20,3 +20,10 @@
 
 (2019-05-16) done
 - Client: Privkey should not be world readable
+
+(2019-05-17)
+done IMS handling is broken if the connect url ends in a slash!
+done Suppress ims= cn= if empty
+- if hook script is newer than cert, execute it, even if the cert isn't
+  refreshed
+- many certs, many hooks
