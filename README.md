@@ -29,10 +29,11 @@ client.
 
 ## Installation
 
-Currently there is no packaged version of the cert-proxy-server or
-cert-proxy-client. You need to build it from the sources. You can build
-the binaries for both Linux and Windows using the same build environment
-by using cross compilation. It is easy. Read on.
+Currently there a packaged version for Debian systems only (see the
+other branches of this repo).  For other platforms you need to build it
+from the sources. You can build the binaries for both Linux and Windows
+using the same build environment by using cross compilation. It is easy.
+Read on.
 
 ### Prepare the build environment on a Linux system
 
