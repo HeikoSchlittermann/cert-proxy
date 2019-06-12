@@ -1,10 +1,37 @@
 #!/bin/bash
 set -e
+export LC_ALL=C
 umask 077
-BINDIR=$(dirname $0)
-: ${BINDIR:=.}
+
+this=$(dirname $0)
+BINDIR=${this:=.}
 LIBDIR=$(readlink -f "$BINDIR"/../lib)
 VARSFILE="$LIBDIR"/vars.sh
+
+if (( $# != 1 ))    # need the name
+then
+    $0 -h >&2
+    exit 1
+fi
+
+tmp=$(getopt -n $0 -o h -l help -- "$@")
+eval set -- "$tmp"
+while true
+do
+    o=$1; shift
+    case "$o" in
+    -h|--help)	cat <<-_HELP
+	$0 CN
+	    This creates a file "NAME-ssl.pem" containing the full bundle
+	    (CA, Cert, Key) for the client named NAME
+
+            Example: $0 cert-proxy
+                 or: $0 host2.domain.com
+_HELP
+        exit 0 ;;
+    --) break ;;
+    esac
+done
 
 test -f "$VARSFILE" || {
     echo "$0: Can't source $VARSFILE" >&2
@@ -27,17 +54,6 @@ test -d "$CA_DIR" || {
     echo "$0: CA $CA_DIR is missing. Please run lib/mkca first" >&2
     exit 1
 }
-
-
-if (( $# != 1 )); then
-    cat >&2 <<_
-Usage: $0 CN
-       CN: common name of the certificate (auth-info)
-       Example: $0 cert-proxy
-            or: $0 host2.domain.com
-_
-    exit 1
-fi
 
 _gitclean
 
