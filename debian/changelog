@@ -1,5 +1,6 @@
 cert-proxy (1.8-1) stable unstable; urgency=medium
 
+  * Bump version to 1.8
   * Add -revoke to CA tool
   * Add dependency on git for the server
   * More hints in *default
