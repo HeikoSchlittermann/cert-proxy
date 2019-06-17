@@ -36,7 +36,12 @@ case "$1" in
 	fi
 
 	dpkg-statoverride --list /var/lib/cert-proxy/certs \
-	|| dpkg-statoverride --update --add root ssl-cert 0750 /var/lib/cert-proxy/certs
+	|| {
+	    getent group ssl-cert >/dev/null \
+	    || addgroup --quiet --system --force-badname ssl-cert
+
+	    dpkg-statoverride --update --add root ssl-cert 0750 /var/lib/cert-proxy/certs
+	}
 
     ;;
 
