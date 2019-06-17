@@ -1,2 +1,5 @@
 # Options for cert-proxy-server
-#OPTS="-serve :4433"
+# Example:
+# OPTS="-serve :443"
+#
+# For defaults see the output of `cert-proxy-server -h`

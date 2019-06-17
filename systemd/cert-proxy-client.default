@@ -1,2 +1,5 @@
 # Options for cert-proxy-client
-#OPTS="-connect https://localhost:4433"
+# Example:
+# OPTS="-connect https://example.com:4433 -hook /etc/cert-proxy/hook"
+# Note: http:// implies port 443 of not given otherwise
+# For defaults, see the output of `cert-proxy-client -h`
