@@ -1,10 +1,8 @@
-cert-proxy (1.8-3~1.gbp694d35) UNRELEASED; urgency=medium
+cert-proxy (1.8-3) stable unstable; urgency=medium
 
-  ** SNAPSHOT build @694d3534a3f8c80c40779b02f00b330df9d2707d **
+  * Add README.md to doc files to be installed
 
-  * UNRELEASED
-
- -- Heiko Schlittermann (HS12-RIPE) <hs@schlittermann.de>  Mon, 17 Jun 2019 18:01:17 +0200
+ -- Heiko Schlittermann (HS12-RIPE) <hs@schlittermann.de>  Mon, 17 Jun 2019 18:18:30 +0200
 
 cert-proxy (1.8-2) stable unstable; urgency=medium
 
