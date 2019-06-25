@@ -1,0 +1,142 @@
+=head1 NAME
+
+ cert-proxy-client - client side for the cert-proxy
+
+=head1 SYNOPSIS
+
+ cert-proxy-client [options]
+
+=head1 DESCRIPTION
+
+The B<cert-proxy-client> is the client side of the cert-proxy suite.
+Normally it is started by systemd timer-units.
+
+=head1 OPTIONS
+
+=over
+
+=item B<-auto>
+
+Auto mode (fetch all CNs the server provides us) (default: true)
+
+=item B<-certbase> I<directory>
+
+Base dir for downloaded certs (default: "certs")
+
+=item B<-cnfile> I<file name>
+
+CN list file (use - for stdin), useful if not using auto mode (see
+above)
+
+=item B<-connect> I<schema:server>[I<:port>]
+
+Address of cert proxy server (default: "https://localhost:4433")
+Note, the default https port is 443.
+
+=item B<-force>
+
+Force download, even if not modified (default off)
+
+=item B<-format> I<PEM|PKCS12>
+
+Format of the requested certificate(s) (PEM|PKCS12) (default: PEM on
+*Nix, but PKCS12 in Win*)
+
+=item B<-hook> I<script path>
+
+Hook script to be executed after fetching the certs.
+
+=item B<-jobs> I<number of parallel running jobs>
+
+Maximum number of parallel running jobs (default: number of CPUs)
+
+=item B<-passout> I<schema>:I<password>
+
+Passwort to protect the PKCS12 (default: nothing)
+
+=item B<-servername> I<cn of the server>
+
+Name (CN) of the cert proxy certificate (default: "cert-proxy")
+
+=item B<-sslfile> I<file with auth info>
+
+SSL auth file (crt+key+ca) PEM (default: "client-ssl.pem")
+
+=item B<-stderr> I<output-channel>
+
+Redirect stderr (stderr|stdout) (default: stderr). This option helps on
+windows OS, when running under control of a PowerShell.
+
+=item B<-symlink> I<true|false>
+
+Use symlinks for current files (default: true on *Nix, false on Win*)
+
+=item B<-verbose>
+
+Verbose output (default: off)
+
+=item B<-version>
+
+Print the version and exit.
+
+=back
+
+=head1 EXAMPLE
+
+	cert-proxy-client -connect https://cert-proxy/ \
+					  -servernae certs.example.com \
+					  -sslfile client-ssl.pem \
+					  -verbose
+
+=head1 SYSTEMD
+
+The systemd service unit runs the B<cert-proxy-client> with the
+following command line
+
+    /usr/local/bin/cert-proxy-client \
+	-verbose \
+	-sslfile /etc/cert-proxy/client-ssl.pem \
+	-certs /var/lib/cert-proxy/certs \
+	$OPTS
+
+Where I<$OPTS> is taken from F</etc/default/cert-proxy-client>.
+
+You should start the service unit via the provied
+F<cert-proxy-client.timer> unit.
+
+=head1 EXIT STATUS
+
+The cert-proxy-client exits with 0 on success, and with any other value if there
+is a problem.
+
+=head1 The Hook Script
+
+The hook script gets called as
+
+       <script> deploy_cert <DOMAIN> <KEYFILE> <CERTFILE> <FULLCHAIN> <CHAINFILE> <TIMESTAMP>
+or
+
+       <script> deploy_cert <DOMAIN> <BUNDLEFILE> <TIMESTAMP>
+
+Additionally the corresponding environment variables are set (possibly overriding
+existing environment variables with the same name.
+
+Note for Windows Powershell: You may wish to "set-executionpolicy remotesigned"
+
+=head1 Password schema
+
+The password for protecting the P12 file may be given in one of the following notations:
+
+=over
+
+=item pass:<password>
+
+=item file:<file containing the password>
+
+=item env:<environment variable containing the password>
+
+=back
+
+
+=cut
+# vim:et ts=4 ft=pod:
