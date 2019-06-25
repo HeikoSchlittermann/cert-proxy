@@ -168,7 +168,7 @@ func (req *Req) Execute(mtx Mutex) error {
 		case http.StatusOK:
 		case http.StatusNotModified:
 			Verbose(resp.Status)
-			return nil
+			continue
 		default:
 			return fmt.Errorf("%v: %v",
 				item.remote.URL, resp.Status)
@@ -186,6 +186,10 @@ func (req *Req) Execute(mtx Mutex) error {
 	var infixed = map[string]string{}
 
 	for _, item := range req.items {
+
+		if len(item.data) == 0 {
+			continue
+		}
 		Verbose("Write %s", item.local)
 
 		infixed[item.local] = func(s string) string {
