@@ -1,3 +1,13 @@
+cert-proxy (1.9-1) stable unstable; urgency=medium
+
+  * Add manual pages for cert-proxy-{client,server}
+  * Bugfix: client use correct timestamp for local files
+  * Mark version mismatch as a warning only
+  * Fix handling of unmodified items
+  * Bump version to 1.9
+
+ -- Heiko Schlittermann (HS12-RIPE) <hs@schlittermann.de>  Tue, 25 Jun 2019 22:41:54 +0200
+
 cert-proxy (1.8-3) stable unstable; urgency=medium
 
   * Add README.md to doc files to be installed
