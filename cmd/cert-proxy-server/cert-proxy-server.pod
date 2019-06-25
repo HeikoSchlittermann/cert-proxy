@@ -1,0 +1,61 @@
+=head1 NAME
+
+ cert-proxy-server - server side for the cert-proxy
+
+=head1 SYNOPSIS
+
+ cert-proxy-server [options]
+
+=head1 DESCRIPTION
+
+The B<cert-proxy-server> is the server side of the cert-proxy suite.
+Normally it is started by systemd-units.
+
+=head1 OPTIONS
+
+=over
+
+=item B<-ccd> I<client config dir>
+
+The directory containing the client specific configurations. (default: F<clients/>)
+
+=item B<-certbase> I<base dir for certficates>
+
+The directory name where B<cert-proxy-server> gets the certificates to
+be expored. (default: F<certs/>)
+
+=item B<-serve> [I<ip>]:I<port>
+
+The local listener socket. (default: F<:4433>)
+
+=item B<-sslfile> I<file with auth info>
+
+The file containing the server auth info (crt, key, ca). The CN
+of the crt should be "cert-proxy", as the clients expect this per
+default. (default: F<server-ssl.pem>)
+
+=item B<-verbose>
+
+Switch on verbose operation (goes to STDOUT). (default: off)
+
+=item B<-version>
+
+Print the version and exit.
+
+=back
+
+=head2 Systemd
+
+The supplied systemd unit set the following options
+
+    -verbose
+    -sslfile /etc/cert-proxy/server-ssl.pem
+    -certbase /var/lib/dehydrated/certs
+    -ccd /etc/cert-proxy/clients
+    $OPTS
+
+Where I<$OPTS> is taken from F</etc/default/cert-proxy-server>.
+
+
+=cut
+# vim:et ts=4 ft=pod:
