@@ -152,7 +152,7 @@ func (req *Req) Execute(mtx Mutex) error {
 		// header
 		if !Force {
 			if fi, err := os.Stat(item.local); err == nil {
-				item.remote.Header.Set(`if-modified-since`, fi.ModTime().Format(http.TimeFormat))
+				item.remote.Header.Set(`if-modified-since`, fi.ModTime().UTC().Format(http.TimeFormat))
 			}
 		}
 
