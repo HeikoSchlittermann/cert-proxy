@@ -1,12 +1,8 @@
-cert-proxy (1.9-2~4.gbp4d1a0b) UNRELEASED; urgency=medium
-
-  ** SNAPSHOT build @4d1a0bede3519e31f0893720289ca2900a4e8375 **
+cert-proxy (1.9-2) stable unstable; urgency=medium
 
   * make manualpages
-  * make manualpages
-  * make manualpages
 
- -- Heiko Schlittermann (HS12-RIPE) <hs@schlittermann.de>  Fri, 28 Jun 2019 17:41:02 +0200
+ -- Heiko Schlittermann (HS12-RIPE) <hs@schlittermann.de>  Fri, 28 Jun 2019 17:43:23 +0200
 
 cert-proxy (1.9-1) stable unstable; urgency=medium
 
