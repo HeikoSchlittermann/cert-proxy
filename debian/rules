@@ -22,6 +22,11 @@ override_dh_auto_install:
 	dh_auto_install
 	DESTDIR=${PWD}/debian/cert-proxy-server make install-ca
 
+override_dh_auto_build:
+	dh_auto_build
+	make -C cmd/cert-proxy-client cert-proxy-client.8
+	make -C cmd/cert-proxy-server cert-proxy-server.8
+
 # dh_make generated override targets
 # This is example for Cmake (See https://bugs.debian.org/641051 )
 #override_dh_auto_configure:
