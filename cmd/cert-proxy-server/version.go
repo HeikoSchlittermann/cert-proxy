@@ -2,7 +2,6 @@ package main
 
 import (
 	"cert-proxy/internal/program"
-	"log"
 	"net/http"
 )
 
