@@ -73,7 +73,7 @@ var TEMPLATES = map[role]templates{
 	},
 	RoleBUNDLE: {
 		remote: tt(`{{.Proxy}}/v1/bundle/{{.Domain}}?format=PKCS12{{with.Pass}}&pass={{.}}{{end}}`),
-		local:  tt(`{{.Domain}}/bundle.p12`),
+		local:  tt(`{{.Domain}}/bundle.pfx`),		// Windows does not like .p12 here
 		env:    tt(`BUNDLEFILE={{.Local}}`),
 	},
 }
