@@ -1,3 +1,10 @@
+cert-proxy (1.10-1) oldstable stable; urgency=low
+
+  * Add testing for secret/
+  * Disable the version check warning
+
+ -- Heiko Schlittermann (HS12-RIPE) <hs@schlittermann.de>  Tue, 10 Sep 2019 10:00:30 +0200
+
 cert-proxy (1.9-2) stable unstable; urgency=medium
 
   * make manualpages
