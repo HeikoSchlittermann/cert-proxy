@@ -1,3 +1,9 @@
+cert-proxy (1.11-1) oldoldstable oldstable stable; urgency=medium
+
+  * Use cert.pem as the name for the downloaded cert
+
+ -- Heiko Schlittermann (HS12-RIPE) <hs@schlittermann.de>  Fri, 04 Oct 2019 14:02:46 +0200
+
 cert-proxy (1.10.2-2) oldoldstable oldstable stable; urgency=medium
 
   * Build for oldoldstable too
