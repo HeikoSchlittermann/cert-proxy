@@ -53,7 +53,7 @@ type templates struct {
 var TEMPLATES = map[role]templates{
 	RoleCRT: {
 		remote: tt(`{{.Proxy}}/v1/cert/{{.Domain}}`),
-		local:  tt(`{{.Domain}}/crt.pem`),
+		local:  tt(`{{.Domain}}/cert.pem`),
 		env:    tt(`CERTFILE={{.Local}}`),
 	},
 	RoleKEY: {
