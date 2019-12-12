@@ -55,6 +55,7 @@ func main() {
 		// If we want to be more polite, we should disable the long
 		// lived connections:
 		//DisableKeepAlives: true,
+		Proxy: http.ProxyFromEnvironment,
 		TLSClientConfig: func() *tls.Config {
 			cfg, err := TLSClientConfig(opt.SSLFile, &tls.Config{
 				ServerName: opt.ServerCN,
