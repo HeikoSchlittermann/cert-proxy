@@ -1,11 +1,10 @@
-cert-proxy (1.11-2~1.gbp56aa7c) UNRELEASED; urgency=medium
-
-  ** SNAPSHOT build @56aa7c1effdced0bf3607091a03427677d46205d **
+cert-proxy (1.12-2) squeeze wheezy jessie stretch buster; urgency=medium
 
   * Client: Honour proxy environment
   * Upgrade to buster as default distro
+  * Bump the version to 1.12
 
- -- Heiko Schlittermann (HS12-RIPE) <hs@schlittermann.de>  Thu, 12 Dec 2019 17:26:31 +0100
+ -- Heiko Schlittermann (HS12-RIPE) <hs@schlittermann.de>  Thu, 12 Dec 2019 17:35:46 +0100
 
 cert-proxy (1.11-1) oldoldstable oldstable stable; urgency=medium
 
