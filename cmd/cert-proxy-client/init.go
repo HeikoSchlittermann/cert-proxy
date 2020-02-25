@@ -22,17 +22,26 @@ func init() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] [<CN>]...\n", os.Args[0])
 		flag.PrintDefaults()
 		fmt.Fprint(os.Stderr, `
-The cert-proxy-client exits with 0 on success, and with any other value if there
+The cert-proxy-client exits with 0 on success, and with an non-zero value if there
 is a problem.
 
-¹) The hook script gets called as
+¹) The hook script gets called *for each* certificate as soon as it is
+   done (whether fetched or unmodified):
+
        <script> deploy_cert <DOMAIN> <KEYFILE> <CERTFILE> <FULLCHAIN> <CHAINFILE> <TIMESTAMP>
     or
        <script> deploy_cert <DOMAIN> <BUNDLEFILE> <TIMESTAMP>
-    Additionally the corresponding environment variables are set (possibly overriding
-    existing environment variables with the same name.
+
+	Additionally the corresponding environment variables are set
+	(possibly overriding existing environment variables with the same
+	name.
 
 	Note for Windows Powershell: You may wish to "set-executionpolicy remotesigned"
+
+	Note on concurrency: The hooks run sequenctially: at no time the
+	hook script will run in more than one instance. But, during the hook
+	script is running, other threads of the cert-proxy-client may
+	replace certificates your hook script relies indirectly on.
 
 ²) The password for protecting the P12 file may be given in one of the following notations:
     - pass:<password>
