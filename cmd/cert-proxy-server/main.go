@@ -1,8 +1,8 @@
 package main
 
 import (
-	"cert-proxy/internal/program"
-	. "cert-proxy/internal/shared"
+	"git.schlittermann.de/user/heiko/cert-proxy.git/internal/program"
+	. "git.schlittermann.de/user/heiko/cert-proxy.git/internal/shared"
 	"crypto/tls"
 	"log"
 	"net/http"

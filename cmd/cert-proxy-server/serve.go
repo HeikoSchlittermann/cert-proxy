@@ -1,7 +1,7 @@
 package main
 
 import (
-	. "cert-proxy/internal/shared"
+	. "git.schlittermann.de/user/heiko/cert-proxy.git/internal/shared"
 	"errors"
 	"fmt"
 	"io"
