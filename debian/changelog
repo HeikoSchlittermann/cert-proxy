@@ -8,8 +8,12 @@ cert-proxy (1.13-1) UNRELEASED; urgency=medium
   * Add GOCACHE env
   * Update patch
   * Fix typo in rules file
+  * Clarify hook concurrency
+  * Use go.mod
+  * Do not use "internal/" anymore, go.mod obsoletes this
+  * Update changelog for 1.13-1 release
 
- -- Heiko Schlittermann (HS12-RIPE) <hs@schlittermann.de>  Fri, 13 Nov 2020 15:16:55 +0100
+ -- Heiko Schlittermann (HS12-RIPE) <hs@schlittermann.de>  Fri, 13 Nov 2020 15:25:17 +0100
 
 cert-proxy (1.12-2) squeeze wheezy jessie stretch buster; urgency=medium
 
