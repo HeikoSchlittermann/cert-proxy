@@ -1,7 +1,7 @@
 package main
 
 import (
-	"cert-proxy/internal/program"
+	"git.schlittermann.de/user/heiko/cert-proxy.git/program"
 	"net/http"
 )
 

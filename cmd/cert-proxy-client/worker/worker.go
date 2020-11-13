@@ -1,9 +1,9 @@
 package worker
 
 import (
-	"cert-proxy/cmd/cert-proxy-client/cert"
-	"cert-proxy/internal/list"
-	. "cert-proxy/internal/shared"
+	"git.schlittermann.de/user/heiko/cert-proxy.git/cmd/cert-proxy-client/cert"
+	"git.schlittermann.de/user/heiko/cert-proxy.git/list"
+	. "git.schlittermann.de/user/heiko/cert-proxy.git/shared"
 	"fmt"
 	"log"
 	"sync"

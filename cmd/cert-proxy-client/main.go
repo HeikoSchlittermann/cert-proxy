@@ -2,11 +2,11 @@ package main
 
 import (
 	"bufio"
-	"cert-proxy/cmd/cert-proxy-client/cert"
-	"cert-proxy/cmd/cert-proxy-client/worker"
-	"cert-proxy/internal/list"
-	"cert-proxy/internal/program"
-	. "cert-proxy/internal/shared"
+	"git.schlittermann.de/user/heiko/cert-proxy.git/cmd/cert-proxy-client/cert"
+	"git.schlittermann.de/user/heiko/cert-proxy.git/cmd/cert-proxy-client/worker"
+	"git.schlittermann.de/user/heiko/cert-proxy.git/list"
+	"git.schlittermann.de/user/heiko/cert-proxy.git/program"
+	. "git.schlittermann.de/user/heiko/cert-proxy.git/shared"
 	"crypto/tls"
 	"errors"
 	"log"
