@@ -1,3 +1,16 @@
+cert-proxy (1.13-1) UNRELEASED; urgency=medium
+
+  * Clarify hook concurrency
+  * Use go.mod
+  * Do not use "internal/" anymore, go.mod obsoletes this
+  * Update version in patches file
+  * Do not use go auto build provided by debian
+  * Add GOCACHE env
+  * Update patch
+  * Fix typo in rules file
+
+ -- Heiko Schlittermann (HS12-RIPE) <hs@schlittermann.de>  Fri, 13 Nov 2020 15:16:55 +0100
+
 cert-proxy (1.12-2) squeeze wheezy jessie stretch buster; urgency=medium
 
   * Client: Honour proxy environment

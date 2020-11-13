@@ -1,0 +1,11 @@
+--- a/cmd/.makefile.common
++++ b/cmd/.makefile.common
+@@ -6,6 +6,8 @@
+ ifeq (${GOOS},windows)
+ PACKAGE := ${PACKAGE}.exe
+ bindir := ${bindir}/windows_$(shell go env GOARCH)
++else
++export GOCACHE=/tmp
+ endif
+ 
+ v = $(shell git describe --always --dirty=+)
