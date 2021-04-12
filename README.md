@@ -41,7 +41,7 @@ Read on.
 ### Prepare the build environment on a Linux system
 
 * You need to install a Go [build environment](https://golang.org).
-  I used Go 1.7.4.
+  I used Go 1.14.
 
 
 ### Get the source, build, and install the binaries
