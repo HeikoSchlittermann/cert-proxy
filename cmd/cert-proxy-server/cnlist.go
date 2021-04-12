@@ -1,7 +1,7 @@
 package main
 
 import (
-	"gitea.schlittermann.de/heiko/cert-proxy.git/list"
+	"go.schlittermann.de/heiko/cert-proxy.git/list"
 	"net/http"
 )
 

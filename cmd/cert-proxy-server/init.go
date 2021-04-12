@@ -3,8 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	"gitea.schlittermann.de/heiko/cert-proxy.git/program"
-	. "gitea.schlittermann.de/heiko/cert-proxy.git/shared"
+	"go.schlittermann.de/heiko/cert-proxy.git/program"
+	. "go.schlittermann.de/heiko/cert-proxy.git/shared"
 	"log"
 	"os"
 )

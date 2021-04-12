@@ -2,9 +2,9 @@ package worker
 
 import (
 	"fmt"
-	"gitea.schlittermann.de/heiko/cert-proxy.git/cmd/cert-proxy-client/cert"
-	"gitea.schlittermann.de/heiko/cert-proxy.git/list"
-	. "gitea.schlittermann.de/heiko/cert-proxy.git/shared"
+	"go.schlittermann.de/heiko/cert-proxy.git/cmd/cert-proxy-client/cert"
+	"go.schlittermann.de/heiko/cert-proxy.git/list"
+	. "go.schlittermann.de/heiko/cert-proxy.git/shared"
 	"log"
 	"sync"
 )

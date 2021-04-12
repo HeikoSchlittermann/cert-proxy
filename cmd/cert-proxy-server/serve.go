@@ -3,7 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
-	. "gitea.schlittermann.de/heiko/cert-proxy.git/shared"
+	. "go.schlittermann.de/heiko/cert-proxy.git/shared"
 	"io"
 	"net/http"
 	"os"
