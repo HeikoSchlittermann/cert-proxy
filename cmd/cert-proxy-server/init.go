@@ -1,10 +1,10 @@
 package main
 
 import (
-	"git.schlittermann.de/user/heiko/cert-proxy.git/program"
-	. "git.schlittermann.de/user/heiko/cert-proxy.git/shared"
 	"flag"
 	"fmt"
+	"gitea.schlittermann.de/heiko/cert-proxy.git/program"
+	. "gitea.schlittermann.de/heiko/cert-proxy.git/shared"
 	"log"
 	"os"
 )

@@ -2,9 +2,9 @@ package cert
 
 import (
 	"bytes"
-	"git.schlittermann.de/user/heiko/cert-proxy.git/program"
-	. "git.schlittermann.de/user/heiko/cert-proxy.git/shared"
 	"fmt"
+	"gitea.schlittermann.de/heiko/cert-proxy.git/program"
+	. "gitea.schlittermann.de/heiko/cert-proxy.git/shared"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -73,7 +73,7 @@ var TEMPLATES = map[role]templates{
 	},
 	RoleBUNDLE: {
 		remote: tt(`{{.Proxy}}/v1/bundle/{{.Domain}}?format=PKCS12{{with.Pass}}&pass={{.}}{{end}}`),
-		local:  tt(`{{.Domain}}/bundle.pfx`),		// Windows does not like .p12 here
+		local:  tt(`{{.Domain}}/bundle.pfx`), // Windows does not like .p12 here
 		env:    tt(`BUNDLEFILE={{.Local}}`),
 	},
 }

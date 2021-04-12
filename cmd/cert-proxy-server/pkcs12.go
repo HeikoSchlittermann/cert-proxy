@@ -2,7 +2,7 @@ package main
 
 import (
 	"bytes"
-	. "git.schlittermann.de/user/heiko/cert-proxy.git/shared"
+	. "gitea.schlittermann.de/heiko/cert-proxy.git/shared"
 	"log"
 	"os"
 	"os/exec"

@@ -52,7 +52,7 @@ The source is published in a GIT
 * Clone the Git repository:
 
   ```shell
-  git clone http://git.schlittermann.de/user/heiko/cert-proxy
+  git clone http://gitea.schlittermann.de/heiko/cert-proxy
   ```
 
 * To build and install the binaries, change your working
