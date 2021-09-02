@@ -66,7 +66,6 @@ test -f "$CA_DIR"/cacsr.pem \
 #
 _
     openssl req -new -out "$CA_DIR/cacsr.pem" \
-    -days 3650 \
     -key "$CA_DIR/private/cakey.pem" \
     -subj "/C=$CA_DEFAULT_C/ST=$CA_DEFAULT_ST/L=$CA_DEFAULT_L/O=$CA_DEFAULT_O/OU=$CA_DEFAULT_OU/CN=CA"
     echo "# DONE: CA certificate signing request." >&2
