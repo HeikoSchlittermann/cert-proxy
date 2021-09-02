@@ -34,6 +34,18 @@ install -d -m 700 "$CA_DIR/private"
 
 touch -a "$CA_DIR/index.txt"
 
+test -f "$HOME/.rnd" \
+|| {
+    cat >&2 <<_
+#
+# Next: create a ~/.rnd file
+#
+_
+    openssl rand -writerand "$HOME/.rnd"
+
+    echo "# DONE: $HOME/.rnd created." >&2
+}
+
 test -f "$CA_DIR"/private/cakey.pem \
 || {
     cat >&2 <<_
