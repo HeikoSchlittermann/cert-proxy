@@ -1,12 +1,12 @@
 package main
 
 import (
-	"git.schlittermann.de/user/heiko/cert-proxy.git/cmd/cert-proxy-client/cert"
-	"git.schlittermann.de/user/heiko/cert-proxy.git/cmd/cert-proxy-client/secret"
-	"git.schlittermann.de/user/heiko/cert-proxy.git/program"
-	. "git.schlittermann.de/user/heiko/cert-proxy.git/shared"
 	"flag"
 	"fmt"
+	"go.schlittermann.de/heiko/cert-proxy.git/cmd/cert-proxy-client/cert"
+	"go.schlittermann.de/heiko/cert-proxy.git/cmd/cert-proxy-client/secret"
+	"go.schlittermann.de/heiko/cert-proxy.git/program"
+	. "go.schlittermann.de/heiko/cert-proxy.git/shared"
 	"log"
 	"os"
 	"runtime"

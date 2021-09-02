@@ -1,10 +1,10 @@
 package worker
 
 import (
-	"git.schlittermann.de/user/heiko/cert-proxy.git/cmd/cert-proxy-client/cert"
-	"git.schlittermann.de/user/heiko/cert-proxy.git/list"
-	. "git.schlittermann.de/user/heiko/cert-proxy.git/shared"
 	"fmt"
+	"go.schlittermann.de/heiko/cert-proxy.git/cmd/cert-proxy-client/cert"
+	"go.schlittermann.de/heiko/cert-proxy.git/list"
+	. "go.schlittermann.de/heiko/cert-proxy.git/shared"
 	"log"
 	"sync"
 )
@@ -92,7 +92,7 @@ func (pool Pool) Wait() error {
 
 	pool.wg.Wait()     // for for all workers to complete
 	close(pool.errors) // this terminates the above goroutine, but we don't care to wait for it
-	errors := <- done
+	errors := <-done
 
 	if errors != 0 {
 		return fmt.Errorf("Got %d error%s", errors, plural(errors))

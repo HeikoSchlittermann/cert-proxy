@@ -1,9 +1,9 @@
 package main
 
 import (
-	"git.schlittermann.de/user/heiko/cert-proxy.git/program"
-	. "git.schlittermann.de/user/heiko/cert-proxy.git/shared"
 	"crypto/tls"
+	"go.schlittermann.de/heiko/cert-proxy.git/program"
+	. "go.schlittermann.de/heiko/cert-proxy.git/shared"
 	"log"
 	"net/http"
 )

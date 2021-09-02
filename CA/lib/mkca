@@ -34,6 +34,18 @@ install -d -m 700 "$CA_DIR/private"
 
 touch -a "$CA_DIR/index.txt"
 
+test -f "$HOME/.rnd" \
+|| {
+    cat >&2 <<_
+#
+# Next: create a ~/.rnd file
+#
+_
+    openssl rand -writerand "$HOME/.rnd"
+
+    echo "# DONE: $HOME/.rnd created." >&2
+}
+
 test -f "$CA_DIR"/private/cakey.pem \
 || {
     cat >&2 <<_
@@ -54,7 +66,6 @@ test -f "$CA_DIR"/cacsr.pem \
 #
 _
     openssl req -new -out "$CA_DIR/cacsr.pem" \
-    -days 3650 \
     -key "$CA_DIR/private/cakey.pem" \
     -subj "/C=$CA_DEFAULT_C/ST=$CA_DEFAULT_ST/L=$CA_DEFAULT_L/O=$CA_DEFAULT_O/OU=$CA_DEFAULT_OU/CN=CA"
     echo "# DONE: CA certificate signing request." >&2
