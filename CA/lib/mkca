@@ -78,7 +78,7 @@ test -f "$CA_DIR"/cacrt.pem \
 # NEXT: Sign the CA certificate.
 #
 _
-    openssl ca -selfsign -days 3650 -keyfile "$CA_DIR"/private/cakey.pem \
+    openssl ca -rand_serial -selfsign -days 3650 -keyfile "$CA_DIR"/private/cakey.pem \
    -extensions v3_ca \
    -out "$CA_DIR/cacert.pem" \
    -create_serial \

@@ -102,7 +102,7 @@ else
     gitfiles+=("$REQ_DIR/$cn/csr.pem")
 
     install -d -m 0755 "$CA_DIR/certs"
-    openssl ca -notext -out "$CA_DIR/certs/$cn.pem" -in "$REQ_DIR/$cn/csr.pem"
+    openssl ca -rand_serial -notext -out "$CA_DIR/certs/$cn.pem" -in "$REQ_DIR/$cn/csr.pem"
     gitfiles+=("$CA_DIR/certs/$cn.pem")
     gitfiles+=("$CA_DIR/newcerts")
 
