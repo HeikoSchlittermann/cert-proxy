@@ -1,3 +1,13 @@
+cert-proxy (1.15.1-1) squeeze wheezy jessie stretch buster bullseye; urgency=medium
+
+  * CA: Copy the requested "CN" into the SAN (closes #3)
+  * Use random serial numbers
+  * Git: do quiet initialization
+  * Fix missing version string
+  * tidy
+
+ -- Heiko Schlittermann (HS12-RIPE) <hs@schlittermann.de>  Wed, 08 Sep 2021 18:24:34 +0200
+
 cert-proxy (1.14.1-2) squeeze wheezy jessie stretch buster bullseye; urgency=medium
 
   * Switch to bullseye
