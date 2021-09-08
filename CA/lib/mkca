@@ -21,7 +21,7 @@ function _git() {
 
 trap "_git reset --hard; _git clean -d -f" ERR
 
-git init "$CA_DIR"
+git init --quiet "$CA_DIR"
 cat > "$CA_DIR/.gitignore" <<_
 index*.old
 serial*.old
@@ -78,7 +78,7 @@ test -f "$CA_DIR"/cacrt.pem \
 # NEXT: Sign the CA certificate.
 #
 _
-    openssl ca -selfsign -days 3650 -keyfile "$CA_DIR"/private/cakey.pem \
+    openssl ca -rand_serial -selfsign -days 3650 -keyfile "$CA_DIR"/private/cakey.pem \
    -extensions v3_ca \
    -out "$CA_DIR/cacert.pem" \
    -create_serial \

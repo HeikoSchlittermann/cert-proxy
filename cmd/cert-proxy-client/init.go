@@ -3,13 +3,14 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
+	"os"
+	"runtime"
+
 	"go.schlittermann.de/heiko/cert-proxy.git/cmd/cert-proxy-client/cert"
 	"go.schlittermann.de/heiko/cert-proxy.git/cmd/cert-proxy-client/secret"
 	"go.schlittermann.de/heiko/cert-proxy.git/program"
 	. "go.schlittermann.de/heiko/cert-proxy.git/shared"
-	"log"
-	"os"
-	"runtime"
 )
 
 func init() {

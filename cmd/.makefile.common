@@ -12,7 +12,7 @@ v = $(shell git describe --always --dirty=+)
 
 all: build
 
-build clean:	; go $@ -ldflags '-X cert-proxy/internal/program.Version=$v'
+build clean:	; go $@ -ldflags '-X go.schlittermann.de/heiko/cert-proxy.git/program.Version=$v'
 
 install: build
 	install -d ${bindir}

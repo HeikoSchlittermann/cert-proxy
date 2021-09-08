@@ -4,14 +4,15 @@ import (
 	"bufio"
 	"crypto/tls"
 	"errors"
+	"log"
+	"net/http"
+	"path"
+
 	"go.schlittermann.de/heiko/cert-proxy.git/cmd/cert-proxy-client/cert"
 	"go.schlittermann.de/heiko/cert-proxy.git/cmd/cert-proxy-client/worker"
 	"go.schlittermann.de/heiko/cert-proxy.git/list"
 	"go.schlittermann.de/heiko/cert-proxy.git/program"
 	. "go.schlittermann.de/heiko/cert-proxy.git/shared"
-	"log"
-	"net/http"
-	"path"
 )
 
 const API_VERSION = `v1`
