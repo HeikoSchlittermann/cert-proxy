@@ -97,7 +97,8 @@ else
 
     openssl req -new -key "$REQ_DIR/$cn/key.pem" \
 		-out "$REQ_DIR/$cn/csr.pem" \
-		-subj "/C=$CA_DEFAULT_C/ST=$CA_DEFAULT_ST/L=$CA_DEFAULT_L/O=$CA_DEFAULT_O/OU=$CA_DEFAULT_OU/CN=$cn"
+		-subj "/C=$CA_DEFAULT_C/ST=$CA_DEFAULT_ST/L=$CA_DEFAULT_L/O=$CA_DEFAULT_O/OU=$CA_DEFAULT_OU/CN=$cn" \
+		-addext "subjectAltName = DNS:$cn"
     gitfiles+=("$REQ_DIR/$cn/csr.pem")
 
     install -d -m 0755 "$CA_DIR/certs"
