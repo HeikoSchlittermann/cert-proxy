@@ -21,7 +21,7 @@ function _git() {
 
 trap "_git reset --hard; _git clean -d -f" ERR
 
-git init "$CA_DIR"
+git init --quiet "$CA_DIR"
 cat > "$CA_DIR/.gitignore" <<_
 index*.old
 serial*.old
