@@ -20,9 +20,9 @@ func init() {
 	}
 
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %s [options] [<CN>]...\n", os.Args[0])
+		fmt.Fprintf(flag.CommandLine.Output(), "Usage: %s [options] [<CN>]...\n", os.Args[0])
 		flag.PrintDefaults()
-		fmt.Fprint(os.Stderr, `
+		fmt.Fprint(flag.CommandLine.Output(), `
 The cert-proxy-client exits with 0 on success, and with an non-zero value if there
 is a problem.
 
@@ -63,13 +63,14 @@ Example:
 	// -outformat PEM    implies cert, chain, fullchain, privkey
 	// -outformat PKCS12 implies bundle
 
-	var printVersion bool
 	var logOutput out = STDERR
+
+	var help = flag.Bool("help", false, "print help to STDOUT and exit cleanly")
+	var version = flag.Bool("version", false, "current version ("+program.Version+")")
 
 	flag.BoolVar(&cert.UseSymlink, "symlink", cert.UseSymlink, "use symlinks for current files")
 	flag.BoolVar(&opt.Auto, "auto", true, "auto mode (fetch all CNs the server provides us)")
 	flag.BoolVar(&opt.Verbose, "verbose", false, "verbose output")
-	flag.BoolVar(&printVersion, "version", false, "current version ("+program.Version+")")
 	flag.BoolVar(&cert.Force, "force", false, "force download, even if not modified")
 	flag.IntVar(&opt.Jobs, "jobs", runtime.NumCPU(), "maximum number of parallel running `jobs`")
 	flag.StringVar(&opt.Certbase, "certbase", "certs", "base `dir` for downloaded certs")
@@ -83,13 +84,19 @@ Example:
 	flag.Var(&opt.Format, "format", "`format` of the requested certificate(s) (PEM|PKCS12)")
 	flag.Parse()
 
-	if logOutput == `STDOUT` {
-		*os.Stderr = *os.Stdout
+	if *help {
+		flag.CommandLine.SetOutput(os.Stdout)
+		flag.Usage()
+		os.Exit(0)
 	}
 
-	if printVersion {
+	if *version {
 		fmt.Println(program.Version, program.Name, program.Path)
 		os.Exit(0)
+	}
+
+	if logOutput == `STDOUT` {
+		*os.Stderr = *os.Stdout
 	}
 
 	if !opt.Auto && opt.CNfile == "" && flag.NArg() < 1 {
