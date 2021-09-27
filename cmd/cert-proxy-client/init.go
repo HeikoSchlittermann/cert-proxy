@@ -4,8 +4,10 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"runtime"
+	"strings"
 
 	"go.schlittermann.de/heiko/cert-proxy.git/cmd/cert-proxy-client/cert"
 	"go.schlittermann.de/heiko/cert-proxy.git/cmd/cert-proxy-client/secret"
@@ -120,10 +122,14 @@ Example:
 		}
 	}
 
-	if len(opt.Connect) < len("https://") {
-		log.Fatalf("invalid argument in -connect \"%s\"", opt.Connect)
-	}
-	for opt.Connect[len(opt.Connect)-1] == '/' {
-		opt.Connect = opt.Connect[0 : len(opt.Connect)-1]
+	// Sanitize the Connect option
+	if url, err := url.Parse(opt.Connect); err != nil {
+		log.Fatal(err)
+	} else {
+		if url.Scheme == "" {
+			url.Scheme = "https"
+		}
+		url.Path = strings.TrimRight(url.Path, "/")
+		opt.Connect = url.String()
 	}
 }
