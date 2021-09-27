@@ -3,10 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	"go.schlittermann.de/heiko/cert-proxy.git/program"
-	. "go.schlittermann.de/heiko/cert-proxy.git/shared"
 	"log"
 	"os"
+
+	"go.schlittermann.de/heiko/cert-proxy.git/program"
+	. "go.schlittermann.de/heiko/cert-proxy.git/shared"
 )
 
 func init() {
@@ -18,12 +19,12 @@ func init() {
 	//	    log.SetPrefix(filepath.Base(os.Args[0]) + `: `)
 
 	var printVersion bool
-	flag.StringVar(&opt.SSLFile, "sslfile", "server-ssl.pem", "SSL auth file (crt+key+ca) PEM")
-	flag.StringVar(&opt.Serve, "serve", ":4433", "Listener [host]:port")
-	flag.StringVar(&opt.Certbase, "certbase", "certs", "Base dir for certificates")
-	flag.StringVar(&opt.ClientConfigDir, "ccd", "clients", "Client configuration dir")
-	flag.BoolVar(&opt.Verbose, "verbose", false, "Verbose operation")
-	flag.BoolVar(&printVersion, "version", false, "Version information ("+program.Version+")")
+	flag.StringVar(&opt.SSLFile, "sslfile", "server-ssl.pem", "SSL auth `file` (crt+key+ca) PEM")
+	flag.StringVar(&opt.Serve, "serve", ":4433", "listener `[host]:port`")
+	flag.StringVar(&opt.Certbase, "certbase", "certs", "base `dir` for certificates")
+	flag.StringVar(&opt.ClientConfigDir, "ccd", "clients", "client configuration `dir`")
+	flag.BoolVar(&opt.Verbose, "verbose", false, "verbose operation")
+	flag.BoolVar(&printVersion, "version", false, "version information ("+program.Version+")")
 	flag.Parse()
 
 	if printVersion {
