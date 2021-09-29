@@ -115,7 +115,7 @@ func fetchCNs() ([]string, error) {
 
 	// check remote version
 	if program.Version != resp.Header.Get(`x-version`) {
-		log.Printf("Version mismatch: server:%s client:%s",
+		log.Printf("Warning: Version mismatch: server:%s client:%s",
 			resp.Header.Get(`x-version`), program.Version)
 	}
 
