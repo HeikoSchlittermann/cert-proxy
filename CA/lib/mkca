@@ -27,7 +27,7 @@ index*.old
 serial*.old
 _
 
-install -m 0644 $BINDIR/openssl.cnf "$CA_DIR/"
+install -m 0644 "$BINDIR/openssl.cnf.example" "$CA_DIR/openssl.cnf"
 
 install -d "$CA_DIR"/{newcerts,certs}
 install -d -m 700 "$CA_DIR/private"
