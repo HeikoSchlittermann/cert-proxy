@@ -116,7 +116,7 @@ setup, setup the Cert-proxy-server and Systemd startup scripts and start the ser
 
   ```shell
   cd /etc/cert-proxy/ca
-  ./bin/mkssl-pem cert-proxy
+  ./bin/mkssl-pem cert-proxy.example.com cert-proxy
   ```
 
 * Copy the resulting file (`cert-proxy-ssl.pem`) to the place where the
