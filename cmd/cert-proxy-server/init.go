@@ -6,8 +6,8 @@ import (
 	"log"
 	"os"
 
-	"go.schlittermann.de/heiko/cert-proxy.git/program"
-	. "go.schlittermann.de/heiko/cert-proxy.git/shared"
+	"go.schlittermann.de/heiko/cert-proxy/program"
+	. "go.schlittermann.de/heiko/cert-proxy/shared"
 )
 
 func init() {

@@ -2,12 +2,13 @@ package main
 
 import (
 	"bytes"
-	. "go.schlittermann.de/heiko/cert-proxy.git/shared"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"time"
+
+	. "go.schlittermann.de/heiko/cert-proxy/shared"
 )
 
 func createPKCS12(certbase, domain, pass string) (*bytes.Reader, time.Time, error) {

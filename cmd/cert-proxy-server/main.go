@@ -2,10 +2,11 @@ package main
 
 import (
 	"crypto/tls"
-	"go.schlittermann.de/heiko/cert-proxy.git/program"
-	. "go.schlittermann.de/heiko/cert-proxy.git/shared"
 	"log"
 	"net/http"
+
+	"go.schlittermann.de/heiko/cert-proxy/program"
+	. "go.schlittermann.de/heiko/cert-proxy/shared"
 )
 
 var (

@@ -8,11 +8,11 @@ import (
 	"net/http"
 	"path"
 
-	"go.schlittermann.de/heiko/cert-proxy.git/cmd/cert-proxy-client/cert"
-	"go.schlittermann.de/heiko/cert-proxy.git/cmd/cert-proxy-client/worker"
-	"go.schlittermann.de/heiko/cert-proxy.git/list"
-	"go.schlittermann.de/heiko/cert-proxy.git/program"
-	. "go.schlittermann.de/heiko/cert-proxy.git/shared"
+	"go.schlittermann.de/heiko/cert-proxy/cmd/cert-proxy-client/cert"
+	"go.schlittermann.de/heiko/cert-proxy/cmd/cert-proxy-client/worker"
+	"go.schlittermann.de/heiko/cert-proxy/list"
+	"go.schlittermann.de/heiko/cert-proxy/program"
+	. "go.schlittermann.de/heiko/cert-proxy/shared"
 )
 
 const API_VERSION = `v1`

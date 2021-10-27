@@ -9,10 +9,10 @@ import (
 	"runtime"
 	"strings"
 
-	"go.schlittermann.de/heiko/cert-proxy.git/cmd/cert-proxy-client/cert"
-	"go.schlittermann.de/heiko/cert-proxy.git/cmd/cert-proxy-client/secret"
-	"go.schlittermann.de/heiko/cert-proxy.git/program"
-	. "go.schlittermann.de/heiko/cert-proxy.git/shared"
+	"go.schlittermann.de/heiko/cert-proxy/cmd/cert-proxy-client/cert"
+	"go.schlittermann.de/heiko/cert-proxy/cmd/cert-proxy-client/secret"
+	"go.schlittermann.de/heiko/cert-proxy/program"
+	. "go.schlittermann.de/heiko/cert-proxy/shared"
 )
 
 func init() {

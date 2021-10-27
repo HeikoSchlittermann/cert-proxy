@@ -3,8 +3,6 @@ package cert
 import (
 	"bytes"
 	"fmt"
-	"go.schlittermann.de/heiko/cert-proxy.git/program"
-	. "go.schlittermann.de/heiko/cert-proxy.git/shared"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -15,6 +13,9 @@ import (
 	"strings"
 	"text/template"
 	"time"
+
+	"go.schlittermann.de/heiko/cert-proxy/program"
+	. "go.schlittermann.de/heiko/cert-proxy/shared"
 )
 
 type role string
