@@ -17,7 +17,7 @@ import (
 
 func init() {
 	// Running as a systemd unit?
-	if os.Getenv(`INVOCATION_ID`) != "" {
+	if os.Getenv(`JOURNAL_STREAM`) != "" {
 		log.SetFlags(0)
 	}
 
