@@ -88,7 +88,7 @@ Example:
 	flag.StringVar(&opt.Hook, "hook", "", "hook script `file`¹")
 	flag.StringVar(&opt.Passout, "passout", "", "`password` to protect the PKCS12³")
 	flag.StringVar(&opt.SharedHook, "shared-hook", "", "shared hook script `file`²")
-	flag.StringVar(&opt.ServerCN, "servername", "cert-proxy", "name (`CN`) of the cert proxy certificate")
+	flag.StringVar(&opt.ServerCN, "servername", "", "name (`CN`) of the cert proxy server (if emtpy: use the FQDN of the host we connect to)")
 	flag.StringVar(&opt.SSLFile, "sslfile", "client-ssl.pem", "SSL auth `file` (crt+key+ca) PEM")
 	flag.Var(&logOutput, "stderr", "redirect stderr `output` (stderr|stdout)")
 	flag.Var(&opt.Format, "format", "`format` of the requested certificate(s) (PEM|PKCS12)")
