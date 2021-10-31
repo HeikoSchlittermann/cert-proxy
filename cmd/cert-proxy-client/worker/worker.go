@@ -27,7 +27,7 @@ func (*fakeMutex) Lock()   {}
 func (*fakeMutex) Unlock() {}
 
 // NewPool creates worker pool of size workers and returns
-// the Pool type. This pool type can be used to enqueue
+// the Pool. This pool can be used to enqueue
 // Tasks.
 func NewPool(workers int) *Pool {
 
