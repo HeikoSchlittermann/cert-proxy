@@ -1,3 +1,11 @@
+cert-proxy (1.15.3-3) sid; urgency=medium
+
+  * doc: explain the hook invocation in the example.hook
+  * Provide the list of domains in environment DOMAINS for the hook invocation
+  * doc: better explanation in the example hook script
+
+ -- Heiko Schlittermann (HS12-RIPE) <hs@schlittermann.de>  Mon, 01 Nov 2021 10:21:52 +0100
+
 cert-proxy (1.15.3-2) sid; urgency=medium
 
   * Update changelog for 1.15.3-2 release
