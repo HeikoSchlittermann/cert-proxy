@@ -1,6 +1,13 @@
 #!/bin/sh
-# called as <hook> deploy_cert <DOMAIN> <KEYFILE> <CERTFILE> <FULLCHAINFILE> <CHAINFILE> <TIMESTAMP>
-# For PKCS12 as … <DOMAIN> <BUNDLEFILE> <TIMESTAMP>
+#
+# If called via the `-hook=<hook>` option:
+# <hook> deploy_cert <DOMAIN> <KEYFILE> <CERTFILE> <FULLCHAINFILE> <CHAINFILE> <TIMESTAMP>
 # The values are in the positional parameters *AND* in environment vars of the same name
+#
+# If called as shared hook via `-shared-hook=<hook>`:
+# <hook> shared <DOMAIN> ...
+# No special environment variable are set!
+
+# For PKCS12 as deply_cert|shared <DOMAIN> <BUNDLEFILE> <TIMESTAMP>
 
 # DO NOT FORGET to make this file executable!
