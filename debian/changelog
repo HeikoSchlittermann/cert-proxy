@@ -1,3 +1,20 @@
+cert-proxy (1.15.3-1) squeeze wheezy jessie stretch buster bullseye; urgency=medium
+
+  * Improve readability of -h output
+  * Add -help option (print help to STDOUT(!) and exit cleanly)
+  * Santize URL path, add scheme (https) if it is missing (close #4)
+  * Emphasize "version mismatch" as a warning
+  * Use lib/openssl.cnf.example (close #6)
+  * Allow multiple names (CN + SAN) for mkssl-pem (closes #7)
+  * Use import path go.schlittermann.de/heiko/cert-proxy (w/o the .git)
+  * Use "JOURNAL_STREAM" as indicator for logging to systemd-journal
+  * [tidy doc]
+  * Provide new option -shared-hook (fixes #2)
+  * Do not set the SNI - use the FQDN of the server we connec to (fixes #4)
+  * Use heiko/dev as upstream
+
+ -- Heiko Schlittermann (HS12-RIPE) <hs@schlittermann.de>  Mon, 01 Nov 2021 08:28:00 +0100
+
 cert-proxy (1.15.1-2) squeeze wheezy jessie stretch buster bullseye; urgency=medium
 
   * Bump the version number
