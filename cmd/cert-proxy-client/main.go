@@ -98,6 +98,7 @@ func main() {
 		log.Fatal(err)
 	}
 	if opt.SharedHook != "" {
+		Verbose("Shared hook %s for %s", opt.SharedHook, CNs)
 		cmd := exec.Cmd{
 			Path:   opt.SharedHook,
 			Args:   append([]string{opt.SharedHook, "shared"}, CNs.Items()...),
