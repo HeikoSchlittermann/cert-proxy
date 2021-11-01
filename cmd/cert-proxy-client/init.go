@@ -50,6 +50,9 @@ is a problem.
 
       <script> shared <DOMAIN>...
 
+	An environment variable "DOMAINS" is provided too, containing a space separated
+	list of the domain names.
+
 ³) The password for protecting the P12 file may be given in one of the following notations:
     - pass:<password>
     - file:<file containing the password>

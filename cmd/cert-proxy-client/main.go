@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strings"
 
 	"go.schlittermann.de/heiko/cert-proxy/cmd/cert-proxy-client/cert"
 	"go.schlittermann.de/heiko/cert-proxy/cmd/cert-proxy-client/worker"
@@ -100,6 +101,7 @@ func main() {
 		cmd := exec.Cmd{
 			Path:   opt.SharedHook,
 			Args:   append([]string{opt.SharedHook, "shared"}, CNs.Items()...),
+			Env:    append(os.Environ(), "DOMAINS="+strings.Join(CNs.Items(), " ")),
 			Stdout: os.Stdout,
 			Stderr: os.Stderr,
 		}
