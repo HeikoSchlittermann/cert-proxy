@@ -1,8 +1,9 @@
 package main
 
 import (
-	"go.schlittermann.de/heiko/cert-proxy.git/list"
 	"net/http"
+
+	"go.schlittermann.de/heiko/cert-proxy/list"
 )
 
 // cnList reads the client config file and returns

@@ -4,25 +4,27 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"runtime"
+	"strings"
 
-	"go.schlittermann.de/heiko/cert-proxy.git/cmd/cert-proxy-client/cert"
-	"go.schlittermann.de/heiko/cert-proxy.git/cmd/cert-proxy-client/secret"
-	"go.schlittermann.de/heiko/cert-proxy.git/program"
-	. "go.schlittermann.de/heiko/cert-proxy.git/shared"
+	"go.schlittermann.de/heiko/cert-proxy/cmd/cert-proxy-client/cert"
+	"go.schlittermann.de/heiko/cert-proxy/cmd/cert-proxy-client/secret"
+	"go.schlittermann.de/heiko/cert-proxy/program"
+	. "go.schlittermann.de/heiko/cert-proxy/shared"
 )
 
 func init() {
 	// Running as a systemd unit?
-	if os.Getenv(`INVOCATION_ID`) != "" {
+	if os.Getenv(`JOURNAL_STREAM`) != "" {
 		log.SetFlags(0)
 	}
 
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %s [options] [<CN>]...\n", os.Args[0])
+		fmt.Fprintf(flag.CommandLine.Output(), "Usage: %s [options] [<CN>]...\n", os.Args[0])
 		flag.PrintDefaults()
-		fmt.Fprint(os.Stderr, `
+		fmt.Fprint(flag.CommandLine.Output(), `
 The cert-proxy-client exits with 0 on success, and with an non-zero value if there
 is a problem.
 
@@ -44,7 +46,11 @@ is a problem.
 	script is running, other threads of the cert-proxy-client may
 	replace certificates your hook script relies indirectly on.
 
-²) The password for protecting the P12 file may be given in one of the following notations:
+²) The shared hook script gets called once *after* all other hooks are done:
+
+      <script> shared <DOMAIN>...
+
+³) The password for protecting the P12 file may be given in one of the following notations:
     - pass:<password>
     - file:<file containing the password>
     - env:<environment variable containing the password>
@@ -63,33 +69,41 @@ Example:
 	// -outformat PEM    implies cert, chain, fullchain, privkey
 	// -outformat PKCS12 implies bundle
 
-	var printVersion bool
 	var logOutput out = STDERR
 
-	flag.BoolVar(&cert.UseSymlink, "symlink", cert.UseSymlink, "Use symlinks for current files")
-	flag.BoolVar(&opt.Auto, "auto", true, "Auto mode (fetch all CNs the server provides us)")
-	flag.BoolVar(&opt.Verbose, "verbose", false, "Verbose output")
-	flag.BoolVar(&printVersion, "version", false, "current version ("+program.Version+")")
-	flag.BoolVar(&cert.Force, "force", false, "Force download, even if not modified")
-	flag.IntVar(&opt.Jobs, "jobs", runtime.NumCPU(), "Maximum number of parallel running jobs")
-	flag.StringVar(&opt.Certbase, "certbase", "certs", "Base dir for downloaded certs")
-	flag.StringVar(&opt.CNfile, "cnfile", "", "CN list file (use - for stdin)")
-	flag.StringVar(&opt.Connect, "connect", "https://localhost:4433", "Address of cert proxy server")
-	flag.StringVar(&opt.Hook, "hook", "", "Hook script¹")
-	flag.StringVar(&opt.Passout, "passout", "", "Passwort to protect the PKCS12²")
-	flag.StringVar(&opt.ServerCN, "servername", "cert-proxy", "Name (CN) of the cert proxy certificate")
-	flag.StringVar(&opt.SSLFile, "sslfile", "client-ssl.pem", "SSL auth file (crt+key+ca) PEM")
-	flag.Var(&logOutput, "stderr", "Redirect stderr (stderr|stdout)")
-	flag.Var(&opt.Format, "format", "Format of the requested certificate(s) (PEM|PKCS12)")
+	var help = flag.Bool("help", false, "print help to STDOUT and exit cleanly")
+	var version = flag.Bool("version", false, "current version ("+program.Version+")")
+
+	flag.BoolVar(&cert.UseSymlink, "symlink", cert.UseSymlink, "use symlinks for current files")
+	flag.BoolVar(&opt.Auto, "auto", true, "auto mode (fetch all CNs the server provides us)")
+	flag.BoolVar(&opt.Verbose, "verbose", false, "verbose output")
+	flag.BoolVar(&cert.Force, "force", false, "force download, even if not modified")
+	flag.IntVar(&opt.Jobs, "jobs", runtime.NumCPU(), "maximum number of parallel running `jobs`")
+	flag.StringVar(&opt.Certbase, "certbase", "certs", "base `dir` for downloaded certs")
+	flag.StringVar(&opt.CNfile, "cnfile", "", "CN list `file` (use - for stdin)")
+	flag.StringVar(&opt.Connect, "connect", "https://localhost:4433", "address of cert proxy `[scheme://]server`")
+	flag.StringVar(&opt.Hook, "hook", "", "hook script `file`¹")
+	flag.StringVar(&opt.Passout, "passout", "", "`password` to protect the PKCS12³")
+	flag.StringVar(&opt.SharedHook, "shared-hook", "", "shared hook script `file`²")
+	flag.StringVar(&opt.ServerCN, "servername", "", "name (`CN`) of the cert proxy server (if emtpy: use the FQDN of the host we connect to)")
+	flag.StringVar(&opt.SSLFile, "sslfile", "client-ssl.pem", "SSL auth `file` (crt+key+ca) PEM")
+	flag.Var(&logOutput, "stderr", "redirect stderr `output` (stderr|stdout)")
+	flag.Var(&opt.Format, "format", "`format` of the requested certificate(s) (PEM|PKCS12)")
 	flag.Parse()
+
+	if *help {
+		flag.CommandLine.SetOutput(os.Stdout)
+		flag.Usage()
+		os.Exit(0)
+	}
+
+	if *version {
+		fmt.Println(program.Version, program.Name, program.Path)
+		os.Exit(0)
+	}
 
 	if logOutput == `STDOUT` {
 		*os.Stderr = *os.Stdout
-	}
-
-	if printVersion {
-		fmt.Println(program.Version, program.Name, program.Path)
-		os.Exit(0)
 	}
 
 	if !opt.Auto && opt.CNfile == "" && flag.NArg() < 1 {
@@ -113,10 +127,14 @@ Example:
 		}
 	}
 
-	if len(opt.Connect) < len("https://") {
-		log.Fatalf("invalid argument in -connect \"%s\"", opt.Connect)
-	}
-	for opt.Connect[len(opt.Connect)-1] == '/' {
-		opt.Connect = opt.Connect[0 : len(opt.Connect)-1]
+	// Sanitize the Connect option
+	if url, err := url.Parse(opt.Connect); err != nil {
+		log.Fatal(err)
+	} else {
+		if url.Scheme == "" {
+			url.Scheme = "https"
+		}
+		url.Path = strings.TrimRight(url.Path, "/")
+		opt.Connect = url.String()
 	}
 }

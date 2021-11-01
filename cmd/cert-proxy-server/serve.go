@@ -3,13 +3,14 @@ package main
 import (
 	"errors"
 	"fmt"
-	. "go.schlittermann.de/heiko/cert-proxy.git/shared"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	. "go.schlittermann.de/heiko/cert-proxy/shared"
 )
 
 func serve(ctx context, w http.ResponseWriter, req *http.Request) error {

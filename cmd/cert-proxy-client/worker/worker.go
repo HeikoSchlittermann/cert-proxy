@@ -2,11 +2,12 @@ package worker
 
 import (
 	"fmt"
-	"go.schlittermann.de/heiko/cert-proxy.git/cmd/cert-proxy-client/cert"
-	"go.schlittermann.de/heiko/cert-proxy.git/list"
-	. "go.schlittermann.de/heiko/cert-proxy.git/shared"
 	"log"
 	"sync"
+
+	"go.schlittermann.de/heiko/cert-proxy/cmd/cert-proxy-client/cert"
+	"go.schlittermann.de/heiko/cert-proxy/list"
+	. "go.schlittermann.de/heiko/cert-proxy/shared"
 )
 
 // Task is a bundle of requests and associated destination
@@ -26,7 +27,7 @@ func (*fakeMutex) Lock()   {}
 func (*fakeMutex) Unlock() {}
 
 // NewPool creates worker pool of size workers and returns
-// the Pool type. This pool type can be used to enqueue
+// the Pool. This pool can be used to enqueue
 // Tasks.
 func NewPool(workers int) *Pool {
 

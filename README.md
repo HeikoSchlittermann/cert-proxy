@@ -116,7 +116,7 @@ setup, setup the Cert-proxy-server and Systemd startup scripts and start the ser
 
   ```shell
   cd /etc/cert-proxy/ca
-  ./bin/mkssl-pem cert-proxy
+  ./bin/mkssl-pem cert-proxy.example.com cert-proxy
   ```
 
 * Copy the resulting file (`cert-proxy-ssl.pem`) to the place where the
@@ -205,7 +205,7 @@ source's `systemd/` directory.
 ## Daily operation
 
 Repeat starting the Cert-proxy client in sufficient intervals. In
-normal operation it downloads (and starts the hook) only if the files
+normal operation it downloads (and starts the hooks) only if the files
 on the server are fresher than the client's files (based on the file
 modification date, *not* on the certificate dates). For Linux systems
 you may use the provided Systemd units (`cert-proxy-client.timer` and

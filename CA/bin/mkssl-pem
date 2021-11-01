@@ -21,12 +21,12 @@ do
     o=$1; shift
     case "$o" in
     -h|--help)	cat <<-_HELP
-	$0 [-revoke] CN
+	$0 [-revoke] CN [SAN]...
 	    This creates a file "NAME-ssl.pem" containing the full bundle
-	    (CA, Cert, Key) for the client named NAME
+	    (CA, Cert, Key) for the client named CN
 
-            Example: $0 cert-proxy
-                 or: $0 host2.domain.com
+            Example: $0 cert-proxy.example.com
+                     $0 cert-proxy.example.com cert-proxy
 _HELP
         exit 0 ;;
     -r|--revoke)
@@ -85,20 +85,25 @@ then
     _git add -u
     _git commit -m "Revoke $cn (${serials[@]})"
     }
-else
+else	# issue
     REQ_DIR=$CA_DIR/requests
     install -d -m 0700 "$REQ_DIR"
 
-    cn="$1"; shift
+    cn=$1; shift
 
     install -d -m 0700 "$REQ_DIR/$cn"
     openssl genrsa -out "$REQ_DIR/$cn/key.pem" 4096
     gitfiles+=("$REQ_DIR/$cn/key.pem")
 
+    ext="subjectAltName = DNS:$cn"
+    for dns in $@; do
+	ext+=", DNS:$dns"
+    done
+
     openssl req -new -key "$REQ_DIR/$cn/key.pem" \
 		-out "$REQ_DIR/$cn/csr.pem" \
 		-subj "/C=$CA_DEFAULT_C/ST=$CA_DEFAULT_ST/L=$CA_DEFAULT_L/O=$CA_DEFAULT_O/OU=$CA_DEFAULT_OU/CN=$cn" \
-		-addext "subjectAltName = DNS:$cn"
+		-addext "$ext"
     gitfiles+=("$REQ_DIR/$cn/csr.pem")
 
     install -d -m 0755 "$CA_DIR/certs"
