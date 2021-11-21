@@ -46,7 +46,14 @@ is a problem.
 	script is running, other threads of the cert-proxy-client may
 	replace certificates your hook script relies indirectly on.
 
-²) The password for protecting the P12 file may be given in one of the following notations:
+²) The shared hook script gets called once *after* all other hooks are done:
+
+      <script> shared <DOMAIN>...
+
+	An environment variable "DOMAINS" is provided too, containing a space separated
+	list of the domain names.
+
+³) The password for protecting the P12 file may be given in one of the following notations:
     - pass:<password>
     - file:<file containing the password>
     - env:<environment variable containing the password>
@@ -79,7 +86,8 @@ Example:
 	flag.StringVar(&opt.CNfile, "cnfile", "", "CN list `file` (use - for stdin)")
 	flag.StringVar(&opt.Connect, "connect", "https://localhost:4433", "address of cert proxy `[scheme://]server`")
 	flag.StringVar(&opt.Hook, "hook", "", "hook script `file`¹")
-	flag.StringVar(&opt.Passout, "passout", "", "`password` to protect the PKCS12²")
+	flag.StringVar(&opt.Passout, "passout", "", "`password` to protect the PKCS12³")
+	flag.StringVar(&opt.SharedHook, "shared-hook", "", "shared hook script `file`²")
 	flag.StringVar(&opt.ServerCN, "servername", "cert-proxy", "name (`CN`) of the cert proxy certificate")
 	flag.StringVar(&opt.SSLFile, "sslfile", "client-ssl.pem", "SSL auth `file` (crt+key+ca) PEM")
 	flag.Var(&logOutput, "stderr", "redirect stderr `output` (stderr|stdout)")

@@ -26,4 +26,4 @@ done IMS handling is broken if the connect url ends in a slash!
 done Suppress ims= cn= if empty
 - if hook script is newer than cert, execute it, even if the cert isn't
   refreshed
-- many certs, many hooks
+- many certs, many hooks <-- needs explanation

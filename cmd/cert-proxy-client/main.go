@@ -6,7 +6,10 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"os"
+	"os/exec"
 	"path"
+	"strings"
 
 	"go.schlittermann.de/heiko/cert-proxy/cmd/cert-proxy-client/cert"
 	"go.schlittermann.de/heiko/cert-proxy/cmd/cert-proxy-client/worker"
@@ -20,17 +23,18 @@ const API_VERSION = `v1`
 var (
 	CNs = list.UniqStrings{}
 	opt = struct {
-		Auto     bool        // Fetch all (Issue /list first)
-		Certbase string      // where to put the output
-		CNfile   string      // the CNs to fetch
-		Connect  string      // Server address
-		Format   cert.Format // PEM|PKCS12
-		Hook     string      // Hook file
-		Jobs     int         // parallel Jobs
-		Passout  string      // PKC12 password
-		ServerCN string      // X509 CN of the server
-		SSLFile  string      // SSL auth file
-		Verbose  bool
+		Auto       bool        // Fetch all (Issue /list first)
+		Certbase   string      // where to put the output
+		CNfile     string      // the CNs to fetch
+		Connect    string      // Server address
+		Format     cert.Format // PEM|PKCS12
+		Hook       string      // Hook file
+		Jobs       int         // parallel Jobs
+		Passout    string      // PKC12 password
+		SharedHook string      // Shared hook file
+		ServerCN   string      // X509 CN of the server
+		SSLFile    string      // SSL auth file
+		Verbose    bool
 	}{
 		Format: cert.FORMAT, // platform dependend, PEM (*nix) vs PKCS12 (Win*)
 	}
@@ -93,6 +97,20 @@ func main() {
 	if err := pool.Wait(); err != nil {
 		log.Fatal(err)
 	}
+	if opt.SharedHook != "" {
+		Verbose("Shared hook %s for %s", opt.SharedHook, CNs)
+		cmd := exec.Cmd{
+			Path:   opt.SharedHook,
+			Args:   append([]string{opt.SharedHook, "shared"}, CNs.Items()...),
+			Env:    append(os.Environ(), "DOMAINS="+strings.Join(CNs.Items(), " ")),
+			Stdout: os.Stdout,
+			Stderr: os.Stderr,
+		}
+		if err := cmd.Run(); err != nil {
+			log.Fatal("Running shared hook %q: %v", opt.SharedHook, err)
+		}
+	}
+	os.Exit(0)
 }
 
 func fetchCNs() ([]string, error) {
