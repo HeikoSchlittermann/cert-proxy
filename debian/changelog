@@ -1,3 +1,16 @@
+cert-proxy (1.17~RC0-1) sid; urgency=medium
+
+  [ Heiko Schlittermann (HS12-RIPE) ]
+  * Verbose output if running the shared hook
+
+  [ Heiko Schlittermann ]
+  * Allow shared hook (fixes #2) (#11)
+
+  [ Heiko Schlittermann (HS12-RIPE) ]
+  * Do not set the SNI - use the FQDN of the server we connec to (fixes #4)
+
+ -- Heiko Schlittermann (HS12-RIPE) <hs@schlittermann.de>  Fri, 18 Mar 2022 20:50:17 +0100
+
 cert-proxy (1.16-RC0-0) sid; urgency=medium
 
   * doc: explain the hook invocation in the example.hook
