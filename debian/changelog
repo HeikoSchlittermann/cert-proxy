@@ -1,3 +1,9 @@
+cert-proxy (1.17-0) stable oldstable; urgency=medium
+
+  * Release 1.17
+
+ -- Heiko Schlittermann (HS12-RIPE) <hs@schlittermann.de>  Sun, 20 Mar 2022 08:40:49 +0100
+
 cert-proxy (1.17~RC0-1) sid; urgency=medium
 
   [ Heiko Schlittermann (HS12-RIPE) ]
