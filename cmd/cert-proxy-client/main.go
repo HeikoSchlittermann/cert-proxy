@@ -107,7 +107,7 @@ func main() {
 			Stderr: os.Stderr,
 		}
 		if err := cmd.Run(); err != nil {
-			log.Fatal("Running shared hook %q: %v", opt.SharedHook, err)
+			log.Fatalf("Running shared hook %q: %v", opt.SharedHook, err)
 		}
 	}
 	os.Exit(0)
