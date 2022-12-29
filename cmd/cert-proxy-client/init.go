@@ -41,7 +41,7 @@ is a problem.
 
 	Note for Windows Powershell: You may wish to "set-executionpolicy remotesigned"
 
-	Note on concurrency: The hooks run sequenctially: at no time the
+	Note on concurrency: The hooks run sequentially: at no time the
 	hook script will run in more than one instance. But, during the hook
 	script is running, other threads of the cert-proxy-client may
 	replace certificates your hook script relies indirectly on.
