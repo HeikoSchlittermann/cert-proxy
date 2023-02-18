@@ -1,3 +1,3 @@
 module go.schlittermann.de/heiko/cert-proxy
 
-go 1.14
+go 1.19
