@@ -13,13 +13,13 @@ the clients.
       [ Let's Encrypt CA ]
          | |
          ^ |
-	 | v
-	 | |
+	       | v
+      	 | |
        LE helper (dehydrated)---> DNS
        Cert-proxy server
          | |
-	 ^ v
-	 | |
+         ^ v
+         | |
        Cert-proxy client
 ```
 
