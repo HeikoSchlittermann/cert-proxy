@@ -4,7 +4,6 @@
 package secret
 
 import (
-	"errors"
 	"io/ioutil"
 	"os"
 	"strings"
