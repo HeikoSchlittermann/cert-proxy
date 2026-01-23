@@ -18,7 +18,7 @@ import (
 	"go.schlittermann.de/heiko/cert-proxy/cmd/cert-proxy-client/worker"
 	"go.schlittermann.de/heiko/cert-proxy/internal/program"
 	"go.schlittermann.de/heiko/cert-proxy/internal/list"
-	. "go.schlittermann.de/heiko/cert-proxy/shared"
+	. "go.schlittermann.de/heiko/cert-proxy/internal/shared"
 )
 
 const API_VERSION = `v1`

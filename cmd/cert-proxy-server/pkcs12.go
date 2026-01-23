@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"time"
 
-	. "go.schlittermann.de/heiko/cert-proxy/shared"
+	. "go.schlittermann.de/heiko/cert-proxy/internal/shared"
 )
 
 func createPKCS12(certbase, domain, pass string) (*bytes.Reader, time.Time, error) {

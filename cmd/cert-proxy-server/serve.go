@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	. "go.schlittermann.de/heiko/cert-proxy/shared"
+	. "go.schlittermann.de/heiko/cert-proxy/internal/shared"
 )
 
 func serve(ctx context, w http.ResponseWriter, req *http.Request) error {

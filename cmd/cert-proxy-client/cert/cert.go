@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"go.schlittermann.de/heiko/cert-proxy/internal/program"
-	. "go.schlittermann.de/heiko/cert-proxy/shared"
+	. "go.schlittermann.de/heiko/cert-proxy/internal/shared"
 )
 
 type role string

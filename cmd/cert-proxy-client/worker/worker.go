@@ -10,7 +10,7 @@ import (
 
 	"go.schlittermann.de/heiko/cert-proxy/cmd/cert-proxy-client/cert"
 	"go.schlittermann.de/heiko/cert-proxy/internal/list"
-	. "go.schlittermann.de/heiko/cert-proxy/shared"
+	. "go.schlittermann.de/heiko/cert-proxy/internal/shared"
 )
 
 // Task is a bundle of requests and associated destination
