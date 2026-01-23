@@ -17,6 +17,7 @@ func (o *out) Set(v string) error {
 	default:
 		return fmt.Errorf("Unknown output: %s", s)
 	}
+
 	return nil
 }
 func (o *out) String() string {

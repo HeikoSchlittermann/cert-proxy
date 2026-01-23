@@ -12,7 +12,6 @@ import (
 // cnList reads the client config file and returns
 // the list of allowed domains
 func cnList(cn string) (list.UniqStrings, error) {
-
 	cc, err := http.Dir(opt.ClientConfigDir).Open(cn)
 	if err != nil {
 		return nil, err

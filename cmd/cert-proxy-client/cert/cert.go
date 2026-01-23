@@ -105,15 +105,17 @@ type templateContext struct {
 }
 
 func NewReq(domain, remote, basedir, hook string, format Format, pass string) (Req, error) {
-	var req = Req{domain: domain, hook: hook, env: []string{`DOMAIN=` + domain}}
-	var ctx = templateContext{Domain: domain, Proxy: remote, Pass: pass}
+	var (
+		req = Req{domain: domain, hook: hook, env: []string{`DOMAIN=` + domain}}
+		ctx = templateContext{Domain: domain, Proxy: remote, Pass: pass}
+	)
 
 	// This format may require RoleCRT, RoleKey, … or RoleBUNDLE
+
 	for _, role := range ROLES[format] {
 		if templates, ok := TEMPLATES[role]; !ok {
 			panic("template for " + string(role) + " is missing")
 		} else {
-
 			var item = certItem{
 				role:    role,
 				local:   filepath.Join(basedir, mustExpand(templates.local, ctx)),
@@ -136,7 +138,6 @@ func NewReq(domain, remote, basedir, hook string, format Format, pass string) (R
 	}
 
 	return req, nil
-
 }
 
 type Mutex interface {
@@ -147,11 +148,9 @@ type Mutex interface {
 // Execute is the Workhorse. It operats on a single "request", that is,
 // on all its files
 func (req *Req) Execute(mtx Mutex) error {
-
 	// First request all the data we need, this can be done in parallel,
 	// but we'll wait until all are done
 	for i, item := range req.items {
-
 		// The file may exist already, use its timestamp for i-m-s
 		// header
 		if !Force {
@@ -186,14 +185,16 @@ func (req *Req) Execute(mtx Mutex) error {
 
 	// Got it, now write the output
 	//
-	var infix = strconv.Itoa(int(time.Now().Unix()))
-	var infixed = map[string]string{}
+	var (
+		infix   = strconv.Itoa(int(time.Now().Unix()))
+		infixed = map[string]string{}
+	)
 
 	for _, item := range req.items {
-
 		if len(item.data) == 0 {
 			continue
 		}
+
 		Verbose("Write %s", item.local)
 
 		infixed[item.local] = func(s string) string {
@@ -201,6 +202,7 @@ func (req *Req) Execute(mtx Mutex) error {
 			if i < 0 {
 				panic("should not happen")
 			}
+
 			return s[0:i] + `-` + infix + s[i:]
 		}(item.local)
 
@@ -212,14 +214,16 @@ func (req *Req) Execute(mtx Mutex) error {
 
 	// Ok, and now create the symlinks
 	//
-	for name, _ := range infixed {
+	for name := range infixed {
 		var err error
+
 		if UseSymlink {
 			os.Remove(name)
 			err = os.Symlink(filepath.Base(infixed[name]), name)
 		} else {
 			err = os.Rename(infixed[name], name)
 		}
+
 		if err != nil {
 			return err
 		}
@@ -259,8 +263,10 @@ func (req *Req) Execute(mtx Mutex) error {
 				cmd.Args[6] = i.local
 			}
 		}
+
 		mtx.Lock()
 		defer mtx.Unlock()
+
 		return cmd.Run()
 	} else {
 		return nil
@@ -279,11 +285,11 @@ func mustExpand(t *template.Template, ctx templateContext) string {
 	if err := t.Execute(b, &ctx); err != nil {
 		panic(err)
 	}
+
 	return b.String()
 }
 
 func writeFile(name string, data []byte, private bool) error {
-
 	if err := Mkdir(filepath.Dir(name)); err != nil {
 		return err
 	}
@@ -297,6 +303,7 @@ func writeFile(name string, data []byte, private bool) error {
 	} else {
 		mode = 0666
 	}
+
 	file, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE, mode)
 	if err != nil {
 		return err
@@ -304,5 +311,6 @@ func writeFile(name string, data []byte, private bool) error {
 	defer file.Close()
 
 	_, err = file.Write(data)
+
 	return err
 }

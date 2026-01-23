@@ -17,24 +17,26 @@ import (
 )
 
 func serve(ctx context, w http.ResponseWriter, req *http.Request) error {
-
 	Verbose("Serving url=%v%s%s\n",
 		req.URL,
 		func() string {
 			if s := req.Header.Get(`if-modified-since`); s != "" {
 				return " ims=" + s
 			}
+
 			return ""
 		}(),
 		func() string {
 			if s := ctx[REMOTE]; s != "" {
 				return " cn=" + s
 			}
+
 			return ""
 		}())
 	versionCheck(w, req)
 
 	var ext string
+
 	switch format := strings.ToUpper(req.URL.Query().Get(`format`)); format {
 	case `PEM`, ``:
 		ext = `.pem`
@@ -43,14 +45,18 @@ func serve(ctx context, w http.ResponseWriter, req *http.Request) error {
 	default:
 		err := fmt.Errorf("invalid format `%s`", format)
 		http.Error(w, err.Error(), http.StatusBadRequest)
+
 		return err
 	}
 
-	var content io.ReadSeeker
-	var mtime time.Time
-	var role, domain string
+	var (
+		content      io.ReadSeeker
+		mtime        time.Time
+		role, domain string
+	)
 
 	// [0]/[1]v1/[2]<role>/[3]<domain>
+
 	switch parts := strings.Split(req.URL.Path, "/"); len(parts) {
 	case 4:
 		domain = parts[3]
@@ -60,6 +66,7 @@ func serve(ctx context, w http.ResponseWriter, req *http.Request) error {
 	default:
 		err := errors.New("required syntax: /v1/<req>[/<domain>]")
 		http.Error(w, err.Error(), http.StatusBadRequest)
+
 		return err
 	}
 
@@ -75,6 +82,7 @@ func serve(ctx context, w http.ResponseWriter, req *http.Request) error {
 	case `bundle`:
 		if file, err := http.Dir(opt.Certbase).Open((filepath.Join(domain, role+ext))); err == nil {
 			defer file.Close()
+
 			content = file
 			if fi, err := file.Stat(); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -99,6 +107,7 @@ func serve(ctx context, w http.ResponseWriter, req *http.Request) error {
 			return err
 		} else {
 			defer file.Close()
+
 			content = file
 
 			if fi, err := file.Stat(); err != nil {
@@ -111,10 +120,11 @@ func serve(ctx context, w http.ResponseWriter, req *http.Request) error {
 	default:
 		err := fmt.Errorf("invalid request `%s`", role)
 		http.Error(w, err.Error(), http.StatusBadRequest)
+
 		return err
 	}
 
 	http.ServeContent(w, req, domain, mtime, content)
-	return nil
 
+	return nil
 }

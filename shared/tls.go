@@ -13,7 +13,9 @@ func TLSClientConfig(sslFile string, config *tls.Config) (*tls.Config, error) {
 	if err != nil {
 		return config, err
 	}
+
 	config.RootCAs = CAs
+
 	return config, err
 }
 
@@ -22,12 +24,13 @@ func TLSServerConfig(sslFile string, config *tls.Config) (*tls.Config, error) {
 	if err != nil {
 		return config, err
 	}
+
 	config.ClientCAs = CAs
+
 	return config, err
 }
 
 func TLSConfig(sslFile string, config *tls.Config) (pool *x509.CertPool, err error) {
-
 	cert, err := tls.LoadX509KeyPair(sslFile, sslFile)
 	if err != nil {
 		return
@@ -39,5 +42,6 @@ func TLSConfig(sslFile string, config *tls.Config) (pool *x509.CertPool, err err
 	}
 
 	config.Certificates = []tls.Certificate{cert}
+
 	return
 }

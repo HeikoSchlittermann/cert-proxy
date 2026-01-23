@@ -40,8 +40,10 @@ func AddItemsFromReader(items List, r io.Reader) error {
 		if l == "" {
 			continue
 		}
+
 		items.Add(l)
 	}
+
 	return scanner.Err()
 }
 
@@ -66,14 +68,16 @@ func (list *UniqStrings) Add(v ...string) {
 }
 func (list UniqStrings) Items() []string {
 	var items = make([]string, 0, len(list))
-	for k, _ := range list {
+	for k := range list {
 		items = append(items, k)
 	}
+
 	return items
 }
 func (list UniqStrings) Copy() UniqStrings {
 	copy := UniqStrings{}
 	copy.Add(list.Items()...)
+
 	return copy
 }
 

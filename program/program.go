@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	Version string = `*unknown*` // overriden by the linker
+	Version string = `*unknown*` // overridden by the linker
 	Name    string = filepath.Base(os.Args[0])
 	Path    string = func() string {
 		if p, err := filepath.Abs(os.Args[0]); err != nil {

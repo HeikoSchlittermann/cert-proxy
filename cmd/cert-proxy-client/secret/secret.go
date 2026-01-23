@@ -30,5 +30,4 @@ func Read(src string) (string, error) {
 		panic("unhandled secret source proto: " + proto)
 	}
 
-	return ``, errors.New("xxx")
 }

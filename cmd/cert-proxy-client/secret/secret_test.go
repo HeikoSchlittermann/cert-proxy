@@ -9,9 +9,9 @@ import (
 )
 
 func TestRead(t *testing.T) {
-
 	// String
 	t.Log("PASS")
+
 	if pass, err := Read("PASS:foo"); err != nil {
 		t.Errorf("unexpected: %v\n", err)
 	} else if pass != "foo" {
@@ -21,6 +21,7 @@ func TestRead(t *testing.T) {
 	// Environment
 	t.Log("ENV")
 	os.Setenv("PW", "bar")
+
 	if pass, err := Read("ENV:PW"); err != nil {
 		t.Errorf("unexpected: %v\n", err)
 	} else if pass != "bar" {
@@ -29,11 +30,10 @@ func TestRead(t *testing.T) {
 
 	// File
 	t.Log("FILE")
+
 	if pass, err := Read("FILE:pwfile"); err != nil {
 		t.Errorf("unexpected: %v\n", err)
 	} else if pass != "baz" {
 		t.Errorf("expected %q, got %q\n", "baz", pass)
 	}
-
-
 }

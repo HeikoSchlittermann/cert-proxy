@@ -45,6 +45,7 @@ var (
 
 func main() {
 	defer Verbose("DONE")
+
 	Verbose("Starting %s: %s", program.Name, program.Version)
 
 	if err := list.AddItemsFromFile(&CNs, opt.CNfile); err != nil {
@@ -53,7 +54,7 @@ func main() {
 
 	// Setup the HTTP client, some more setup is necessary, as we need
 	// to send our certificate and we need to check the server's cert
-	// agains a non-public root CA.
+	// against a non-public root CA.
 	// FIXME: is this really the right way?
 
 	http.DefaultClient.Transport = &http.Transport{
@@ -71,6 +72,7 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
+
 			return cfg
 		}(),
 	}
@@ -95,13 +97,17 @@ func main() {
 	// in parallel
 	opt.Jobs = min(opt.Jobs, len(CNs))
 	Verbose("Enqueing %d tasks for %d domains %v", opt.Jobs, len(CNs), CNs)
+
 	var pool = worker.NewPool(opt.Jobs)
 	pool.EnqueueTasks(CNs, opt.Connect, opt.Certbase, opt.Hook, opt.Format, opt.Passout)
+
 	if err := pool.Wait(); err != nil {
 		log.Fatal(err)
 	}
+
 	if opt.SharedHook != "" {
 		Verbose("Shared hook %s for %s", opt.SharedHook, CNs)
+
 		cmd := exec.Cmd{
 			Path:   opt.SharedHook,
 			Args:   append([]string{opt.SharedHook, "shared"}, CNs.Items()...),
@@ -113,13 +119,16 @@ func main() {
 			log.Fatalf("Running shared hook %q: %v", opt.SharedHook, err)
 		}
 	}
+
 	os.Exit(0)
 }
 
 func fetchCNs() ([]string, error) {
 	Verbose("Getting list of domains")
+
 	req, err := http.NewRequest(`GET`, opt.Connect+path.Join(`/`+API_VERSION, `list`), nil)
 	req.Header.Add(`x-version`, program.Version)
+
 	if err != nil {
 		return nil, err
 	}
@@ -128,10 +137,12 @@ func fetchCNs() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, errors.New(resp.Status)
 	}
 	defer resp.Body.Close()
+
 	var domains []string
 
 	// check remote version
@@ -144,6 +155,7 @@ func fetchCNs() ([]string, error) {
 	for s.Scan() {
 		domains = append(domains, s.Text())
 	}
+
 	return domains, s.Err()
 }
 
