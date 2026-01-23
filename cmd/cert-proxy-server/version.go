@@ -6,7 +6,7 @@ package main
 import (
 	"net/http"
 
-	"go.schlittermann.de/heiko/cert-proxy/program"
+	"go.schlittermann.de/heiko/cert-proxy/internal/program"
 )
 
 func versionCheck(w http.ResponseWriter, req *http.Request) {

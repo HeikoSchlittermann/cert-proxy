@@ -8,7 +8,7 @@ import (
 	"log"
 	"net/http"
 
-	"go.schlittermann.de/heiko/cert-proxy/program"
+	"go.schlittermann.de/heiko/cert-proxy/internal/program"
 	. "go.schlittermann.de/heiko/cert-proxy/shared"
 )
 

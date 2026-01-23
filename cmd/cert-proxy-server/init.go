@@ -9,7 +9,7 @@ import (
 	"log"
 	"os"
 
-	"go.schlittermann.de/heiko/cert-proxy/program"
+	"go.schlittermann.de/heiko/cert-proxy/internal/program"
 	. "go.schlittermann.de/heiko/cert-proxy/shared"
 )
 

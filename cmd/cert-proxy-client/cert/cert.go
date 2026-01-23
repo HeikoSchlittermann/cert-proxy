@@ -17,7 +17,7 @@ import (
 	"text/template"
 	"time"
 
-	"go.schlittermann.de/heiko/cert-proxy/program"
+	"go.schlittermann.de/heiko/cert-proxy/internal/program"
 	. "go.schlittermann.de/heiko/cert-proxy/shared"
 )
 
