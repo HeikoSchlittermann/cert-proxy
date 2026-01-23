@@ -17,7 +17,7 @@ import (
 	"go.schlittermann.de/heiko/cert-proxy/cmd/cert-proxy-client/cert"
 	"go.schlittermann.de/heiko/cert-proxy/cmd/cert-proxy-client/worker"
 	"go.schlittermann.de/heiko/cert-proxy/internal/program"
-	"go.schlittermann.de/heiko/cert-proxy/list"
+	"go.schlittermann.de/heiko/cert-proxy/internal/list"
 	. "go.schlittermann.de/heiko/cert-proxy/shared"
 )
 
