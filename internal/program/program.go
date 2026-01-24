@@ -1,6 +1,7 @@
 // Copyright 2019-2024 Heiko Schlittermann <hs@schlittermann.de>
 // SPDX-License-Identifier: Apache-2.0
 
+// Package program provides program self identification.
 package program
 
 import (
@@ -9,13 +10,19 @@ import (
 )
 
 var (
-	Version string = `*unknown*` // overridden by the linker
-	Name    string = filepath.Base(os.Args[0])
-	Path    string = func() string {
-		if p, err := filepath.Abs(os.Args[0]); err != nil {
+	// Version is the version of the current program, as set by the
+	// builder (linker)
+	Version = `*unknown*` // overridden by the linker
+
+	// Name is the basename of the current process
+	Name = filepath.Base(os.Args[0])
+
+	// Path is the absolute path of the running executable.
+	Path = func() string {
+		p, err := filepath.Abs(os.Args[0])
+		if err != nil {
 			panic(err)
-		} else {
-			return p
 		}
+		return p
 	}()
 )
