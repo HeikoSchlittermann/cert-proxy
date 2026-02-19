@@ -13,11 +13,11 @@ import (
 	"strings"
 	"time"
 
-	. "go.schlittermann.de/heiko/cert-proxy/internal/shared"
+	"go.schlittermann.de/heiko/cert-proxy/internal/shared"
 )
 
 func serve(ctx context, w http.ResponseWriter, req *http.Request) error {
-	Verbose("Serving url=%v%s%s\n",
+	shared.Verbose("Serving url=%v%s%s\n",
 		req.URL,
 		func() string {
 			if s := req.Header.Get(`if-modified-since`); s != "" {
@@ -72,24 +72,28 @@ func serve(ctx context, w http.ResponseWriter, req *http.Request) error {
 
 	switch role {
 	case `list`:
-		if domains, err := cnList(ctx[REMOTE]); err != nil {
+		domains, err := cnList(ctx[REMOTE])
+		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return err
-		} else {
-			fmt.Fprintln(w, strings.Join(domains.Items(), "\n"))
-			return nil
 		}
+
+		_, _ = fmt.Fprintln(w, strings.Join(domains.Items(), "\n"))
+
+		return nil
 	case `bundle`:
 		if file, err := http.Dir(opt.Certbase).Open((filepath.Join(domain, role+ext))); err == nil {
-			defer file.Close()
+			defer file.Close() //nolint:errcheck // we pass the FH to content, which should test whether there is a close, and check its error
 
 			content = file
-			if fi, err := file.Stat(); err != nil {
+
+			fi, err := file.Stat()
+			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return err
-			} else {
-				mtime = fi.ModTime()
 			}
+
+			mtime = fi.ModTime()
 		} else if os.IsNotExist(err) {
 			content, mtime, err = createPKCS12(opt.Certbase, domain, req.URL.Query().Get("pass"))
 			if err != nil {
@@ -102,21 +106,23 @@ func serve(ctx context, w http.ResponseWriter, req *http.Request) error {
 		}
 	case `cert`, `chain`, `fullchain`, `privkey`:
 		fn := filepath.Join(domain, role+ext)
-		if file, err := http.Dir(opt.Certbase).Open(fn); err != nil {
+
+		file, err := http.Dir(opt.Certbase).Open(fn)
+		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return err
-		} else {
-			defer file.Close()
-
-			content = file
-
-			if fi, err := file.Stat(); err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return err
-			} else {
-				mtime = fi.ModTime()
-			}
 		}
+		defer file.Close() //nolint:errcheck // fh is passed to content
+
+		content = file
+
+		fi, err := file.Stat()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return err
+		}
+
+		mtime = fi.ModTime()
 	default:
 		err := fmt.Errorf("invalid request `%s`", role)
 		http.Error(w, err.Error(), http.StatusBadRequest)

@@ -9,7 +9,7 @@ import (
 	"net/http"
 
 	"go.schlittermann.de/heiko/cert-proxy/internal/program"
-	. "go.schlittermann.de/heiko/cert-proxy/internal/shared"
+	"go.schlittermann.de/heiko/cert-proxy/internal/shared"
 )
 
 var (
@@ -53,7 +53,7 @@ func main() {
 	http.HandleFunc("/v1/privkey/", use(authz, serve))
 	http.HandleFunc("/v1/bundle/", use(authz, serve))
 
-	tlsConfig, err := TLSServerConfig(opt.SSLFile, &tls.Config{
+	tlsConfig, err := shared.TLSServerConfig(opt.SSLFile, &tls.Config{
 		ClientAuth: tls.VerifyClientCertIfGiven,
 	})
 	if err != nil {
@@ -66,5 +66,5 @@ func main() {
 	}
 
 	log.Printf("Starting listener %v (%s: %s)\n", listener.Addr(), program.Path, program.Version)
-	http.Serve(listener, nil)
+	_ = http.Serve(listener, nil)
 }

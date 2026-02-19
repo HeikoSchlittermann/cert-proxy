@@ -16,12 +16,12 @@ func cnList(cn string) (list.UniqStrings, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer cc.Close()
+	defer cc.Close() //nolint:errcheck
 
 	cns := list.UniqStrings{}
 	if err = list.AddItemsFromReader(&cns, cc); err != nil {
 		return nil, err
 	}
 
-	return cns, nil
+	return cns, cc.Close()
 }

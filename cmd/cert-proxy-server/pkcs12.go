@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"time"
 
-	. "go.schlittermann.de/heiko/cert-proxy/internal/shared"
+	"go.schlittermann.de/heiko/cert-proxy/internal/shared"
 )
 
 func createPKCS12(certbase, domain, pass string) (*bytes.Reader, time.Time, error) {
@@ -22,11 +22,12 @@ func createPKCS12(certbase, domain, pass string) (*bytes.Reader, time.Time, erro
 		mtime time.Time
 	)
 
-	if fi, err := os.Stat(cert); err != nil {
+	fi, err := os.Stat(cert)
+	if err != nil {
 		return nil, mtime, err
-	} else {
-		mtime = fi.ModTime()
 	}
+
+	mtime = fi.ModTime()
 
 	var cmd = exec.Command(`openssl`, `pkcs12`,
 		`-export`,
@@ -34,7 +35,7 @@ func createPKCS12(certbase, domain, pass string) (*bytes.Reader, time.Time, erro
 		`-inkey`, key,
 		`-in`, cert,
 		`-certfile`, chain)
-	Verbose("Starting %s", cmd.Path)
+	shared.Verbose("Starting %s", cmd.Path)
 
 	pkcs12, err := cmd.Output()
 	if err != nil {

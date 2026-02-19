@@ -10,7 +10,7 @@ import (
 	"os"
 
 	"go.schlittermann.de/heiko/cert-proxy/internal/program"
-	. "go.schlittermann.de/heiko/cert-proxy/internal/shared"
+	"go.schlittermann.de/heiko/cert-proxy/internal/shared"
 )
 
 func init() {
@@ -44,8 +44,8 @@ func init() {
 	}
 
 	if opt.Verbose {
-		Verbose = log.Printf
+		shared.Verbose = log.Printf
 	} else {
-		Verbose = func(string, ...interface{}) {}
+		shared.Verbose = func(string, ...interface{}) {}
 	}
 }

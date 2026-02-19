@@ -1,6 +1,8 @@
 // Copyright 2019-2024 Heiko Schlittermann <hs@schlittermann.de>
 // SPDX-License-Identifier: Apache-2.0
 
+// Cert-proxy-server implements the server side of the cert-proxy
+// protocol.
 package main
 
 import (
@@ -12,14 +14,15 @@ import (
 )
 
 func authn(ctx context, w http.ResponseWriter, req *http.Request) error {
-	if c := req.TLS.PeerCertificates; len(c) == 0 {
+	c := req.TLS.PeerCertificates
+	if len(c) == 0 {
 		err := errors.New("no (valid) client certificate")
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 
 		return err
-	} else {
-		ctx[REMOTE] = c[0].Subject.CommonName
 	}
+
+	ctx[REMOTE] = c[0].Subject.CommonName
 
 	return nil
 }
@@ -30,14 +33,15 @@ func authz(ctx context, w http.ResponseWriter, req *http.Request) error {
 
 	// <>/v1/<req>/[domain]
 	// 0  1  2     3
-	if parts := strings.Split(req.URL.Path, `/`); len(parts) < 4 {
+	parts := strings.Split(req.URL.Path, `/`)
+	if len(parts) < 4 {
 		err := errors.New("required syntax: /v1/<req>[/<domain>]")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 
 		return err
-	} else {
-		ctx[DOMAIN] = parts[3]
 	}
+
+	ctx[DOMAIN] = parts[3]
 
 	allowedDomains, err := cnList(ctx[REMOTE])
 	if err != nil {
