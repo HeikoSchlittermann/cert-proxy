@@ -16,12 +16,12 @@ import (
 
 	"go.schlittermann.de/heiko/cert-proxy/cmd/cert-proxy-client/cert"
 	"go.schlittermann.de/heiko/cert-proxy/cmd/cert-proxy-client/worker"
-	"go.schlittermann.de/heiko/cert-proxy/internal/program"
 	"go.schlittermann.de/heiko/cert-proxy/internal/list"
-	. "go.schlittermann.de/heiko/cert-proxy/internal/shared"
+	"go.schlittermann.de/heiko/cert-proxy/internal/program"
+	"go.schlittermann.de/heiko/cert-proxy/internal/shared"
 )
 
-const API_VERSION = `v1`
+const apiVersion = `v1`
 
 var (
 	CNs = list.UniqStrings{}
@@ -44,9 +44,9 @@ var (
 )
 
 func main() {
-	defer Verbose("DONE")
+	defer shared.Verbose("DONE")
 
-	Verbose("Starting %s: %s", program.Name, program.Version)
+	shared.Verbose("Starting %s: %s", program.Name, program.Version)
 
 	if err := list.AddItemsFromFile(&CNs, opt.CNfile); err != nil {
 		log.Fatal(err)
@@ -66,7 +66,7 @@ func main() {
 		//DisableKeepAlives: true,
 		Proxy: http.ProxyFromEnvironment,
 		TLSClientConfig: func() *tls.Config {
-			cfg, err := TLSClientConfig(opt.SSLFile, &tls.Config{
+			cfg, err := shared.TLSClientConfig(opt.SSLFile, &tls.Config{
 				ServerName: opt.ServerCN,
 			})
 			if err != nil {
@@ -86,17 +86,18 @@ func main() {
 	// In auto mode fetch the list of available domains and
 	// append this list to the static list we may have in CNs
 	if opt.Auto {
-		if pushed, err := fetchCNs(); err != nil {
+		pushed, err := fetchCNs()
+		if err != nil {
 			log.Fatal(err)
-		} else {
-			CNs.Add(pushed...)
 		}
+
+		CNs.Add(pushed...)
 	}
 
 	// Now we get all startup information and can start working
 	// in parallel
 	opt.Jobs = min(opt.Jobs, len(CNs))
-	Verbose("Enqueing %d tasks for %d domains %v", opt.Jobs, len(CNs), CNs)
+	shared.Verbose("Enqueing %d tasks for %d domains %v", opt.Jobs, len(CNs), CNs)
 
 	var pool = worker.NewPool(opt.Jobs)
 	pool.EnqueueTasks(CNs, opt.Connect, opt.Certbase, opt.Hook, opt.Format, opt.Passout)
@@ -106,7 +107,7 @@ func main() {
 	}
 
 	if opt.SharedHook != "" {
-		Verbose("Shared hook %s for %s", opt.SharedHook, CNs)
+		shared.Verbose("Shared hook %s for %s", opt.SharedHook, CNs)
 
 		cmd := exec.Cmd{
 			Path:   opt.SharedHook,
@@ -124,9 +125,9 @@ func main() {
 }
 
 func fetchCNs() ([]string, error) {
-	Verbose("Getting list of domains")
+	shared.Verbose("Getting list of domains")
 
-	req, err := http.NewRequest(`GET`, opt.Connect+path.Join(`/`+API_VERSION, `list`), nil)
+	req, err := http.NewRequest(`GET`, opt.Connect+path.Join(`/`+apiVersion, `list`), nil)
 	req.Header.Add(`x-version`, program.Version)
 
 	if err != nil {
@@ -141,7 +142,7 @@ func fetchCNs() ([]string, error) {
 	if resp.StatusCode != http.StatusOK {
 		return nil, errors.New(resp.Status)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	var domains []string
 
@@ -157,12 +158,4 @@ func fetchCNs() ([]string, error) {
 	}
 
 	return domains, s.Err()
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	} else {
-		return b
-	}
 }

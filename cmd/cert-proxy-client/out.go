@@ -15,7 +15,7 @@ func (o *out) Set(v string) error {
 	case `STDERR`, `STDOUT`:
 		*o = out(s)
 	default:
-		return fmt.Errorf("Unknown output: %s", s)
+		return fmt.Errorf("unknown output: %s", s)
 	}
 
 	return nil

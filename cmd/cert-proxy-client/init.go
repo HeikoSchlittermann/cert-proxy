@@ -15,7 +15,7 @@ import (
 	"go.schlittermann.de/heiko/cert-proxy/cmd/cert-proxy-client/cert"
 	"go.schlittermann.de/heiko/cert-proxy/cmd/cert-proxy-client/secret"
 	"go.schlittermann.de/heiko/cert-proxy/internal/program"
-	. "go.schlittermann.de/heiko/cert-proxy/internal/shared"
+	"go.schlittermann.de/heiko/cert-proxy/internal/shared"
 )
 
 func init() {
@@ -25,9 +25,11 @@ func init() {
 	}
 
 	flag.Usage = func() {
-		fmt.Fprintf(flag.CommandLine.Output(), "Usage: %s [options] [<CN>]...\n", os.Args[0])
+		_, _ = fmt.Fprintf(flag.CommandLine.Output(), "Usage: %s [options] [<CN>]...\n", os.Args[0])
+
 		flag.PrintDefaults()
-		fmt.Fprint(flag.CommandLine.Output(), `
+
+		_, _ = fmt.Fprint(flag.CommandLine.Output(), `
 The cert-proxy-client exits with 0 on success, and with an non-zero value if there
 is a problem.
 
@@ -124,7 +126,7 @@ Example:
 	}
 
 	if opt.Verbose {
-		Verbose = log.New(os.Stderr, ``, log.Flags()).Printf
+		shared.Verbose = log.New(os.Stderr, ``, log.Flags()).Printf
 	}
 
 	if opt.Passout != "" {
@@ -137,14 +139,15 @@ Example:
 	}
 
 	// Sanitize the Connect option
-	if url, err := url.Parse(opt.Connect); err != nil {
+	url, err := url.Parse(opt.Connect)
+	if err != nil {
 		log.Fatal(err)
-	} else {
-		if url.Scheme == "" {
-			url.Scheme = "https"
-		}
-
-		url.Path = strings.TrimRight(url.Path, "/")
-		opt.Connect = url.String()
 	}
+
+	if url.Scheme == "" {
+		url.Scheme = "https"
+	}
+
+	url.Path = strings.TrimRight(url.Path, "/")
+	opt.Connect = url.String()
 }
