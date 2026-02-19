@@ -29,5 +29,4 @@ func Read(src string) (string, error) {
 	default:
 		panic("unhandled secret source proto: " + proto)
 	}
-
 }
