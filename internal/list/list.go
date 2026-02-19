@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package list provides a List interface and functions around lists.
-package list
+package list //nolint:revive // I accept the collision with Go standard(?) list package
 
 import (
 	"bufio"

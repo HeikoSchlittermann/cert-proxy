@@ -23,6 +23,7 @@ var (
 		if err != nil {
 			panic(err)
 		}
+
 		return p
 	}()
 )
