@@ -1,12 +1,12 @@
 // Copyright 2019-2024 Heiko Schlittermann <hs@schlittermann.de>
 // SPDX-License-Identifier: Apache-2.0
 
-// Package for shared code
+// Package shared provides code used in both the client and the server
 package shared
 
 import (
 	"crypto/x509"
-	"io/ioutil"
+	"os"
 )
 
 // CertPool creates a pool of certificates from PEM files. This is mainly for
@@ -17,7 +17,7 @@ func CertPool(files ...string) (pool *x509.CertPool, err error) {
 	for _, f := range files {
 		var pem []byte
 
-		pem, err = ioutil.ReadFile(f)
+		pem, err = os.ReadFile(f)
 		if err != nil {
 			return
 		}

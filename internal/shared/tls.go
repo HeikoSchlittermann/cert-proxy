@@ -8,6 +8,8 @@ import (
 	"crypto/x509"
 )
 
+// TLSClientConfig returns a tls.Config which is ready for use on the
+// client side.
 func TLSClientConfig(sslFile string, config *tls.Config) (*tls.Config, error) {
 	CAs, err := TLSConfig(sslFile, config)
 	if err != nil {
@@ -19,6 +21,8 @@ func TLSClientConfig(sslFile string, config *tls.Config) (*tls.Config, error) {
 	return config, err
 }
 
+// TLSServerConfig returns a tls.Config which is ready to be used on the
+// server side.
 func TLSServerConfig(sslFile string, config *tls.Config) (*tls.Config, error) {
 	CAs, err := TLSConfig(sslFile, config)
 	if err != nil {
@@ -30,6 +34,8 @@ func TLSServerConfig(sslFile string, config *tls.Config) (*tls.Config, error) {
 	return config, err
 }
 
+// TLSConfig populates the certs of the config and returns the cert pool
+// for furter use.
 func TLSConfig(sslFile string, config *tls.Config) (pool *x509.CertPool, err error) {
 	cert, err := tls.LoadX509KeyPair(sslFile, sslFile)
 	if err != nil {
