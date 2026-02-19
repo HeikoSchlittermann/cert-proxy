@@ -18,6 +18,7 @@ func (format *Format) Set(value string) error {
 	default:
 		return errors.New("Invalid format spec")
 	}
+
 	return nil
 }
 

@@ -4,7 +4,6 @@
 package secret
 
 import (
-	"errors"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -30,6 +29,4 @@ func Read(src string) (string, error) {
 	default:
 		panic("unhandled secret source proto: " + proto)
 	}
-
-	return ``, errors.New("xxx")
 }

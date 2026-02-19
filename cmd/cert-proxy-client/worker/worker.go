@@ -9,8 +9,8 @@ import (
 	"sync"
 
 	"go.schlittermann.de/heiko/cert-proxy/cmd/cert-proxy-client/cert"
-	"go.schlittermann.de/heiko/cert-proxy/list"
-	. "go.schlittermann.de/heiko/cert-proxy/shared"
+	"go.schlittermann.de/heiko/cert-proxy/internal/list"
+	. "go.schlittermann.de/heiko/cert-proxy/internal/shared"
 )
 
 // Task is a bundle of requests and associated destination
@@ -33,27 +33,29 @@ func (*fakeMutex) Unlock() {}
 // the Pool. This pool can be used to enqueue
 // Tasks.
 func NewPool(workers int) *Pool {
-
-	var pool = Pool{
-		wg:     new(sync.WaitGroup),
-		queue:  make(queue, workers),
-		errors: make(chan int),
-	}
-	var mtx = &sync.Mutex{}
+	var (
+		pool = Pool{wg: new(sync.WaitGroup), queue: make(queue, workers), errors: make(chan int)}
+		mtx  = &sync.Mutex{}
+	)
 	//var mtx = fakeMutex{}
 
 	Verbose("Launching %d workers", workers)
-	for i := 0; i < workers; i++ {
 
+	for i := 0; i < workers; i++ {
 		pool.wg.Add(1)
+
 		go func(wid int) {
 			defer Verbose("Worker[%d] done", wid)
 			defer pool.wg.Done()
+
 			Verbose("Worker[%d] starting", wid)
+
 			for req := range pool.queue {
 				Verbose("Req %v\n", req)
+
 				if err := req.Execute(mtx); err != nil {
 					log.Println(err)
+
 					pool.errors <- 1
 				}
 			}
@@ -61,7 +63,6 @@ func NewPool(workers int) *Pool {
 	}
 
 	return &pool
-
 }
 
 // EnqueueTasks creates a task per CN, with all the items that are
@@ -76,13 +77,13 @@ func (pool *Pool) EnqueueTasks(CNs list.UniqStrings, proxy, certbase, hook strin
 				pool.queue <- req
 			}
 		}
+
 		close(pool.queue)
 	}()
 }
 
 // Wait until all jobs are done
 func (pool Pool) Wait() error {
-
 	var done = make(chan int)
 
 	// Collect and output the error messages
@@ -91,6 +92,7 @@ func (pool Pool) Wait() error {
 		for n := range pool.errors {
 			errors += n
 		}
+
 		done <- errors
 	}()
 
@@ -109,5 +111,6 @@ func plural(i int) (s string) {
 	if i != 1 {
 		s = `s`
 	}
+
 	return
 }

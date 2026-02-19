@@ -14,8 +14,8 @@ import (
 
 	"go.schlittermann.de/heiko/cert-proxy/cmd/cert-proxy-client/cert"
 	"go.schlittermann.de/heiko/cert-proxy/cmd/cert-proxy-client/secret"
-	"go.schlittermann.de/heiko/cert-proxy/program"
-	. "go.schlittermann.de/heiko/cert-proxy/shared"
+	"go.schlittermann.de/heiko/cert-proxy/internal/program"
+	"go.schlittermann.de/heiko/cert-proxy/internal/shared"
 )
 
 func init() {
@@ -25,9 +25,11 @@ func init() {
 	}
 
 	flag.Usage = func() {
-		fmt.Fprintf(flag.CommandLine.Output(), "Usage: %s [options] [<CN>]...\n", os.Args[0])
+		_, _ = fmt.Fprintf(flag.CommandLine.Output(), "Usage: %s [options] [<CN>]...\n", os.Args[0])
+
 		flag.PrintDefaults()
-		fmt.Fprint(flag.CommandLine.Output(), `
+
+		_, _ = fmt.Fprint(flag.CommandLine.Output(), `
 The cert-proxy-client exits with 0 on success, and with an non-zero value if there
 is a problem.
 
@@ -77,8 +79,10 @@ Example:
 
 	var logOutput out = STDERR
 
-	var help = flag.Bool("help", false, "print help to STDOUT and exit cleanly")
-	var version = flag.Bool("version", false, "current version ("+program.Version+")")
+	var (
+		help    = flag.Bool("help", false, "print help to STDOUT and exit cleanly")
+		version = flag.Bool("version", false, "current version ("+program.Version+")")
+	)
 
 	flag.BoolVar(&cert.UseSymlink, "symlink", cert.UseSymlink, "use symlinks for current files")
 	flag.BoolVar(&opt.Auto, "auto", true, "auto mode (fetch all CNs the server provides us)")
@@ -91,7 +95,7 @@ Example:
 	flag.StringVar(&opt.Hook, "hook", "", "hook script `file`¹")
 	flag.StringVar(&opt.Passout, "passout", "", "`password` to protect the PKCS12³")
 	flag.StringVar(&opt.SharedHook, "shared-hook", "", "shared hook script `file`²")
-	flag.StringVar(&opt.ServerCN, "servername", "", "name (`CN`) of the cert proxy server (if emtpy: use the FQDN of the host we connect to)")
+	flag.StringVar(&opt.ServerCN, "servername", "", "name (`CN`) of the cert proxy server (if empty: use the FQDN of the host we connect to)")
 	flag.StringVar(&opt.SSLFile, "sslfile", "client-ssl.pem", "SSL auth `file` (crt+key+ca) PEM")
 	flag.Var(&logOutput, "stderr", "redirect stderr `output` (stderr|stdout)")
 	flag.Var(&opt.Format, "format", "`format` of the requested certificate(s) (PEM|PKCS12)")
@@ -122,11 +126,12 @@ Example:
 	}
 
 	if opt.Verbose {
-		Verbose = log.New(os.Stderr, ``, log.Flags()).Printf
+		shared.Verbose = log.New(os.Stderr, ``, log.Flags()).Printf
 	}
 
 	if opt.Passout != "" {
 		var err error
+
 		opt.Passout, err = secret.Read(opt.Passout)
 		if err != nil {
 			log.Fatal(err)
@@ -134,13 +139,15 @@ Example:
 	}
 
 	// Sanitize the Connect option
-	if url, err := url.Parse(opt.Connect); err != nil {
+	url, err := url.Parse(opt.Connect)
+	if err != nil {
 		log.Fatal(err)
-	} else {
-		if url.Scheme == "" {
-			url.Scheme = "https"
-		}
-		url.Path = strings.TrimRight(url.Path, "/")
-		opt.Connect = url.String()
 	}
+
+	if url.Scheme == "" {
+		url.Scheme = "https"
+	}
+
+	url.Path = strings.TrimRight(url.Path, "/")
+	opt.Connect = url.String()
 }
