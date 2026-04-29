@@ -37,6 +37,7 @@ func createTestCertAndKey(t *testing.T, dir string) {
 	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER})
 	keyDER, err := x509.MarshalECPrivateKey(key)
 	require.NoError(t, err)
+
 	keyPEM := pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: keyDER})
 
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "cert.pem"), certPEM, 0644))
