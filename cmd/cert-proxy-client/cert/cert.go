@@ -317,21 +317,22 @@ func writeFile(name string, data []byte, private bool) error {
 		return err
 	}
 
-	// We do not use ioutil.WriteFile, as this would overwrite
-	// an existing file
-	//file, err := os.Create(name)
 	var mode os.FileMode
 	if private {
-		mode = 0660
+		mode = 0600
 	} else {
-		mode = 0666
+		mode = 0644
 	}
 
-	file, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE, mode)
+	file, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode)
 	if err != nil {
 		return err
 	}
 	defer file.Close() //nolint:errcheck
+
+	if err := file.Chmod(mode); err != nil {
+		return err
+	}
 
 	_, err = file.Write(data)
 
