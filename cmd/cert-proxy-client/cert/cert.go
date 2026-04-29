@@ -237,30 +237,40 @@ func (req *Req) Execute(mtx Mutex) error {
 	if req.hook != "" {
 		Verbose("Hook %s for %s", req.hook, req.domain)
 
+		var timestamp = fmt.Sprint(time.Now().Unix())
+
 		var cmd = exec.Cmd{
-			Path: req.hook,
-			Env:  append(os.Environ(), req.env...),
-			Args: []string{
-				0: req.hook,
-				1: `deploy_cert`,
-				2: req.domain,
-				//3..6: to be filled below
-				7: fmt.Sprint(time.Now().Unix()),
-			},
+			Path:   req.hook,
+			Env:    append(os.Environ(), req.env...),
 			Stdout: os.Stdout,
 			Stderr: os.Stderr,
 		}
+
 		for _, i := range req.items {
 			cmd.Env = append(cmd.Env, i.env)
-			switch i.role {
-			case RoleKEY:
-				cmd.Args[3] = i.local
-			case RoleCRT:
-				cmd.Args[4] = i.local
-			case RoleFULLCHAIN:
-				cmd.Args[5] = i.local
-			case RoleCHAIN:
-				cmd.Args[6] = i.local
+		}
+
+		if len(req.items) == 1 && req.items[0].role == RoleBUNDLE {
+			cmd.Args = []string{req.hook, `deploy_cert`, req.domain, req.items[0].local, timestamp}
+		} else {
+			cmd.Args = []string{
+				0: req.hook,
+				1: `deploy_cert`,
+				2: req.domain,
+				7: timestamp,
+			}
+
+			for _, i := range req.items {
+				switch i.role {
+				case RoleKEY:
+					cmd.Args[3] = i.local
+				case RoleCRT:
+					cmd.Args[4] = i.local
+				case RoleFULLCHAIN:
+					cmd.Args[5] = i.local
+				case RoleCHAIN:
+					cmd.Args[6] = i.local
+				}
 			}
 		}
 
