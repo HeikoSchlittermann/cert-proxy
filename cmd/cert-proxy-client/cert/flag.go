@@ -16,7 +16,7 @@ func (format *Format) Set(value string) error {
 	case `PKCS12`:
 		*format = FormatPKCS12
 	default:
-		return errors.New("Invalid format spec")
+		return errors.New("invalid format spec")
 	}
 
 	return nil

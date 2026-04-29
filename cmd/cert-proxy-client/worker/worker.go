@@ -106,7 +106,7 @@ func (pool Pool) Wait() error {
 	errors := <-done
 
 	if errors != 0 {
-		return fmt.Errorf("Got %d error%s", errors, plural(errors))
+		return fmt.Errorf("got %d error%s", errors, plural(errors))
 	}
 
 	return nil

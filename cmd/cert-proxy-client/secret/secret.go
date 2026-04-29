@@ -6,7 +6,6 @@
 package secret
 
 import (
-	"io/ioutil"
 	"os"
 	"strings"
 )
@@ -23,7 +22,7 @@ func Read(src string) (string, error) {
 	case `PASS`:
 		return value, nil
 	case `FILE`:
-		b, err := ioutil.ReadFile(value)
+		b, err := os.ReadFile(value)
 		if err != nil {
 			return ``, err
 		}
