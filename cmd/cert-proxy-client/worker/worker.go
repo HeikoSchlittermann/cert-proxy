@@ -28,11 +28,6 @@ type Pool struct {
 	errors chan int
 }
 
-type fakeMutex struct{}
-
-func (*fakeMutex) Lock()   {}
-func (*fakeMutex) Unlock() {}
-
 // NewPool creates worker pool of size workers and returns
 // the Pool. This pool can be used to enqueue
 // Tasks.
@@ -41,7 +36,6 @@ func NewPool(workers int) *Pool {
 		pool = Pool{wg: new(sync.WaitGroup), queue: make(queue, workers), errors: make(chan int)}
 		mtx  = &sync.Mutex{}
 	)
-	//var mtx = fakeMutex{}
 
 	shared.Verbose("Launching %d workers", workers)
 
