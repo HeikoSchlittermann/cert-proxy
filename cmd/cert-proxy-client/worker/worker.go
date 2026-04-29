@@ -1,6 +1,8 @@
 // Copyright 2019-2024 Heiko Schlittermann <hs@schlittermann.de>
 // SPDX-License-Identifier: Apache-2.0
 
+// Package worker implements a fixed-size pool that runs cert.Req fetches
+// concurrently across many domains.
 package worker
 
 import (
@@ -10,7 +12,7 @@ import (
 
 	"go.schlittermann.de/heiko/cert-proxy/cmd/cert-proxy-client/cert"
 	"go.schlittermann.de/heiko/cert-proxy/internal/list"
-	. "go.schlittermann.de/heiko/cert-proxy/internal/shared"
+	"go.schlittermann.de/heiko/cert-proxy/internal/shared"
 )
 
 // Task is a bundle of requests and associated destination
@@ -18,6 +20,8 @@ import (
 // one DN
 
 type queue chan cert.Req
+
+// Pool is a fixed-size set of workers that execute cert.Req fetches.
 type Pool struct {
 	wg *sync.WaitGroup
 	queue
@@ -39,19 +43,19 @@ func NewPool(workers int) *Pool {
 	)
 	//var mtx = fakeMutex{}
 
-	Verbose("Launching %d workers", workers)
+	shared.Verbose("Launching %d workers", workers)
 
 	for i := 0; i < workers; i++ {
 		pool.wg.Add(1)
 
 		go func(wid int) {
-			defer Verbose("Worker[%d] done", wid)
+			defer shared.Verbose("Worker[%d] done", wid)
 			defer pool.wg.Done()
 
-			Verbose("Worker[%d] starting", wid)
+			shared.Verbose("Worker[%d] starting", wid)
 
 			for req := range pool.queue {
-				Verbose("Req %v\n", req)
+				shared.Verbose("Req %v\n", req)
 
 				if err := req.Execute(mtx); err != nil {
 					log.Println(err)
@@ -71,11 +75,12 @@ func NewPool(workers int) *Pool {
 func (pool *Pool) EnqueueTasks(CNs list.UniqStrings, proxy, certbase, hook string, format cert.Format, pass string) {
 	go func() {
 		for cn := range CNs {
-			if req, err := cert.NewReq(cn, proxy, certbase, hook, format, pass); err != nil {
+			req, err := cert.NewReq(cn, proxy, certbase, hook, format, pass)
+			if err != nil {
 				panic(err) // this is not supposed to fail
-			} else {
-				pool.queue <- req
 			}
+
+			pool.queue <- req
 		}
 
 		close(pool.queue)
@@ -102,9 +107,9 @@ func (pool Pool) Wait() error {
 
 	if errors != 0 {
 		return fmt.Errorf("Got %d error%s", errors, plural(errors))
-	} else {
-		return nil
 	}
+
+	return nil
 }
 
 func plural(i int) (s string) {

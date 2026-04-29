@@ -1,6 +1,8 @@
 // Copyright 2019-2024 Heiko Schlittermann <hs@schlittermann.de>
 // SPDX-License-Identifier: Apache-2.0
 
+// Package cert builds and executes certificate-fetch requests against the
+// cert-proxy server.
 package cert
 
 import (
@@ -18,14 +20,19 @@ import (
 	"time"
 
 	"go.schlittermann.de/heiko/cert-proxy/internal/program"
-	. "go.schlittermann.de/heiko/cert-proxy/internal/shared"
+	"go.schlittermann.de/heiko/cert-proxy/internal/shared"
 )
 
 type role string
 
+// UseSymlink controls whether downloaded files are exposed via symlinks.
+// Defaults to true on Unix, false on Windows.
 var UseSymlink = runtime.GOOS != "windows"
+
+// Force makes Execute ignore If-Modified-Since and re-download every file.
 var Force = false
 
+// Roles identify the per-domain artifacts the client may fetch.
 const (
 	RoleINVALID   role = ``
 	RoleCRT       role = `CERT`
@@ -35,15 +42,17 @@ const (
 	RoleBUNDLE    role = `BUNDLE`
 )
 
+// Format selects the on-disk certificate representation.
 type Format string
 
+// Supported certificate formats.
 const (
 	FormatINVALID Format = ``
 	FormatPEM     Format = `PEM`
 	FormatPKCS12  Format = `PKCS12`
 )
 
-// Each Format has a set of Files with specific Roles
+// ROLES maps each Format to the set of files (by Role) it requires.
 var ROLES = map[Format][]role{
 	FormatPEM:    {RoleCRT, RoleKEY, RoleCHAIN, RoleFULLCHAIN},
 	FormatPKCS12: {RoleBUNDLE},
@@ -54,6 +63,8 @@ type templates struct {
 	remote, local, env *template.Template
 }
 
+// TEMPLATES maps each Role to the URL, file-path, and environment-variable
+// templates used to fetch and place the artifact.
 var TEMPLATES = map[role]templates{
 	RoleCRT: {
 		remote: tt(`{{.Proxy}}/v1/cert/{{.Domain}}`),
@@ -82,6 +93,7 @@ var TEMPLATES = map[role]templates{
 	},
 }
 
+// Req is a per-domain bundle of artifact fetches plus an optional hook.
 type Req struct {
 	domain string
 	items  []certItem // depending on the Role…
@@ -104,6 +116,8 @@ type templateContext struct {
 	Pass   string
 }
 
+// NewReq builds a Req for one domain, expanding the URL, file-path, and env
+// templates for each Role required by the chosen Format.
 func NewReq(domain, remote, basedir, hook string, format Format, pass string) (Req, error) {
 	var (
 		req = Req{domain: domain, hook: hook, env: []string{`DOMAIN=` + domain}}
@@ -113,33 +127,36 @@ func NewReq(domain, remote, basedir, hook string, format Format, pass string) (R
 	// This format may require RoleCRT, RoleKey, … or RoleBUNDLE
 
 	for _, role := range ROLES[format] {
-		if templates, ok := TEMPLATES[role]; !ok {
+		templates, ok := TEMPLATES[role]
+		if !ok {
 			panic("template for " + string(role) + " is missing")
-		} else {
-			var item = certItem{
-				role:    role,
-				local:   filepath.Join(basedir, mustExpand(templates.local, ctx)),
-				private: role == RoleKEY || role == RoleBUNDLE,
-			}
-
-			// The env needs the expanded item.local (file name)
-			ctx.Local = item.local
-			item.env = mustExpand(templates.env, ctx)
-
-			if r, err := http.NewRequest(`GET`, mustExpand(templates.remote, ctx), nil); err != nil {
-				return Req{}, err
-			} else {
-				r.Header.Add(`x-version`, program.Version)
-				item.remote = r
-			}
-
-			req.items = append(req.items, item)
 		}
+
+		var item = certItem{
+			role:    role,
+			local:   filepath.Join(basedir, mustExpand(templates.local, ctx)),
+			private: role == RoleKEY || role == RoleBUNDLE,
+		}
+
+		// The env needs the expanded item.local (file name)
+		ctx.Local = item.local
+		item.env = mustExpand(templates.env, ctx)
+
+		r, err := http.NewRequest(`GET`, mustExpand(templates.remote, ctx), nil)
+		if err != nil {
+			return Req{}, err
+		}
+
+		r.Header.Add(`x-version`, program.Version)
+		item.remote = r
+
+		req.items = append(req.items, item)
 	}
 
 	return req, nil
 }
 
+// Mutex is the locking contract Execute uses to serialize hook invocations.
 type Mutex interface {
 	Lock()
 	Unlock()
@@ -159,7 +176,7 @@ func (req *Req) Execute(mtx Mutex) error {
 			}
 		}
 
-		Verbose("Requesting %s ims:%s", item.remote.URL, item.remote.Header.Get(`if-modified-since`))
+		shared.Verbose("Requesting %s ims:%s", item.remote.URL, item.remote.Header.Get(`if-modified-since`))
 
 		resp, err := http.DefaultClient.Do(item.remote)
 		if err != nil {
@@ -170,7 +187,7 @@ func (req *Req) Execute(mtx Mutex) error {
 		switch resp.StatusCode {
 		case http.StatusOK:
 		case http.StatusNotModified:
-			Verbose(resp.Status)
+			shared.Verbose(resp.Status)
 			continue
 		default:
 			return fmt.Errorf("%v: %v",
@@ -195,7 +212,7 @@ func (req *Req) Execute(mtx Mutex) error {
 			continue
 		}
 
-		Verbose("Write %s", item.local)
+		shared.Verbose("Write %s", item.local)
 
 		infixed[item.local] = func(s string) string {
 			i := strings.LastIndex(s, ".")
@@ -234,53 +251,53 @@ func (req *Req) Execute(mtx Mutex) error {
 	// 0    1           2      3       4        5             6         7
 	// These positional parameters appear as environment variables too,
 	// plus an additional variable BUNDLEFILE
-	if req.hook != "" {
-		Verbose("Hook %s for %s", req.hook, req.domain)
+	if req.hook == "" {
+		return nil
+	}
 
-		var timestamp = fmt.Sprint(time.Now().Unix())
+	shared.Verbose("Hook %s for %s", req.hook, req.domain)
 
-		var cmd = exec.Cmd{
-			Path:   req.hook,
-			Env:    append(os.Environ(), req.env...),
-			Stdout: os.Stdout,
-			Stderr: os.Stderr,
+	var timestamp = fmt.Sprint(time.Now().Unix())
+
+	var cmd = exec.Cmd{
+		Path:   req.hook,
+		Env:    append(os.Environ(), req.env...),
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+
+	for _, i := range req.items {
+		cmd.Env = append(cmd.Env, i.env)
+	}
+
+	if len(req.items) == 1 && req.items[0].role == RoleBUNDLE {
+		cmd.Args = []string{req.hook, `deploy_cert`, req.domain, req.items[0].local, timestamp}
+	} else {
+		cmd.Args = []string{
+			0: req.hook,
+			1: `deploy_cert`,
+			2: req.domain,
+			7: timestamp,
 		}
 
 		for _, i := range req.items {
-			cmd.Env = append(cmd.Env, i.env)
-		}
-
-		if len(req.items) == 1 && req.items[0].role == RoleBUNDLE {
-			cmd.Args = []string{req.hook, `deploy_cert`, req.domain, req.items[0].local, timestamp}
-		} else {
-			cmd.Args = []string{
-				0: req.hook,
-				1: `deploy_cert`,
-				2: req.domain,
-				7: timestamp,
-			}
-
-			for _, i := range req.items {
-				switch i.role {
-				case RoleKEY:
-					cmd.Args[3] = i.local
-				case RoleCRT:
-					cmd.Args[4] = i.local
-				case RoleFULLCHAIN:
-					cmd.Args[5] = i.local
-				case RoleCHAIN:
-					cmd.Args[6] = i.local
-				}
+			switch i.role {
+			case RoleKEY:
+				cmd.Args[3] = i.local
+			case RoleCRT:
+				cmd.Args[4] = i.local
+			case RoleFULLCHAIN:
+				cmd.Args[5] = i.local
+			case RoleCHAIN:
+				cmd.Args[6] = i.local
 			}
 		}
-
-		mtx.Lock()
-		defer mtx.Unlock()
-
-		return cmd.Run()
-	} else {
-		return nil
 	}
+
+	mtx.Lock()
+	defer mtx.Unlock()
+
+	return cmd.Run()
 }
 
 func (req Req) String() string {
@@ -300,7 +317,7 @@ func mustExpand(t *template.Template, ctx templateContext) string {
 }
 
 func writeFile(name string, data []byte, private bool) error {
-	if err := Mkdir(filepath.Dir(name)); err != nil {
+	if err := shared.Mkdir(filepath.Dir(name)); err != nil {
 		return err
 	}
 

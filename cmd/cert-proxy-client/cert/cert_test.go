@@ -17,19 +17,19 @@ func newMockServer(t *testing.T) *httptest.Server {
 	t.Helper()
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/v1/cert/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/v1/cert/", func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte("CERT-CONTENT"))
 	})
-	mux.HandleFunc("/v1/privkey/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/v1/privkey/", func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte("KEY-CONTENT"))
 	})
-	mux.HandleFunc("/v1/chain/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/v1/chain/", func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte("CHAIN-CONTENT"))
 	})
-	mux.HandleFunc("/v1/fullchain/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/v1/fullchain/", func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte("FULLCHAIN-CONTENT"))
 	})
-	mux.HandleFunc("/v1/bundle/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/v1/bundle/", func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte("BUNDLE-CONTENT"))
 	})
 
