@@ -18,19 +18,19 @@ func newMockServer(t *testing.T) *httptest.Server {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v1/cert/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("CERT-CONTENT"))
+		_, _ = w.Write([]byte("CERT-CONTENT"))
 	})
 	mux.HandleFunc("/v1/privkey/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("KEY-CONTENT"))
+		_, _ = w.Write([]byte("KEY-CONTENT"))
 	})
 	mux.HandleFunc("/v1/chain/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("CHAIN-CONTENT"))
+		_, _ = w.Write([]byte("CHAIN-CONTENT"))
 	})
 	mux.HandleFunc("/v1/fullchain/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("FULLCHAIN-CONTENT"))
+		_, _ = w.Write([]byte("FULLCHAIN-CONTENT"))
 	})
 	mux.HandleFunc("/v1/bundle/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("BUNDLE-CONTENT"))
+		_, _ = w.Write([]byte("BUNDLE-CONTENT"))
 	})
 
 	srv := httptest.NewServer(mux)
@@ -48,7 +48,7 @@ func newMockServer304(t *testing.T) *httptest.Server {
 			return
 		}
 
-		w.Write([]byte("DATA"))
+		_, _ = w.Write([]byte("DATA"))
 	}))
 	t.Cleanup(srv.Close)
 
@@ -313,7 +313,7 @@ func TestExecute_IfModifiedSince(t *testing.T) {
 			return
 		}
 
-		w.Write([]byte("DATA"))
+		_, _ = w.Write([]byte("DATA"))
 	}))
 	t.Cleanup(srv.Close)
 
@@ -329,7 +329,7 @@ func TestExecute_IfModifiedSince(t *testing.T) {
 	require.NoError(t, err)
 
 	var mtx sync.Mutex
-	req.Execute(&mtx)
+	_ = req.Execute(&mtx)
 
 	assert.Equal(t, 4, imsCount, "all 4 items should send If-Modified-Since")
 }
@@ -344,7 +344,7 @@ func TestExecute_Force(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		imsReceived = r.Header.Get("If-Modified-Since")
 
-		w.Write([]byte("NEW"))
+		_, _ = w.Write([]byte("NEW"))
 	}))
 	t.Cleanup(srv.Close)
 

@@ -165,7 +165,7 @@ func (req *Req) Execute(mtx Mutex) error {
 		if err != nil {
 			return err
 		}
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck
 
 		switch resp.StatusCode {
 		case http.StatusOK:
@@ -218,7 +218,7 @@ func (req *Req) Execute(mtx Mutex) error {
 		var err error
 
 		if UseSymlink {
-			os.Remove(name)
+			_ = os.Remove(name)
 			err = os.Symlink(filepath.Base(infixed[name]), name)
 		} else {
 			err = os.Rename(infixed[name], name)
@@ -318,7 +318,7 @@ func writeFile(name string, data []byte, private bool) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer file.Close() //nolint:errcheck
 
 	_, err = file.Write(data)
 

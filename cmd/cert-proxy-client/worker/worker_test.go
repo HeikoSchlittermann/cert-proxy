@@ -19,7 +19,7 @@ func TestNewPool(t *testing.T) {
 
 func TestPool_EnqueueAndWait_Success(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Write([]byte("DATA"))
+		_, _ = w.Write([]byte("DATA"))
 	}))
 	defer srv.Close()
 

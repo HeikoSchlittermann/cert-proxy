@@ -38,7 +38,7 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	defer os.RemoveAll(tmpDir)
+	defer os.RemoveAll(tmpDir) //nolint:errcheck
 
 	serverBin = filepath.Join(tmpDir, "cert-proxy-server")
 	clientBin = filepath.Join(tmpDir, "cert-proxy-client")
@@ -173,11 +173,11 @@ func createSSLPEM(t *testing.T, dir, cn string, caKey *ecdsa.PrivateKey, caCert 
 	f, err := os.Create(path)
 	require.NoError(t, err)
 
-	defer f.Close()
+	defer f.Close() //nolint:errcheck
 
-	pem.Encode(f, &pem.Block{Type: "CERTIFICATE", Bytes: certDER})
-	pem.Encode(f, &pem.Block{Type: "EC PRIVATE KEY", Bytes: keyDER})
-	pem.Encode(f, &pem.Block{Type: "CERTIFICATE", Bytes: caCertDER})
+	_ = pem.Encode(f, &pem.Block{Type: "CERTIFICATE", Bytes: certDER})
+	_ = pem.Encode(f, &pem.Block{Type: "EC PRIVATE KEY", Bytes: keyDER})
+	_ = pem.Encode(f, &pem.Block{Type: "CERTIFICATE", Bytes: caCertDER})
 
 	return path
 }
@@ -189,7 +189,7 @@ func freePort(t *testing.T) int {
 	require.NoError(t, err)
 
 	port := l.Addr().(*net.TCPAddr).Port
-	l.Close()
+	_ = l.Close()
 
 	return port
 }
@@ -208,15 +208,15 @@ func startServer(t *testing.T, pki *testPKI, port int) {
 	require.NoError(t, cmd.Start())
 
 	t.Cleanup(func() {
-		cmd.Process.Kill()
-		cmd.Wait()
+		_ = cmd.Process.Kill()
+		_ = cmd.Wait()
 	})
 
 	deadline := time.Now().Add(5 * time.Second)
 	for time.Now().Before(deadline) {
 		conn, err := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", port), 100*time.Millisecond)
 		if err == nil {
-			conn.Close()
+			_ = conn.Close()
 
 			return
 		}
@@ -369,7 +369,7 @@ func TestEndToEnd_ServerAPI_Direct(t *testing.T) {
 		resp, err := client.Get(baseURL + "/v1/list")
 		require.NoError(t, err)
 
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck
 
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -381,7 +381,7 @@ func TestEndToEnd_ServerAPI_Direct(t *testing.T) {
 		resp, err := client.Get(baseURL + "/v1/cert/example.com")
 		require.NoError(t, err)
 
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck
 
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -393,7 +393,7 @@ func TestEndToEnd_ServerAPI_Direct(t *testing.T) {
 		resp, err := client.Get(baseURL + "/v1/privkey/example.com")
 		require.NoError(t, err)
 
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck
 
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 	})
@@ -402,7 +402,7 @@ func TestEndToEnd_ServerAPI_Direct(t *testing.T) {
 		resp, err := client.Get(baseURL + "/v1/privkey/other.com")
 		require.NoError(t, err)
 
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck
 
 		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 	})
@@ -411,7 +411,7 @@ func TestEndToEnd_ServerAPI_Direct(t *testing.T) {
 		resp, err := client.Get(baseURL + "/v1/cert/example.com")
 		require.NoError(t, err)
 
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck
 
 		assert.NotEmpty(t, resp.Header.Get("x-version"))
 	})
@@ -422,7 +422,7 @@ func TestEndToEnd_ServerAPI_Direct(t *testing.T) {
 		resp, err := client.Do(req)
 		require.NoError(t, err)
 
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck
 
 		assert.Equal(t, http.StatusNotModified, resp.StatusCode)
 	})

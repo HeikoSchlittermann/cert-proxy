@@ -16,7 +16,7 @@ func TestFetchCNs_EmptyList(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		// Simulate what the server does for a client with no domains assigned:
 		// fmt.Fprintln(w, strings.Join(nil, "\n")) produces just "\n"
-		fmt.Fprintln(w, "")
+		_, _ = fmt.Fprintln(w, "")
 	}))
 	defer srv.Close()
 
@@ -33,7 +33,7 @@ func TestFetchCNs_EmptyList(t *testing.T) {
 
 func TestFetchCNs_WithDomains(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		fmt.Fprintln(w, "example.com\nsub.example.com")
+		_, _ = fmt.Fprintln(w, "example.com\nsub.example.com")
 	}))
 	defer srv.Close()
 

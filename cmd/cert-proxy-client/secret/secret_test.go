@@ -20,7 +20,7 @@ func TestRead(t *testing.T) {
 
 	// Environment
 	t.Log("ENV")
-	os.Setenv("PW", "bar")
+	_ = os.Setenv("PW", "bar")
 
 	if pass, err := Read("ENV:PW"); err != nil {
 		t.Errorf("unexpected: %v\n", err)

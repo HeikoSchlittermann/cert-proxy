@@ -61,11 +61,11 @@ func generateTestSSLPEM(t *testing.T) string {
 	f, err := os.Create(path)
 	require.NoError(t, err)
 
-	defer f.Close()
+	defer f.Close() //nolint:errcheck
 
-	pem.Encode(f, &pem.Block{Type: "CERTIFICATE", Bytes: leafDER})
-	pem.Encode(f, &pem.Block{Type: "EC PRIVATE KEY", Bytes: leafKeyDER})
-	pem.Encode(f, &pem.Block{Type: "CERTIFICATE", Bytes: caDER})
+	_ = pem.Encode(f, &pem.Block{Type: "CERTIFICATE", Bytes: leafDER})
+	_ = pem.Encode(f, &pem.Block{Type: "EC PRIVATE KEY", Bytes: leafKeyDER})
+	_ = pem.Encode(f, &pem.Block{Type: "CERTIFICATE", Bytes: caDER})
 
 	return path
 }
@@ -81,14 +81,14 @@ func TestMkdir_Creates(t *testing.T) {
 
 func TestMkdir_Idempotent(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "existing")
-	os.Mkdir(dir, 0755)
+	_ = os.Mkdir(dir, 0755)
 
 	assert.NoError(t, Mkdir(dir))
 }
 
 func TestMkdir_ConflictWithFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "afile")
-	os.WriteFile(path, []byte("x"), 0644)
+	_ = os.WriteFile(path, []byte("x"), 0644)
 
 	assert.Error(t, Mkdir(path))
 }
