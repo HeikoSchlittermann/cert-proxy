@@ -38,7 +38,7 @@ func TestPool_EnqueueAndWait_Success(t *testing.T) {
 	cns.Add("a.example.com", "b.example.com")
 
 	pool := NewPool(2)
-	pool.EnqueueTasks(cns, srv.URL, basedir, "", cert.FormatPEM, "")
+	pool.EnqueueTasks(cns, srv.URL, basedir, "", cert.FormatPEM, "", "")
 
 	err := pool.Wait()
 	require.NoError(t, err)
@@ -62,7 +62,7 @@ func TestPool_EnqueueAndWait_Error(t *testing.T) {
 	cns.Add("fail.example.com")
 
 	pool := NewPool(1)
-	pool.EnqueueTasks(cns, srv.URL, basedir, "", cert.FormatPEM, "")
+	pool.EnqueueTasks(cns, srv.URL, basedir, "", cert.FormatPEM, "", "")
 
 	err := pool.Wait()
 	assert.Error(t, err)

@@ -83,7 +83,7 @@ func saveGlobals(t *testing.T) {
 }
 
 func TestNewReq_PEM(t *testing.T) {
-	req, err := NewReq("example.com", "https://proxy:4433", "/certs", "", FormatPEM, "")
+	req, err := NewReq("example.com", "https://proxy:4433", "/certs", "", FormatPEM, "", "")
 	require.NoError(t, err)
 
 	assert.Equal(t, "example.com", req.domain)
@@ -113,7 +113,7 @@ func TestNewReq_PEM(t *testing.T) {
 }
 
 func TestNewReq_PEM_EnvStrings(t *testing.T) {
-	req, err := NewReq("example.com", "https://proxy:4433", "/certs", "", FormatPEM, "")
+	req, err := NewReq("example.com", "https://proxy:4433", "/certs", "", FormatPEM, "", "")
 	require.NoError(t, err)
 
 	envs := make(map[string]bool)
@@ -128,7 +128,7 @@ func TestNewReq_PEM_EnvStrings(t *testing.T) {
 }
 
 func TestNewReq_PKCS12(t *testing.T) {
-	req, err := NewReq("example.com", "https://proxy:4433", "/certs", "", FormatPKCS12, "secret")
+	req, err := NewReq("example.com", "https://proxy:4433", "/certs", "", FormatPKCS12, "secret", "")
 	require.NoError(t, err)
 
 	assert.Len(t, req.items, 1)
@@ -142,22 +142,37 @@ func TestNewReq_PKCS12(t *testing.T) {
 }
 
 func TestNewReq_PKCS12_NoPass(t *testing.T) {
-	req, err := NewReq("example.com", "https://proxy:4433", "/certs", "", FormatPKCS12, "")
+	req, err := NewReq("example.com", "https://proxy:4433", "/certs", "", FormatPKCS12, "", "")
 	require.NoError(t, err)
 
 	item := req.items[0]
 	assert.NotContains(t, item.remote.URL.String(), "&pass=")
+	assert.NotContains(t, item.remote.URL.String(), "pkcs12-compat=")
+}
+
+func TestNewReq_PKCS12_Compat(t *testing.T) {
+	req, err := NewReq("example.com", "https://proxy:4433", "/certs", "", FormatPKCS12, "", "legacy")
+	require.NoError(t, err)
+
+	item := req.items[0]
+	assert.Contains(t, item.remote.URL.String(), "pkcs12-compat=legacy")
+
+	req, err = NewReq("example.com", "https://proxy:4433", "/certs", "", FormatPKCS12, "", "modern")
+	require.NoError(t, err)
+
+	item = req.items[0]
+	assert.Contains(t, item.remote.URL.String(), "pkcs12-compat=modern")
 }
 
 func TestNewReq_Hook(t *testing.T) {
-	req, err := NewReq("example.com", "https://proxy:4433", "/certs", "/usr/local/bin/hook.sh", FormatPEM, "")
+	req, err := NewReq("example.com", "https://proxy:4433", "/certs", "/usr/local/bin/hook.sh", FormatPEM, "", "")
 	require.NoError(t, err)
 
 	assert.Equal(t, "/usr/local/bin/hook.sh", req.hook)
 }
 
 func TestNewReq_DomainEnv(t *testing.T) {
-	req, err := NewReq("example.com", "https://proxy:4433", "/certs", "", FormatPEM, "")
+	req, err := NewReq("example.com", "https://proxy:4433", "/certs", "", FormatPEM, "", "")
 	require.NoError(t, err)
 
 	assert.Contains(t, req.env, "DOMAIN=example.com")
@@ -172,7 +187,7 @@ func TestExecute_Download(t *testing.T) {
 	srv := newMockServer(t)
 	basedir := t.TempDir()
 
-	req, err := NewReq("example.com", srv.URL, basedir, "", FormatPEM, "")
+	req, err := NewReq("example.com", srv.URL, basedir, "", FormatPEM, "", "")
 	require.NoError(t, err)
 
 	var mtx sync.Mutex
@@ -194,7 +209,7 @@ func TestExecute_DownloadContent(t *testing.T) {
 	srv := newMockServer(t)
 	basedir := t.TempDir()
 
-	req, err := NewReq("example.com", srv.URL, basedir, "", FormatPEM, "")
+	req, err := NewReq("example.com", srv.URL, basedir, "", FormatPEM, "", "")
 	require.NoError(t, err)
 
 	var mtx sync.Mutex
@@ -214,7 +229,7 @@ func TestExecute_Symlink(t *testing.T) {
 	srv := newMockServer(t)
 	basedir := t.TempDir()
 
-	req, err := NewReq("example.com", srv.URL, basedir, "", FormatPEM, "")
+	req, err := NewReq("example.com", srv.URL, basedir, "", FormatPEM, "", "")
 	require.NoError(t, err)
 
 	var mtx sync.Mutex
@@ -240,7 +255,7 @@ func TestExecute_NoSymlink(t *testing.T) {
 	srv := newMockServer(t)
 	basedir := t.TempDir()
 
-	req, err := NewReq("example.com", srv.URL, basedir, "", FormatPEM, "")
+	req, err := NewReq("example.com", srv.URL, basedir, "", FormatPEM, "", "")
 	require.NoError(t, err)
 
 	var mtx sync.Mutex
@@ -268,7 +283,7 @@ func TestExecute_NotModified(t *testing.T) {
 		require.NoError(t, os.WriteFile(filepath.Join(domainDir, name), []byte("OLD"), 0644))
 	}
 
-	req, err := NewReq("example.com", srv.URL, basedir, "", FormatPEM, "")
+	req, err := NewReq("example.com", srv.URL, basedir, "", FormatPEM, "", "")
 	require.NoError(t, err)
 
 	var mtx sync.Mutex
@@ -287,7 +302,7 @@ func TestExecute_ServerError(t *testing.T) {
 	srv := newMockServer500(t)
 	basedir := t.TempDir()
 
-	req, err := NewReq("example.com", srv.URL, basedir, "", FormatPEM, "")
+	req, err := NewReq("example.com", srv.URL, basedir, "", FormatPEM, "", "")
 	require.NoError(t, err)
 
 	var mtx sync.Mutex
@@ -325,7 +340,7 @@ func TestExecute_IfModifiedSince(t *testing.T) {
 		require.NoError(t, os.WriteFile(filepath.Join(domainDir, name), []byte("X"), 0644))
 	}
 
-	req, err := NewReq("example.com", srv.URL, basedir, "", FormatPEM, "")
+	req, err := NewReq("example.com", srv.URL, basedir, "", FormatPEM, "", "")
 	require.NoError(t, err)
 
 	var mtx sync.Mutex
@@ -356,7 +371,7 @@ func TestExecute_Force(t *testing.T) {
 
 	UseSymlink = false
 
-	req, err := NewReq("example.com", srv.URL, basedir, "", FormatPEM, "")
+	req, err := NewReq("example.com", srv.URL, basedir, "", FormatPEM, "", "")
 	require.NoError(t, err)
 
 	var mtx sync.Mutex
@@ -374,7 +389,7 @@ func TestExecute_FilePermissions(t *testing.T) {
 	srv := newMockServer(t)
 	basedir := t.TempDir()
 
-	req, err := NewReq("example.com", srv.URL, basedir, "", FormatPEM, "")
+	req, err := NewReq("example.com", srv.URL, basedir, "", FormatPEM, "", "")
 	require.NoError(t, err)
 
 	var mtx sync.Mutex
@@ -401,7 +416,7 @@ func TestExecute_PKCS12_Download(t *testing.T) {
 	srv := newMockServer(t)
 	basedir := t.TempDir()
 
-	req, err := NewReq("example.com", srv.URL, basedir, "", FormatPKCS12, "pass123")
+	req, err := NewReq("example.com", srv.URL, basedir, "", FormatPKCS12, "pass123", "")
 	require.NoError(t, err)
 
 	var mtx sync.Mutex
@@ -432,7 +447,7 @@ func TestExecute_Hook_PEM(t *testing.T) {
 	script := "#!/bin/sh\necho \"$@\" > " + markerFile + "\nenv >> " + markerFile + "\n"
 	require.NoError(t, os.WriteFile(hookScript, []byte(script), 0755))
 
-	req, err := NewReq("example.com", srv.URL, basedir, hookScript, FormatPEM, "")
+	req, err := NewReq("example.com", srv.URL, basedir, hookScript, FormatPEM, "", "")
 	require.NoError(t, err)
 
 	var mtx sync.Mutex
@@ -467,7 +482,7 @@ func TestExecute_Hook_PKCS12(t *testing.T) {
 	script := "#!/bin/sh\necho \"$@\" > " + markerFile + "\nenv >> " + markerFile + "\n"
 	require.NoError(t, os.WriteFile(hookScript, []byte(script), 0755))
 
-	req, err := NewReq("example.com", srv.URL, basedir, hookScript, FormatPKCS12, "pass")
+	req, err := NewReq("example.com", srv.URL, basedir, hookScript, FormatPKCS12, "pass", "")
 	require.NoError(t, err)
 
 	var mtx sync.Mutex
@@ -511,7 +526,7 @@ func TestFormat_String(t *testing.T) {
 }
 
 func TestReq_String(t *testing.T) {
-	req, err := NewReq("example.com", "https://proxy:4433", "/certs", "", FormatPEM, "")
+	req, err := NewReq("example.com", "https://proxy:4433", "/certs", "", FormatPEM, "", "")
 	require.NoError(t, err)
 
 	s := req.String()
@@ -520,7 +535,7 @@ func TestReq_String(t *testing.T) {
 }
 
 func TestReq_String_PKCS12(t *testing.T) {
-	req, err := NewReq("example.com", "https://proxy:4433", "/certs", "", FormatPKCS12, "")
+	req, err := NewReq("example.com", "https://proxy:4433", "/certs", "", FormatPKCS12, "", "")
 	require.NoError(t, err)
 
 	s := req.String()

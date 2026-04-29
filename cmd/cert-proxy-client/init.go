@@ -87,6 +87,7 @@ Example:
 	flag.StringVar(&opt.Connect, "connect", "https://localhost:4433", "address of cert proxy `[scheme://]server`")
 	flag.StringVar(&opt.Hook, "hook", "", "hook script `file`¹")
 	flag.StringVar(&opt.Passout, "passout", "", "`password` to protect the PKCS12³")
+	flag.StringVar(&opt.Pkcs12Compat, "pkcs12-compat", cert.PKCS12Compat, "PKCS12 compatibility `level` (legacy|modern)")
 	flag.StringVar(&opt.SharedHook, "shared-hook", "", "shared hook script `file`²")
 	flag.StringVar(&opt.ServerCN, "servername", "", "name (`CN`) of the cert proxy server (if empty: use the FQDN of the host we connect to)")
 	flag.StringVar(&opt.SSLFile, "sslfile", "client-ssl.pem", "SSL auth `file` (crt+key+ca) PEM")
