@@ -6,7 +6,7 @@ package cert
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
@@ -177,7 +177,7 @@ func (req *Req) Execute(mtx Mutex) error {
 				item.remote.URL, resp.Status)
 		}
 
-		req.items[i].data, err = ioutil.ReadAll(resp.Body)
+		req.items[i].data, err = io.ReadAll(resp.Body)
 		if err != nil {
 			return err
 		}

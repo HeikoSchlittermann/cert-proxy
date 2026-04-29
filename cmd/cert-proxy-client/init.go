@@ -77,13 +77,6 @@ Example:
 	// -outformat PEM    implies cert, chain, fullchain, privkey
 	// -outformat PKCS12 implies bundle
 
-	var logOutput out = STDERR
-
-	var (
-		help    = flag.Bool("help", false, "print help to STDOUT and exit cleanly")
-		version = flag.Bool("version", false, "current version ("+program.Version+")")
-	)
-
 	flag.BoolVar(&cert.UseSymlink, "symlink", cert.UseSymlink, "use symlinks for current files")
 	flag.BoolVar(&opt.Auto, "auto", true, "auto mode (fetch all CNs the server provides us)")
 	flag.BoolVar(&opt.Verbose, "verbose", false, "verbose output")
@@ -97,8 +90,18 @@ Example:
 	flag.StringVar(&opt.SharedHook, "shared-hook", "", "shared hook script `file`²")
 	flag.StringVar(&opt.ServerCN, "servername", "", "name (`CN`) of the cert proxy server (if empty: use the FQDN of the host we connect to)")
 	flag.StringVar(&opt.SSLFile, "sslfile", "client-ssl.pem", "SSL auth `file` (crt+key+ca) PEM")
-	flag.Var(&logOutput, "stderr", "redirect stderr `output` (stderr|stdout)")
 	flag.Var(&opt.Format, "format", "`format` of the requested certificate(s) (PEM|PKCS12)")
+}
+
+func parseFlags() {
+	var logOutput out = STDERR
+
+	var (
+		help    = flag.Bool("help", false, "print help to STDOUT and exit cleanly")
+		version = flag.Bool("version", false, "current version ("+program.Version+")")
+	)
+
+	flag.Var(&logOutput, "stderr", "redirect stderr `output` (stderr|stdout)")
 	flag.Parse()
 
 	if *help {
