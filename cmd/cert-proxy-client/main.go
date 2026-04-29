@@ -5,6 +5,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"crypto/tls"
 	"errors"
 	"log"
@@ -88,8 +89,10 @@ func main() {
 
 	// In auto mode fetch the list of available domains and
 	// append this list to the static list we may have in CNs
+	ctx := context.Background()
+
 	if opt.Auto {
-		pushed, err := fetchCNs()
+		pushed, err := fetchCNs(ctx)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -102,7 +105,7 @@ func main() {
 	opt.Jobs = min(opt.Jobs, len(CNs))
 	shared.Verbose("Enqueing %d tasks for %d domains %v", opt.Jobs, len(CNs), CNs)
 
-	var pool = worker.NewPool(opt.Jobs)
+	var pool = worker.NewPool(ctx, opt.Jobs)
 	pool.EnqueueTasks(CNs, opt.Connect, opt.Certbase, opt.Hook, opt.Format, opt.Passout, opt.Pkcs12Compat)
 
 	if err := pool.Wait(); err != nil {
@@ -127,15 +130,15 @@ func main() {
 	os.Exit(0)
 }
 
-func fetchCNs() ([]string, error) {
+func fetchCNs(ctx context.Context) ([]string, error) {
 	shared.Verbose("Getting list of domains")
 
-	req, err := http.NewRequest(`GET`, opt.Connect+path.Join(`/`+apiVersion, `list`), nil)
-	req.Header.Add(`x-version`, program.Version)
-
+	req, err := http.NewRequestWithContext(ctx, `GET`, opt.Connect+path.Join(`/`+apiVersion, `list`), nil)
 	if err != nil {
 		return nil, err
 	}
+
+	req.Header.Add(`x-version`, program.Version)
 	//resp, err := http.Get(opt.Connect + path.Join(`/`+API_VERSION, `list`))
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

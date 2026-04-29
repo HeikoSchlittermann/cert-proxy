@@ -7,6 +7,7 @@ package cert
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -144,7 +145,7 @@ func NewReq(domain, remote, basedir, hook string, format Format, pass, compat st
 		ctx.Local = item.local
 		item.env = mustExpand(templates.env, ctx)
 
-		r, err := http.NewRequest(`GET`, mustExpand(templates.remote, ctx), nil)
+		r, err := http.NewRequestWithContext(context.Background(), `GET`, mustExpand(templates.remote, ctx), nil)
 		if err != nil {
 			return Req{}, err
 		}
@@ -159,8 +160,9 @@ func NewReq(domain, remote, basedir, hook string, format Format, pass, compat st
 }
 
 // Execute is the Workhorse. It operats on a single "request", that is,
-// on all its files
-func (req *Req) Execute(mtx sync.Locker) error {
+// on all its files. The supplied context controls cancellation and deadlines
+// for every HTTP request issued during this call.
+func (req *Req) Execute(ctx context.Context, mtx sync.Locker) error {
 	// First request all the data we need, this can be done in parallel,
 	// but we'll wait until all are done
 	for i, item := range req.items {
@@ -174,7 +176,7 @@ func (req *Req) Execute(mtx sync.Locker) error {
 
 		shared.Verbose("Requesting %s ims:%s", item.remote.URL, item.remote.Header.Get(`if-modified-since`))
 
-		resp, err := http.DefaultClient.Do(item.remote)
+		resp, err := http.DefaultClient.Do(item.remote.WithContext(ctx))
 		if err != nil {
 			return err
 		}

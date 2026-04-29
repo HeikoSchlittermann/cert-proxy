@@ -6,6 +6,7 @@
 package worker
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"sync"
@@ -28,10 +29,10 @@ type Pool struct {
 	errors chan int
 }
 
-// NewPool creates worker pool of size workers and returns
-// the Pool. This pool can be used to enqueue
-// Tasks.
-func NewPool(workers int) *Pool {
+// NewPool creates worker pool of size workers and returns the Pool.
+// The supplied context cancels every in-flight cert.Req.Execute call
+// when the caller cancels it (e.g. on SIGINT).
+func NewPool(ctx context.Context, workers int) *Pool {
 	var (
 		pool = Pool{wg: new(sync.WaitGroup), queue: make(queue, workers), errors: make(chan int)}
 		mtx  = &sync.Mutex{}
@@ -51,7 +52,7 @@ func NewPool(workers int) *Pool {
 			for req := range pool.queue {
 				shared.Verbose("Req %v\n", req)
 
-				if err := req.Execute(mtx); err != nil {
+				if err := req.Execute(ctx, mtx); err != nil {
 					log.Println(err)
 
 					pool.errors <- 1

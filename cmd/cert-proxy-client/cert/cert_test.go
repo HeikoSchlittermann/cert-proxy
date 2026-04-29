@@ -1,6 +1,7 @@
 package cert
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -8,6 +9,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -191,7 +193,7 @@ func TestExecute_Download(t *testing.T) {
 	require.NoError(t, err)
 
 	var mtx sync.Mutex
-	require.NoError(t, req.Execute(&mtx))
+	require.NoError(t, req.Execute(context.Background(), &mtx))
 
 	for _, name := range []string{"cert.pem", "privkey.pem", "chain.pem", "fullchain.pem"} {
 		path := filepath.Join(basedir, "example.com", name)
@@ -213,7 +215,7 @@ func TestExecute_DownloadContent(t *testing.T) {
 	require.NoError(t, err)
 
 	var mtx sync.Mutex
-	require.NoError(t, req.Execute(&mtx))
+	require.NoError(t, req.Execute(context.Background(), &mtx))
 
 	data, err := os.ReadFile(filepath.Join(basedir, "example.com", "cert.pem"))
 	require.NoError(t, err)
@@ -233,7 +235,7 @@ func TestExecute_Symlink(t *testing.T) {
 	require.NoError(t, err)
 
 	var mtx sync.Mutex
-	require.NoError(t, req.Execute(&mtx))
+	require.NoError(t, req.Execute(context.Background(), &mtx))
 
 	certPath := filepath.Join(basedir, "example.com", "cert.pem")
 	fi, err := os.Lstat(certPath)
@@ -259,7 +261,7 @@ func TestExecute_NoSymlink(t *testing.T) {
 	require.NoError(t, err)
 
 	var mtx sync.Mutex
-	require.NoError(t, req.Execute(&mtx))
+	require.NoError(t, req.Execute(context.Background(), &mtx))
 
 	certPath := filepath.Join(basedir, "example.com", "cert.pem")
 	fi, err := os.Lstat(certPath)
@@ -287,7 +289,7 @@ func TestExecute_NotModified(t *testing.T) {
 	require.NoError(t, err)
 
 	var mtx sync.Mutex
-	require.NoError(t, req.Execute(&mtx))
+	require.NoError(t, req.Execute(context.Background(), &mtx))
 
 	data, err := os.ReadFile(filepath.Join(domainDir, "cert.pem"))
 	require.NoError(t, err)
@@ -307,7 +309,7 @@ func TestExecute_ServerError(t *testing.T) {
 
 	var mtx sync.Mutex
 
-	err = req.Execute(&mtx)
+	err = req.Execute(context.Background(), &mtx)
 	assert.Error(t, err)
 }
 
@@ -345,7 +347,7 @@ func TestExecute_IfModifiedSince(t *testing.T) {
 
 	var mtx sync.Mutex
 
-	_ = req.Execute(&mtx)
+	_ = req.Execute(context.Background(), &mtx)
 
 	assert.Equal(t, 4, imsCount, "all 4 items should send If-Modified-Since")
 }
@@ -375,7 +377,7 @@ func TestExecute_Force(t *testing.T) {
 	require.NoError(t, err)
 
 	var mtx sync.Mutex
-	require.NoError(t, req.Execute(&mtx))
+	require.NoError(t, req.Execute(context.Background(), &mtx))
 
 	assert.Empty(t, imsReceived, "Force should suppress If-Modified-Since")
 }
@@ -393,7 +395,7 @@ func TestExecute_FilePermissions(t *testing.T) {
 	require.NoError(t, err)
 
 	var mtx sync.Mutex
-	require.NoError(t, req.Execute(&mtx))
+	require.NoError(t, req.Execute(context.Background(), &mtx))
 
 	certFi, _ := os.Stat(filepath.Join(basedir, "example.com", "cert.pem"))
 	keyFi, _ := os.Stat(filepath.Join(basedir, "example.com", "privkey.pem"))
@@ -420,7 +422,7 @@ func TestExecute_PKCS12_Download(t *testing.T) {
 	require.NoError(t, err)
 
 	var mtx sync.Mutex
-	require.NoError(t, req.Execute(&mtx))
+	require.NoError(t, req.Execute(context.Background(), &mtx))
 
 	path := filepath.Join(basedir, "example.com", "bundle.pfx")
 	data, err := os.ReadFile(path)
@@ -451,7 +453,7 @@ func TestExecute_Hook_PEM(t *testing.T) {
 	require.NoError(t, err)
 
 	var mtx sync.Mutex
-	require.NoError(t, req.Execute(&mtx))
+	require.NoError(t, req.Execute(context.Background(), &mtx))
 
 	data, err := os.ReadFile(markerFile)
 	require.NoError(t, err)
@@ -486,7 +488,7 @@ func TestExecute_Hook_PKCS12(t *testing.T) {
 	require.NoError(t, err)
 
 	var mtx sync.Mutex
-	require.NoError(t, req.Execute(&mtx))
+	require.NoError(t, req.Execute(context.Background(), &mtx))
 
 	data, err := os.ReadFile(markerFile)
 	require.NoError(t, err)
@@ -496,6 +498,47 @@ func TestExecute_Hook_PKCS12(t *testing.T) {
 	assert.Contains(t, output, "example.com")
 	assert.Contains(t, output, "DOMAIN=example.com")
 	assert.Contains(t, output, "BUNDLEFILE=")
+}
+
+func TestExecute_ContextCancellation(t *testing.T) {
+	saveGlobals(t)
+
+	UseSymlink = false
+	Force = true
+
+	block := make(chan struct{})
+	srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		select {
+		case <-block:
+		case <-r.Context().Done():
+		}
+	}))
+	t.Cleanup(srv.Close)
+	t.Cleanup(func() { close(block) })
+
+	basedir := t.TempDir()
+
+	req, err := NewReq("example.com", srv.URL, basedir, "", FormatPEM, "", "")
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	var mtx sync.Mutex
+
+	errCh := make(chan error, 1)
+
+	go func() {
+		errCh <- req.Execute(ctx, &mtx)
+	}()
+
+	cancel()
+
+	select {
+	case err := <-errCh:
+		assert.Error(t, err, "Execute should return an error after context cancellation")
+	case <-time.After(2 * time.Second):
+		t.Fatal("Execute did not return after context cancellation")
+	}
 }
 
 func TestFormat_Set_Valid(t *testing.T) {

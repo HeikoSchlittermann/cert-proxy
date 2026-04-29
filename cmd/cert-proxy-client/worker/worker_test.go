@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -13,7 +14,7 @@ import (
 )
 
 func TestNewPool(t *testing.T) {
-	pool := NewPool(2)
+	pool := NewPool(context.Background(), 2)
 	assert.NotNil(t, pool)
 }
 
@@ -37,7 +38,7 @@ func TestPool_EnqueueAndWait_Success(t *testing.T) {
 	cns := list.UniqStrings{}
 	cns.Add("a.example.com", "b.example.com")
 
-	pool := NewPool(2)
+	pool := NewPool(context.Background(), 2)
 	pool.EnqueueTasks(cns, srv.URL, basedir, "", cert.FormatPEM, "", "")
 
 	err := pool.Wait()
@@ -61,7 +62,7 @@ func TestPool_EnqueueAndWait_Error(t *testing.T) {
 	cns := list.UniqStrings{}
 	cns.Add("fail.example.com")
 
-	pool := NewPool(1)
+	pool := NewPool(context.Background(), 1)
 	pool.EnqueueTasks(cns, srv.URL, basedir, "", cert.FormatPEM, "", "")
 
 	err := pool.Wait()
