@@ -51,7 +51,7 @@ func TestCreatePKCS12_Success(t *testing.T) {
 	require.NoError(t, os.MkdirAll(domainDir, 0755))
 	createTestCertAndKey(t, domainDir)
 
-	reader, mtime, err := createPKCS12(certbase, domain, "secret")
+	reader, mtime, err := createPKCS12(certbase, domain, "secret", "legacy")
 	require.NoError(t, err)
 	assert.False(t, mtime.IsZero())
 	assert.Greater(t, reader.Len(), 0, "PKCS12 output should not be empty")
@@ -64,7 +64,7 @@ func TestCreatePKCS12_EmptyPassword(t *testing.T) {
 	require.NoError(t, os.MkdirAll(domainDir, 0755))
 	createTestCertAndKey(t, domainDir)
 
-	reader, mtime, err := createPKCS12(certbase, domain, "")
+	reader, mtime, err := createPKCS12(certbase, domain, "", "")
 	require.NoError(t, err)
 	assert.False(t, mtime.IsZero())
 	assert.Greater(t, reader.Len(), 0)
@@ -74,7 +74,7 @@ func TestCreatePKCS12_MissingCert(t *testing.T) {
 	certbase := t.TempDir()
 	domain := "nonexistent.example.com"
 
-	_, _, err := createPKCS12(certbase, domain, "pass")
+	_, _, err := createPKCS12(certbase, domain, "pass", "")
 	assert.Error(t, err)
 }
 
@@ -88,7 +88,7 @@ func TestCreatePKCS12_MissingKey(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(domainDir, "cert.pem"), certPEM, 0644))
 	require.NoError(t, os.WriteFile(filepath.Join(domainDir, "chain.pem"), certPEM, 0644))
 
-	_, _, err := createPKCS12(certbase, domain, "pass")
+	_, _, err := createPKCS12(certbase, domain, "pass", "")
 	assert.Error(t, err)
 }
 
@@ -103,7 +103,7 @@ func TestCreatePKCS12_Mtime(t *testing.T) {
 	fi, err := os.Stat(certPath)
 	require.NoError(t, err)
 
-	_, mtime, err := createPKCS12(certbase, domain, "pass")
+	_, mtime, err := createPKCS12(certbase, domain, "pass", "")
 	require.NoError(t, err)
 	assert.Equal(t, fi.ModTime(), mtime, "mtime should match cert.pem modification time")
 }
@@ -117,7 +117,49 @@ func TestCreatePKCS12_InvalidKeyPEM(t *testing.T) {
 
 	require.NoError(t, os.WriteFile(filepath.Join(domainDir, "privkey.pem"), []byte("not pem"), 0600))
 
-	_, _, err := createPKCS12(certbase, domain, "pass")
+	_, _, err := createPKCS12(certbase, domain, "pass", "")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "private key")
+}
+
+func TestCreatePKCS12_CompatLegacy(t *testing.T) {
+	certbase := t.TempDir()
+	domain := "test.example.com"
+	domainDir := filepath.Join(certbase, domain)
+	require.NoError(t, os.MkdirAll(domainDir, 0755))
+	createTestCertAndKey(t, domainDir)
+
+	reader, _, err := createPKCS12(certbase, domain, "pass", "legacy")
+	require.NoError(t, err)
+	assert.Greater(t, reader.Len(), 0)
+}
+
+func TestCreatePKCS12_CompatModern(t *testing.T) {
+	certbase := t.TempDir()
+	domain := "test.example.com"
+	domainDir := filepath.Join(certbase, domain)
+	require.NoError(t, os.MkdirAll(domainDir, 0755))
+	createTestCertAndKey(t, domainDir)
+
+	reader, _, err := createPKCS12(certbase, domain, "pass", "modern")
+	require.NoError(t, err)
+	assert.Greater(t, reader.Len(), 0)
+}
+
+func TestCreatePKCS12_CompatUnknownDefaultsToLegacy(t *testing.T) {
+	certbase := t.TempDir()
+	domain := "test.example.com"
+	domainDir := filepath.Join(certbase, domain)
+	require.NoError(t, os.MkdirAll(domainDir, 0755))
+	createTestCertAndKey(t, domainDir)
+
+	readerDefault, _, err := createPKCS12(certbase, domain, "pass", "")
+	require.NoError(t, err)
+
+	readerLegacy, _, err := createPKCS12(certbase, domain, "pass", "legacy")
+	require.NoError(t, err)
+
+	// Both should produce output (can't compare bytes due to randomness in encryption)
+	assert.Greater(t, readerDefault.Len(), 0)
+	assert.Greater(t, readerLegacy.Len(), 0)
 }

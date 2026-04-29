@@ -15,7 +15,7 @@ import (
 	"software.sslmate.com/src/go-pkcs12"
 )
 
-func createPKCS12(certbase, domain, pass string) (*bytes.Reader, time.Time, error) {
+func createPKCS12(certbase, domain, pass, compat string) (*bytes.Reader, time.Time, error) {
 	var (
 		certPath  = filepath.Join(certbase, domain, "cert.pem")
 		keyPath   = filepath.Join(certbase, domain, "privkey.pem")
@@ -60,7 +60,16 @@ func createPKCS12(certbase, domain, pass string) (*bytes.Reader, time.Time, erro
 		return nil, mtime, fmt.Errorf("parsing chain: %w", err)
 	}
 
-	pfxData, err := pkcs12.LegacyDES.Encode(privateKey, cert, chainCerts, pass)
+	var encoder *pkcs12.Encoder
+
+	switch compat {
+	case "modern":
+		encoder = pkcs12.Modern2023
+	default:
+		encoder = pkcs12.LegacyDES
+	}
+
+	pfxData, err := encoder.Encode(privateKey, cert, chainCerts, pass)
 	if err != nil {
 		return nil, mtime, fmt.Errorf("encoding PKCS12: %w", err)
 	}

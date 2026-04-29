@@ -87,7 +87,7 @@ var TEMPLATES = map[role]templates{
 		env:    tt(`FULLCHAINFILE={{.Local}}`),
 	},
 	RoleBUNDLE: {
-		remote: tt(`{{.Proxy}}/v1/bundle/{{.Domain}}?format=PKCS12{{with.Pass}}&pass={{.}}{{end}}`),
+		remote: tt(`{{.Proxy}}/v1/bundle/{{.Domain}}?format=PKCS12{{with .Pass}}&pass={{.}}{{end}}{{with .Compat}}&pkcs12-compat={{.}}{{end}}`),
 		local:  tt(`{{.Domain}}/bundle.pfx`), // Windows does not like .p12 here
 		env:    tt(`BUNDLEFILE={{.Local}}`),
 	},
@@ -114,14 +114,15 @@ type templateContext struct {
 	Proxy  string
 	Local  string
 	Pass   string
+	Compat string
 }
 
 // NewReq builds a Req for one domain, expanding the URL, file-path, and env
 // templates for each Role required by the chosen Format.
-func NewReq(domain, remote, basedir, hook string, format Format, pass string) (Req, error) {
+func NewReq(domain, remote, basedir, hook string, format Format, pass, compat string) (Req, error) {
 	var (
 		req = Req{domain: domain, hook: hook, env: []string{`DOMAIN=` + domain}}
-		ctx = templateContext{Domain: domain, Proxy: remote, Pass: pass}
+		ctx = templateContext{Domain: domain, Proxy: remote, Pass: pass, Compat: compat}
 	)
 
 	// This format may require RoleCRT, RoleKey, … or RoleBUNDLE

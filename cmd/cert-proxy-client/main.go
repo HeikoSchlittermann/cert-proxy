@@ -26,18 +26,19 @@ const apiVersion = `v1`
 var (
 	CNs = list.UniqStrings{}
 	opt = struct {
-		Auto       bool        // Fetch all (Issue /list first)
-		Certbase   string      // where to put the output
-		CNfile     string      // the CNs to fetch
-		Connect    string      // Server address
-		Format     cert.Format // PEM|PKCS12
-		Hook       string      // Hook file
-		Jobs       int         // parallel Jobs
-		Passout    string      // PKC12 password
-		SharedHook string      // Shared hook file
-		ServerCN   string      // X509 CN of the server
-		SSLFile    string      // SSL auth file
-		Verbose    bool
+		Auto         bool        // Fetch all (Issue /list first)
+		Certbase     string      // where to put the output
+		CNfile       string      // the CNs to fetch
+		Connect      string      // Server address
+		Format       cert.Format // PEM|PKCS12
+		Hook         string      // Hook file
+		Jobs         int         // parallel Jobs
+		Passout      string      // PKC12 password
+		Pkcs12Compat string      // PKCS12 compatibility level
+		SharedHook   string      // Shared hook file
+		ServerCN     string      // X509 CN of the server
+		SSLFile      string      // SSL auth file
+		Verbose      bool
 	}{
 		Format: cert.FORMAT, // platform dependend, PEM (*nix) vs PKCS12 (Win*)
 	}
@@ -102,7 +103,7 @@ func main() {
 	shared.Verbose("Enqueing %d tasks for %d domains %v", opt.Jobs, len(CNs), CNs)
 
 	var pool = worker.NewPool(opt.Jobs)
-	pool.EnqueueTasks(CNs, opt.Connect, opt.Certbase, opt.Hook, opt.Format, opt.Passout)
+	pool.EnqueueTasks(CNs, opt.Connect, opt.Certbase, opt.Hook, opt.Format, opt.Passout, opt.Pkcs12Compat)
 
 	if err := pool.Wait(); err != nil {
 		log.Fatal(err)

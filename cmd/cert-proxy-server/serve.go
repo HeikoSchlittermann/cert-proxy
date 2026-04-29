@@ -95,7 +95,7 @@ func serve(ctx context, w http.ResponseWriter, req *http.Request) error {
 
 			mtime = fi.ModTime()
 		} else if os.IsNotExist(err) {
-			content, mtime, err = createPKCS12(opt.Certbase, domain, req.URL.Query().Get("pass"))
+			content, mtime, err = createPKCS12(opt.Certbase, domain, req.URL.Query().Get("pass"), req.URL.Query().Get("pkcs12-compat"))
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return err
