@@ -16,6 +16,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"text/template"
 	"time"
 
@@ -157,15 +158,9 @@ func NewReq(domain, remote, basedir, hook string, format Format, pass, compat st
 	return req, nil
 }
 
-// Mutex is the locking contract Execute uses to serialize hook invocations.
-type Mutex interface {
-	Lock()
-	Unlock()
-}
-
 // Execute is the Workhorse. It operats on a single "request", that is,
 // on all its files
-func (req *Req) Execute(mtx Mutex) error {
+func (req *Req) Execute(mtx sync.Locker) error {
 	// First request all the data we need, this can be done in parallel,
 	// but we'll wait until all are done
 	for i, item := range req.items {
