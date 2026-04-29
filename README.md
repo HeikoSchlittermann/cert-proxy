@@ -286,7 +286,7 @@ The `-passout` flag for PKCS12 protection accepts:
 
 ```
 <certbase>/<domain>/cert.pem
-<certbase>/<domain>/privkey.pem      (mode 0660)
+<certbase>/<domain>/privkey.pem      (mode 0600)
 <certbase>/<domain>/chain.pem
 <certbase>/<domain>/fullchain.pem
 ```
@@ -297,12 +297,14 @@ and then symlinked to the final name for atomic updates.
 ### PKCS12 format (Windows default)
 
 ```
-<certbase>/<domain>/bundle.pfx       (mode 0660)
+<certbase>/<domain>/bundle.pfx       (mode 0600)
 ```
 
 
 ## Known Issues
 
-- [#14](https://forgejo.schlittermann.de/heiko/cert-proxy/issues/14) — Hook: TIMESTAMP parameter not set
+- [#20](https://forgejo.schlittermann.de/heiko/cert-proxy/issues/20) — PKCS12 password exposed in verbose logs via URL query parameter
+- [#23](https://forgejo.schlittermann.de/heiko/cert-proxy/issues/23) — Symlink replacement is non-atomic (TOCTOU race window)
+- [#18](https://forgejo.schlittermann.de/heiko/cert-proxy/issues/18) — Replace openssl dependency in CA scripts with native Go implementation
 - [#10](https://forgejo.schlittermann.de/heiko/cert-proxy/issues/10) — Shared hook should run only if certs are modified
 - [#5](https://forgejo.schlittermann.de/heiko/cert-proxy/issues/5) — Remove certs no longer available on the server
