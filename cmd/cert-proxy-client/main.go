@@ -155,7 +155,9 @@ func fetchCNs() ([]string, error) {
 
 	s := bufio.NewScanner(resp.Body)
 	for s.Scan() {
-		domains = append(domains, s.Text())
+		if line := strings.TrimSpace(s.Text()); line != "" {
+			domains = append(domains, line)
+		}
 	}
 
 	return domains, s.Err()

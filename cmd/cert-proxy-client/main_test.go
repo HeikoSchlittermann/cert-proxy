@@ -10,6 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// These tests mutate the global opt.Connect and cannot run in parallel.
+
 func TestFetchCNs_EmptyList(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		// Simulate what the server does for a client with no domains assigned:
