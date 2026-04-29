@@ -40,7 +40,7 @@ HTTP endpoints on port 4433 (TLS):
 | `GET /v1/chain/<domain>` | none | CA chain (public) |
 | `GET /v1/fullchain/<domain>` | none | Full chain (public) |
 | `GET /v1/privkey/<domain>` | authz | Private key |
-| `GET /v1/bundle/<domain>` | authz | PKCS12 bundle (generated on-the-fly via openssl) |
+| `GET /v1/bundle/<domain>` | authz | PKCS12 bundle (generated on-the-fly, `?pkcs12-compat=legacy\|modern`) |
 
 Request pipeline uses functional middleware composition: `use(authn, serve)` / `use(authz, serve)`.
 

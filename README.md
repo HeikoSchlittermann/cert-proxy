@@ -193,6 +193,7 @@ Additional flags can be set in `/etc/default/cert-proxy-client` (variable `OPTS`
 | `-hook` | | Per-certificate hook script |
 | `-shared-hook` | | Hook script called once after all certs are processed |
 | `-passout` | | Password for PKCS12 bundles (see notation below) |
+| `-pkcs12-compat` | `modern` (Linux), `legacy` (Windows) | PKCS12 compatibility level (`legacy`\|`modern`) |
 | `-servername` | | Expected server CN (default: hostname from `-connect`) |
 | `-symlink` | `true` (Linux), `false` (Windows) | Use symlinks for atomic file updates |
 | `-force` | `false` | Download even if server reports not-modified |
@@ -217,6 +218,14 @@ All endpoints are served over mutual TLS on port 4433.
 | `GET /v1/fullchain/<domain>` | none | Certificate + chain PEM |
 | `GET /v1/privkey/<domain>` | authz | Private key PEM |
 | `GET /v1/bundle/<domain>?format=PKCS12` | authz | PKCS12 bundle (generated on-the-fly) |
+
+Optional query parameters for `/v1/bundle/`:
+
+| Parameter | Values | Default | Description |
+|-----------|--------|---------|-------------|
+| `format` | `PKCS12`, `PFX`, `P12` | | Output format |
+| `pass` | string | | Password protecting the bundle |
+| `pkcs12-compat` | `legacy`, `modern` | `legacy` | Encryption algorithm (`legacy` = 3DES for Java compatibility, `modern` = AES-256) |
 
 - **authn** — valid client certificate required
 - **authz** — client must be authorized for the requested domain
@@ -295,7 +304,5 @@ and then symlinked to the final name for atomic updates.
 ## Known Issues
 
 - [#14](https://forgejo.schlittermann.de/heiko/cert-proxy/issues/14) — Hook: TIMESTAMP parameter not set
-- [#13](https://forgejo.schlittermann.de/heiko/cert-proxy/issues/13) — PKCS12 on Windows with Java Keystore
-- [#12](https://forgejo.schlittermann.de/heiko/cert-proxy/issues/12) — Client crashes if there are no certificates to fetch
 - [#10](https://forgejo.schlittermann.de/heiko/cert-proxy/issues/10) — Shared hook should run only if certs are modified
 - [#5](https://forgejo.schlittermann.de/heiko/cert-proxy/issues/5) — Remove certs no longer available on the server
