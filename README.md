@@ -136,7 +136,7 @@ Create `/etc/cert-proxy/clients/<client-name>` on the server:
 # one domain per line, comments allowed
 example.com
 sub.example.com
-*.example.org
+another.example.org
 ```
 
 No server restart required when adding or changing client authorizations.
