@@ -183,7 +183,7 @@ func (req *Req) Execute(ctx context.Context, mtx sync.Locker) error {
 		switch resp.StatusCode {
 		case http.StatusOK:
 		case http.StatusNotModified:
-			shared.Verbose(resp.Status)
+			shared.Verbose("%s", resp.Status)
 			continue
 		default:
 			return fmt.Errorf("%v: %v",

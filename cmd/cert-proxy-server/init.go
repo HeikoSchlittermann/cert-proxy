@@ -7,10 +7,10 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"log/slog"
 	"os"
 
 	"go.schlittermann.de/heiko/cert-proxy/internal/program"
-	"go.schlittermann.de/heiko/cert-proxy/internal/shared"
 )
 
 func init() {
@@ -46,8 +46,6 @@ func parseFlags() {
 	}
 
 	if opt.Verbose {
-		shared.Verbose = log.Printf
-	} else {
-		shared.Verbose = func(string, ...interface{}) {}
+		slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})))
 	}
 }
