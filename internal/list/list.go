@@ -63,10 +63,13 @@ func (list *OrderedStrings) Add(v ...string) {
 	*list = append(*list, v...)
 }
 
-// Items returns the ordered list of strings
+// Items returns the ordered list of strings. The receiver is not
+// mutated; callers receive a freshly sorted copy.
 func (list OrderedStrings) Items() []string {
-	sort.Strings(list)
-	return list
+	out := append([]string(nil), list...)
+	sort.Strings(out)
+
+	return out
 }
 
 // UniqStrings implements a list of uniq items

@@ -76,6 +76,16 @@ func TestOrderedStrings_Items_Empty(t *testing.T) {
 	assert.Len(t, os.Items(), 0)
 }
 
+func TestOrderedStrings_Items_DoesNotMutateReceiver(t *testing.T) {
+	var os OrderedStrings
+	os.Add("cherry", "apple", "banana")
+
+	_ = os.Items()
+
+	assert.Equal(t, []string{"cherry", "apple", "banana"}, []string(os),
+		"Items() must not reorder the underlying slice")
+}
+
 func TestAddItemsFromReader_Normal(t *testing.T) {
 	input := "example.com\nsub.example.com\nanother.org\n"
 	us := UniqStrings{}
