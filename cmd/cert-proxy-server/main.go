@@ -46,6 +46,8 @@ func use(handlers ...handleFuncCTX) handleFunc {
 }
 
 func main() {
+	parseFlags()
+
 	http.HandleFunc("/v1/list", use(authn, serve))
 	http.HandleFunc("/v1/cert/", use(serve))
 	http.HandleFunc("/v1/chain/", use(serve))
