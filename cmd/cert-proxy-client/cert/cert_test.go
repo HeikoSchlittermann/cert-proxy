@@ -329,6 +329,7 @@ func TestExecute_IfModifiedSince(t *testing.T) {
 	require.NoError(t, err)
 
 	var mtx sync.Mutex
+
 	_ = req.Execute(&mtx)
 
 	assert.Equal(t, 4, imsCount, "all 4 items should send If-Modified-Since")
