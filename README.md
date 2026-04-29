@@ -86,6 +86,12 @@ cp cert-proxy.example.com-ssl.pem /etc/cert-proxy/server-ssl.pem
 The `-ssl.pem` bundle contains the certificate, private key, and CA
 certificate in a single PEM file.
 
+If the server is reachable under multiple names, pass additional SANs:
+
+```shell
+bin/mkssl-pem cert-proxy.example.com proxy.internal.example.com
+```
+
 ### 3. Create the client configuration directory
 
 ```shell
@@ -107,6 +113,8 @@ cert-proxy-server -verbose \
     -certbase /var/lib/dehydrated/certs \
     -ccd /etc/cert-proxy/clients
 ```
+
+Additional flags can be set in `/etc/default/cert-proxy-server` (variable `OPTS`).
 
 ### Server flags
 
@@ -165,6 +173,7 @@ systemctl start cert-proxy-client.timer
 ```
 
 The timer runs daily with a randomized delay of up to 2 hours.
+Additional flags can be set in `/etc/default/cert-proxy-client` (variable `OPTS`).
 
 ### Client flags
 
@@ -221,7 +230,7 @@ Called for each domain after its certificate files are written:
 <script> deploy_cert <DOMAIN> <KEYFILE> <CERTFILE> <FULLCHAIN> <CHAINFILE> <TIMESTAMP>
 ```
 
-For PKCS12 format:
+For PKCS12 format (see [#14](https://forgejo.schlittermann.de/heiko/cert-proxy/issues/14)):
 
 ```
 <script> deploy_cert <DOMAIN> <BUNDLEFILE> <TIMESTAMP>

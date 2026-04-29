@@ -44,7 +44,7 @@ HTTP endpoints on port 4433 (TLS):
 
 Request pipeline uses functional middleware composition: `use(authn, serve)` / `use(authz, serve)`.
 
-Authorization reads `/etc/cert-proxy/clients/<cn>` — one domain pattern per line, `#` comments.
+Authorization reads `/etc/cert-proxy/clients/<cn>` — one domain per line, `#` comments.
 
 Certificate files are stored as `<certbase>/<domain>/{cert,privkey,chain,fullchain}.pem`.
 
