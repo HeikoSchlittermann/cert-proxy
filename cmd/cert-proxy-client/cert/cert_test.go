@@ -66,6 +66,8 @@ func newMockServer500(t *testing.T) *httptest.Server {
 	return srv
 }
 
+// saveGlobals must not be used with t.Parallel() — it mutates package-level
+// globals (UseSymlink, Force). Awaits refactoring these into an options struct.
 func saveGlobals(t *testing.T) {
 	t.Helper()
 
