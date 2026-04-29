@@ -1,10 +1,17 @@
 package main
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
+	"math/big"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -13,34 +20,31 @@ import (
 func createTestCertAndKey(t *testing.T, dir string) {
 	t.Helper()
 
-	cmd := exec.Command("openssl", "req",
-		"-x509", "-newkey", "ec", "-pkeyopt", "ec_paramgen_curve:prime256v1",
-		"-keyout", filepath.Join(dir, "privkey.pem"),
-		"-out", filepath.Join(dir, "cert.pem"),
-		"-days", "1",
-		"-nodes",
-		"-subj", "/CN=test.example.com")
-	out, err := cmd.CombinedOutput()
-	require.NoError(t, err, "openssl req failed: %s", out)
-
-	require.NoError(t, os.WriteFile(
-		filepath.Join(dir, "chain.pem"),
-		mustReadFile(t, filepath.Join(dir, "cert.pem")),
-		0644))
-}
-
-func mustReadFile(t *testing.T, path string) []byte {
-	t.Helper()
-	data, err := os.ReadFile(path)
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	require.NoError(t, err)
-	return data
+
+	tmpl := &x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject:      pkix.Name{CommonName: "test.example.com"},
+		NotBefore:    time.Now(),
+		NotAfter:     time.Now().Add(24 * time.Hour),
+		IsCA:         true,
+	}
+
+	certDER, err := x509.CreateCertificate(rand.Reader, tmpl, tmpl, &key.PublicKey, key)
+	require.NoError(t, err)
+
+	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER})
+	keyDER, err := x509.MarshalECPrivateKey(key)
+	require.NoError(t, err)
+	keyPEM := pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: keyDER})
+
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "cert.pem"), certPEM, 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "privkey.pem"), keyPEM, 0600))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "chain.pem"), certPEM, 0644))
 }
 
 func TestCreatePKCS12_Success(t *testing.T) {
-	if _, err := exec.LookPath("openssl"); err != nil {
-		t.Skip("openssl not available")
-	}
-
 	certbase := t.TempDir()
 	domain := "test.example.com"
 	domainDir := filepath.Join(certbase, domain)
@@ -54,10 +58,6 @@ func TestCreatePKCS12_Success(t *testing.T) {
 }
 
 func TestCreatePKCS12_EmptyPassword(t *testing.T) {
-	if _, err := exec.LookPath("openssl"); err != nil {
-		t.Skip("openssl not available")
-	}
-
 	certbase := t.TempDir()
 	domain := "test.example.com"
 	domainDir := filepath.Join(certbase, domain)
@@ -79,27 +79,20 @@ func TestCreatePKCS12_MissingCert(t *testing.T) {
 }
 
 func TestCreatePKCS12_MissingKey(t *testing.T) {
-	if _, err := exec.LookPath("openssl"); err != nil {
-		t.Skip("openssl not available")
-	}
-
 	certbase := t.TempDir()
 	domain := "test.example.com"
 	domainDir := filepath.Join(certbase, domain)
 	require.NoError(t, os.MkdirAll(domainDir, 0755))
 
-	require.NoError(t, os.WriteFile(filepath.Join(domainDir, "cert.pem"), []byte("---CERT---"), 0644))
-	require.NoError(t, os.WriteFile(filepath.Join(domainDir, "chain.pem"), []byte("---CHAIN---"), 0644))
+	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: []byte("invalid")})
+	require.NoError(t, os.WriteFile(filepath.Join(domainDir, "cert.pem"), certPEM, 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(domainDir, "chain.pem"), certPEM, 0644))
 
 	_, _, err := createPKCS12(certbase, domain, "pass")
 	assert.Error(t, err)
 }
 
 func TestCreatePKCS12_Mtime(t *testing.T) {
-	if _, err := exec.LookPath("openssl"); err != nil {
-		t.Skip("openssl not available")
-	}
-
 	certbase := t.TempDir()
 	domain := "test.example.com"
 	domainDir := filepath.Join(certbase, domain)
@@ -113,4 +106,18 @@ func TestCreatePKCS12_Mtime(t *testing.T) {
 	_, mtime, err := createPKCS12(certbase, domain, "pass")
 	require.NoError(t, err)
 	assert.Equal(t, fi.ModTime(), mtime, "mtime should match cert.pem modification time")
+}
+
+func TestCreatePKCS12_InvalidKeyPEM(t *testing.T) {
+	certbase := t.TempDir()
+	domain := "test.example.com"
+	domainDir := filepath.Join(certbase, domain)
+	require.NoError(t, os.MkdirAll(domainDir, 0755))
+	createTestCertAndKey(t, domainDir)
+
+	require.NoError(t, os.WriteFile(filepath.Join(domainDir, "privkey.pem"), []byte("not pem"), 0600))
+
+	_, _, err := createPKCS12(certbase, domain, "pass")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "private key")
 }
