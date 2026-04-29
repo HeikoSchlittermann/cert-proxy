@@ -10,17 +10,22 @@ on the server. Cert-proxy then serves these certificates to authenticated
 clients over mutual TLS.
 
 ```
-      [ Let's Encrypt CA ]
-         | |
-         ^ |
-         | v
-         | |
-       ACME client (dehydrated) ---> DNS
-       cert-proxy-server
-         | |
-         ^ v
-         | |
-       cert-proxy-client
+      ┌──────────────────┐
+      │ Let's Encrypt CA │
+      └──────────────────┘
+               ↑
+               │
+               ↓
+      ┌────────────────────────────┐       ┌─────┐
+      │ ACME client (dehydrated)   │──────→│ DNS │
+      │ cert-proxy-server          │       └─────┘
+      └────────────────────────────┘
+               ↑
+               │ mutual TLS
+               ↓
+      ┌────────────────────────────┐
+      │ cert-proxy-client          │
+      └────────────────────────────┘
 ```
 
 Authentication is mutual: the server verifies clients via X509 certificates
