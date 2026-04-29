@@ -1,5 +1,6 @@
 SERVER = server
 CLIENT = client
+export GOWORK = off
 
 SUBDIRS = cmd/cert-proxy-${SERVER} cmd/cert-proxy-${CLIENT} CA
 
@@ -11,7 +12,7 @@ test:
 	go test ./...
 
 update:
-	GOWORK=off go get -u ./...
+	go get -t -u ./...
 	go mod tidy
 
 install:	     install-client install-server
