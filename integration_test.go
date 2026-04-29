@@ -172,6 +172,7 @@ func createSSLPEM(t *testing.T, dir, cn string, caKey *ecdsa.PrivateKey, caCert 
 	path := filepath.Join(dir, cn+"-ssl.pem")
 	f, err := os.Create(path)
 	require.NoError(t, err)
+
 	defer f.Close()
 
 	pem.Encode(f, &pem.Block{Type: "CERTIFICATE", Bytes: certDER})
@@ -228,6 +229,7 @@ func startServer(t *testing.T, pki *testPKI, port int) {
 
 func createTestCerts(t *testing.T, certbase, domain string) {
 	t.Helper()
+
 	dir := filepath.Join(certbase, domain)
 	require.NoError(t, os.MkdirAll(dir, 0755))
 
@@ -293,6 +295,7 @@ func TestEndToEnd_Force(t *testing.T) {
 	require.NoError(t, err, "first run failed: %s", string(out))
 
 	fi1, _ := os.Stat(filepath.Join(outDir, "example.com", "cert.pem"))
+
 	time.Sleep(1100 * time.Millisecond)
 
 	out, err = exec.Command(clientBin, args...).CombinedOutput()
@@ -365,7 +368,9 @@ func TestEndToEnd_ServerAPI_Direct(t *testing.T) {
 	t.Run("list", func(t *testing.T) {
 		resp, err := client.Get(baseURL + "/v1/list")
 		require.NoError(t, err)
+
 		defer resp.Body.Close()
+
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 		body, _ := io.ReadAll(resp.Body)
@@ -375,7 +380,9 @@ func TestEndToEnd_ServerAPI_Direct(t *testing.T) {
 	t.Run("cert", func(t *testing.T) {
 		resp, err := client.Get(baseURL + "/v1/cert/example.com")
 		require.NoError(t, err)
+
 		defer resp.Body.Close()
+
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 		body, _ := io.ReadAll(resp.Body)
@@ -385,21 +392,27 @@ func TestEndToEnd_ServerAPI_Direct(t *testing.T) {
 	t.Run("privkey_authorized", func(t *testing.T) {
 		resp, err := client.Get(baseURL + "/v1/privkey/example.com")
 		require.NoError(t, err)
+
 		defer resp.Body.Close()
+
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 	})
 
 	t.Run("privkey_unauthorized", func(t *testing.T) {
 		resp, err := client.Get(baseURL + "/v1/privkey/other.com")
 		require.NoError(t, err)
+
 		defer resp.Body.Close()
+
 		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 	})
 
 	t.Run("x-version_header", func(t *testing.T) {
 		resp, err := client.Get(baseURL + "/v1/cert/example.com")
 		require.NoError(t, err)
+
 		defer resp.Body.Close()
+
 		assert.NotEmpty(t, resp.Header.Get("x-version"))
 	})
 
@@ -408,7 +421,9 @@ func TestEndToEnd_ServerAPI_Direct(t *testing.T) {
 		req.Header.Set("If-Modified-Since", time.Now().Add(time.Hour).UTC().Format(http.TimeFormat))
 		resp, err := client.Do(req)
 		require.NoError(t, err)
+
 		defer resp.Body.Close()
+
 		assert.Equal(t, http.StatusNotModified, resp.StatusCode)
 	})
 }

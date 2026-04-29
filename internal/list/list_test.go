@@ -146,6 +146,7 @@ func TestAddItemsFromFile_MissingFile(t *testing.T) {
 
 func TestAddItemsFromReader_WithOrderedStrings(t *testing.T) {
 	input := "banana\napple\ncherry\n"
+
 	var os OrderedStrings
 
 	require.NoError(t, AddItemsFromReader(&os, strings.NewReader(input)))

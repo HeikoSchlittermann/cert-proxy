@@ -21,7 +21,9 @@ func TestFetchCNs_EmptyList(t *testing.T) {
 	defer srv.Close()
 
 	origConnect := opt.Connect
+
 	t.Cleanup(func() { opt.Connect = origConnect })
+
 	opt.Connect = srv.URL
 
 	domains, err := fetchCNs()
@@ -36,7 +38,9 @@ func TestFetchCNs_WithDomains(t *testing.T) {
 	defer srv.Close()
 
 	origConnect := opt.Connect
+
 	t.Cleanup(func() { opt.Connect = origConnect })
+
 	opt.Connect = srv.URL
 
 	domains, err := fetchCNs()
@@ -51,7 +55,9 @@ func TestFetchCNs_ServerError(t *testing.T) {
 	defer srv.Close()
 
 	origConnect := opt.Connect
+
 	t.Cleanup(func() { opt.Connect = origConnect })
+
 	opt.Connect = srv.URL
 
 	_, err := fetchCNs()

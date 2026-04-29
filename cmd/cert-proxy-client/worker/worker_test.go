@@ -27,6 +27,7 @@ func TestPool_EnqueueAndWait_Success(t *testing.T) {
 	origForce := cert.Force
 	cert.UseSymlink = false
 	cert.Force = true
+
 	t.Cleanup(func() {
 		cert.UseSymlink = origSymlink
 		cert.Force = origForce
@@ -51,6 +52,7 @@ func TestPool_EnqueueAndWait_Error(t *testing.T) {
 
 	origForce := cert.Force
 	cert.Force = true
+
 	t.Cleanup(func() {
 		cert.Force = origForce
 	})

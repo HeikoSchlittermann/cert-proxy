@@ -36,6 +36,7 @@ func setupTestEnv(t *testing.T) (certbase, ccd string) {
 
 	origCertbase := opt.Certbase
 	origCCD := opt.ClientConfigDir
+
 	t.Cleanup(func() {
 		opt.Certbase = origCertbase
 		opt.ClientConfigDir = origCCD
@@ -49,6 +50,7 @@ func setupTestEnv(t *testing.T) (certbase, ccd string) {
 
 func createDomainFiles(t *testing.T, certbase, domain string) {
 	t.Helper()
+
 	dir := filepath.Join(certbase, domain)
 	require.NoError(t, os.MkdirAll(dir, 0755))
 
@@ -65,6 +67,7 @@ func createDomainFiles(t *testing.T, certbase, domain string) {
 
 func createClientConfig(t *testing.T, ccd, cn string, domains []string) {
 	t.Helper()
+
 	content := strings.Join(domains, "\n") + "\n"
 	require.NoError(t, os.WriteFile(filepath.Join(ccd, cn), []byte(content), 0644))
 }
@@ -225,6 +228,7 @@ func TestServe_NotModified(t *testing.T) {
 
 	req := mockTLSRequest("GET", "/v1/cert/example.com", "")
 	req.Header.Set("If-Modified-Since", time.Now().Add(time.Hour).UTC().Format(http.TimeFormat))
+
 	w := httptest.NewRecorder()
 
 	err := serve(make(context), w, req)

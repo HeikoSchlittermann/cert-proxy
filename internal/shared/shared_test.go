@@ -60,6 +60,7 @@ func generateTestSSLPEM(t *testing.T) string {
 	path := filepath.Join(dir, "ssl.pem")
 	f, err := os.Create(path)
 	require.NoError(t, err)
+
 	defer f.Close()
 
 	pem.Encode(f, &pem.Block{Type: "CERTIFICATE", Bytes: leafDER})

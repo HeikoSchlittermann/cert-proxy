@@ -74,6 +74,7 @@ func saveGlobals(t *testing.T) {
 	origSymlink := UseSymlink
 	origForce := Force
 	origTransport := http.DefaultClient.Transport
+
 	t.Cleanup(func() {
 		UseSymlink = origSymlink
 		Force = origForce
@@ -164,6 +165,7 @@ func TestNewReq_DomainEnv(t *testing.T) {
 
 func TestExecute_Download(t *testing.T) {
 	saveGlobals(t)
+
 	UseSymlink = false
 	Force = true
 
@@ -185,6 +187,7 @@ func TestExecute_Download(t *testing.T) {
 
 func TestExecute_DownloadContent(t *testing.T) {
 	saveGlobals(t)
+
 	UseSymlink = false
 	Force = true
 
@@ -204,6 +207,7 @@ func TestExecute_DownloadContent(t *testing.T) {
 
 func TestExecute_Symlink(t *testing.T) {
 	saveGlobals(t)
+
 	UseSymlink = true
 	Force = true
 
@@ -229,6 +233,7 @@ func TestExecute_Symlink(t *testing.T) {
 
 func TestExecute_NoSymlink(t *testing.T) {
 	saveGlobals(t)
+
 	UseSymlink = false
 	Force = true
 
@@ -249,6 +254,7 @@ func TestExecute_NoSymlink(t *testing.T) {
 
 func TestExecute_NotModified(t *testing.T) {
 	saveGlobals(t)
+
 	UseSymlink = false
 	Force = false
 
@@ -275,6 +281,7 @@ func TestExecute_NotModified(t *testing.T) {
 
 func TestExecute_ServerError(t *testing.T) {
 	saveGlobals(t)
+
 	Force = true
 
 	srv := newMockServer500(t)
@@ -284,12 +291,14 @@ func TestExecute_ServerError(t *testing.T) {
 	require.NoError(t, err)
 
 	var mtx sync.Mutex
+
 	err = req.Execute(&mtx)
 	assert.Error(t, err)
 }
 
 func TestExecute_IfModifiedSince(t *testing.T) {
 	saveGlobals(t)
+
 	Force = false
 	UseSymlink = false
 
@@ -298,6 +307,7 @@ func TestExecute_IfModifiedSince(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("If-Modified-Since") != "" {
 			imsCount++
+
 			w.WriteHeader(http.StatusNotModified)
 
 			return
@@ -326,12 +336,14 @@ func TestExecute_IfModifiedSince(t *testing.T) {
 
 func TestExecute_Force(t *testing.T) {
 	saveGlobals(t)
+
 	Force = true
 
 	var imsReceived string
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		imsReceived = r.Header.Get("If-Modified-Since")
+
 		w.Write([]byte("NEW"))
 	}))
 	t.Cleanup(srv.Close)
@@ -354,6 +366,7 @@ func TestExecute_Force(t *testing.T) {
 
 func TestExecute_FilePermissions(t *testing.T) {
 	saveGlobals(t)
+
 	UseSymlink = false
 	Force = true
 
@@ -380,6 +393,7 @@ func TestExecute_FilePermissions(t *testing.T) {
 
 func TestExecute_PKCS12_Download(t *testing.T) {
 	saveGlobals(t)
+
 	UseSymlink = false
 	Force = true
 
@@ -403,6 +417,7 @@ func TestExecute_PKCS12_Download(t *testing.T) {
 
 func TestExecute_Hook_PEM(t *testing.T) {
 	saveGlobals(t)
+
 	UseSymlink = false
 	Force = true
 
@@ -437,6 +452,7 @@ func TestExecute_Hook_PEM(t *testing.T) {
 
 func TestExecute_Hook_PKCS12(t *testing.T) {
 	saveGlobals(t)
+
 	UseSymlink = false
 	Force = true
 

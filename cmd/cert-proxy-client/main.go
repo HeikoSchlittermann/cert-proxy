@@ -45,6 +45,7 @@ var (
 
 func main() {
 	parseFlags()
+
 	defer shared.Verbose("DONE")
 
 	shared.Verbose("Starting %s: %s", program.Name, program.Version)
