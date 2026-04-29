@@ -403,10 +403,46 @@ func TestExecute_FilePermissions(t *testing.T) {
 	certPerm := certFi.Mode().Perm()
 	keyPerm := keyFi.Mode().Perm()
 
-	assert.True(t, certPerm > keyPerm,
-		"public file (%04o) should have more permission bits than private (%04o)", certPerm, keyPerm)
-	assert.Zero(t, keyPerm&0007,
-		"private file should have no other permissions, got %04o", keyPerm)
+	assert.Equal(t, os.FileMode(0644), certPerm,
+		"public file should be 0644, got %04o", certPerm)
+	assert.Equal(t, os.FileMode(0600), keyPerm,
+		"private file should be 0600, got %04o", keyPerm)
+}
+
+func TestExecute_FilePermissions_PreExisting(t *testing.T) {
+	saveGlobals(t)
+
+	UseSymlink = true
+	Force = true
+
+	srv := newMockServer(t)
+	basedir := t.TempDir()
+
+	domainDir := filepath.Join(basedir, "example.com")
+	require.NoError(t, os.MkdirAll(domainDir, 0755))
+
+	// Pre-create a timestamped key file with overly broad permissions
+	// to simulate a file left from a prior run with wrong perms.
+	keyPath := filepath.Join(domainDir, "privkey-9999999999.pem")
+	require.NoError(t, os.WriteFile(keyPath, []byte("old"), 0644))
+
+	req, err := NewReq("example.com", srv.URL, basedir, "", FormatPEM, "", "")
+	require.NoError(t, err)
+
+	var mtx sync.Mutex
+	require.NoError(t, req.Execute(context.Background(), &mtx))
+
+	// Read the symlink to find the actual timestamped file.
+	symlinkPath := filepath.Join(domainDir, "privkey.pem")
+	target, err := os.Readlink(symlinkPath)
+	require.NoError(t, err)
+
+	infixedPath := filepath.Join(domainDir, target)
+	fi, err := os.Stat(infixedPath)
+	require.NoError(t, err)
+
+	assert.Equal(t, os.FileMode(0600), fi.Mode().Perm(),
+		"private key must be 0600 even when pre-existing file had broader permissions")
 }
 
 func TestExecute_PKCS12_Download(t *testing.T) {
