@@ -201,7 +201,7 @@ func (req *Req) Execute(ctx context.Context, mtx sync.Locker) error {
 	// Got it, now write the output
 	//
 	var (
-		infix   = strconv.Itoa(int(time.Now().Unix()))
+		infix   = strconv.FormatInt(time.Now().Unix(), 10)
 		infixed = map[string]string{}
 	)
 
@@ -255,7 +255,7 @@ func (req *Req) Execute(ctx context.Context, mtx sync.Locker) error {
 
 	shared.Verbose("Hook %s for %s", req.hook, req.domain)
 
-	var timestamp = fmt.Sprint(time.Now().Unix())
+	timestamp := strconv.FormatInt(time.Now().Unix(), 10)
 
 	var cmd = exec.Cmd{
 		Path:   req.hook,
