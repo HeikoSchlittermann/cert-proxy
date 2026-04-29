@@ -70,13 +70,13 @@ func (list OrderedStrings) Items() []string {
 }
 
 // UniqStrings implements a list of uniq items
-type UniqStrings map[string]interface{}
+type UniqStrings map[string]struct{}
 
 // Add adds new items to the list of unique strings. If the
 // item exists already, it does nothing.
 func (list *UniqStrings) Add(v ...string) {
 	for _, v := range v {
-		(*list)[v] = nil
+		(*list)[v] = struct{}{}
 	}
 }
 
