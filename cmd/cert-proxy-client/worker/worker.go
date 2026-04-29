@@ -66,20 +66,34 @@ func NewPool(ctx context.Context, workers int) *Pool {
 
 // EnqueueTasks creates a task per CN, with all the items that are
 // necessary for this CN. Bundling it per Domain has the advantage of a
-// transaction like processing of the results
-func (pool *Pool) EnqueueTasks(CNs list.UniqStrings, proxy, certbase, hook string, format cert.Format, pass, compat string) {
-	go func() {
-		for cn := range CNs {
-			req, err := cert.NewReq(cn, proxy, certbase, hook, format, pass, compat)
-			if err != nil {
-				panic(err) // this is not supposed to fail
-			}
+// transaction like processing of the results.
+//
+// Requests are built up front so a malformed proxy/domain combination
+// surfaces as a returned error rather than a panic in a worker
+// goroutine. On error the queue is closed so a subsequent Wait()
+// observes a clean shutdown.
+func (pool *Pool) EnqueueTasks(CNs list.UniqStrings, proxy, certbase, hook string, format cert.Format, pass, compat string) error {
+	reqs := make([]cert.Req, 0, len(CNs))
 
+	for cn := range CNs {
+		req, err := cert.NewReq(cn, proxy, certbase, hook, format, pass, compat)
+		if err != nil {
+			close(pool.queue)
+			return fmt.Errorf("building request for %s: %w", cn, err)
+		}
+
+		reqs = append(reqs, req)
+	}
+
+	go func() {
+		for _, req := range reqs {
 			pool.queue <- req
 		}
 
 		close(pool.queue)
 	}()
+
+	return nil
 }
 
 // Wait until all jobs are done

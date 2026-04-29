@@ -106,7 +106,9 @@ func main() {
 	shared.Verbose("Enqueing %d tasks for %d domains %v", opt.Jobs, len(CNs), CNs)
 
 	var pool = worker.NewPool(ctx, opt.Jobs)
-	pool.EnqueueTasks(CNs, opt.Connect, opt.Certbase, opt.Hook, opt.Format, opt.Passout, opt.Pkcs12Compat)
+	if err := pool.EnqueueTasks(CNs, opt.Connect, opt.Certbase, opt.Hook, opt.Format, opt.Passout, opt.Pkcs12Compat); err != nil {
+		log.Fatal(err)
+	}
 
 	if err := pool.Wait(); err != nil {
 		log.Fatal(err)
