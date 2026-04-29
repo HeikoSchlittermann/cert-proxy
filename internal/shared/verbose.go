@@ -7,13 +7,19 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 )
+
+// EnableVerbose sets the process-wide default logger to emit at
+// slog.LevelDebug on stderr.
+func EnableVerbose() {
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})))
+}
 
 // Verbose emits a printf-formatted message at slog.LevelDebug on the
 // process-wide slog.Default(). When the default logger is below debug
 // level (the silent default) the call returns without formatting the
-// arguments. Configure visibility by replacing slog.Default() with a
-// handler whose Level allows Debug.
+// arguments.
 func Verbose(format string, args ...any) {
 	logger := slog.Default()
 	if !logger.Enabled(context.Background(), slog.LevelDebug) {

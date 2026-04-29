@@ -7,7 +7,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"log/slog"
 	"net/url"
 	"os"
 	"runtime"
@@ -16,6 +15,7 @@ import (
 	"go.schlittermann.de/heiko/cert-proxy/cmd/cert-proxy-client/cert"
 	"go.schlittermann.de/heiko/cert-proxy/cmd/cert-proxy-client/secret"
 	"go.schlittermann.de/heiko/cert-proxy/internal/program"
+	"go.schlittermann.de/heiko/cert-proxy/internal/shared"
 )
 
 func init() {
@@ -130,7 +130,7 @@ func parseFlags() {
 	}
 
 	if opt.Verbose {
-		slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})))
+		shared.EnableVerbose()
 	}
 
 	if opt.Passout != "" {
