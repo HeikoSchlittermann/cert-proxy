@@ -102,3 +102,21 @@ func TestFetchCNs_ContextCancellation(t *testing.T) {
 		t.Fatal("fetchCNs did not return after context cancellation")
 	}
 }
+
+func TestFetchCNs_RejectsInvalidDomains(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = fmt.Fprintln(w, "valid.example.com")
+		_, _ = fmt.Fprintln(w, "../../etc/passwd")
+	}))
+	defer srv.Close()
+
+	origConnect := opt.Connect
+
+	t.Cleanup(func() { opt.Connect = origConnect })
+
+	opt.Connect = srv.URL
+
+	_, err := fetchCNs(context.Background())
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid domain")
+}

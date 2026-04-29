@@ -14,6 +14,7 @@ import (
 
 	"go.schlittermann.de/heiko/cert-proxy/cmd/cert-proxy-client/cert"
 	"go.schlittermann.de/heiko/cert-proxy/cmd/cert-proxy-client/secret"
+	"go.schlittermann.de/heiko/cert-proxy/internal/list"
 	"go.schlittermann.de/heiko/cert-proxy/internal/program"
 	"go.schlittermann.de/heiko/cert-proxy/internal/shared"
 )
@@ -126,6 +127,10 @@ func parseFlags() {
 	}
 
 	for _, v := range flag.Args() {
+		if err := list.ValidateDomain(v); err != nil {
+			log.Fatalf("invalid domain %q: %v", v, err)
+		}
+
 		CNs.Add(v)
 	}
 

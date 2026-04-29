@@ -21,6 +21,7 @@ import (
 	"text/template"
 	"time"
 
+	"go.schlittermann.de/heiko/cert-proxy/internal/list"
 	"go.schlittermann.de/heiko/cert-proxy/internal/program"
 	"go.schlittermann.de/heiko/cert-proxy/internal/shared"
 )
@@ -120,6 +121,10 @@ type templateContext struct {
 // NewReq builds a Req for one domain, expanding the URL, file-path, and env
 // templates for each Role required by the chosen Format.
 func NewReq(domain, remote, basedir, hook string, format Format, pass, compat string) (Req, error) {
+	if err := list.ValidateDomain(domain); err != nil {
+		return Req{}, fmt.Errorf("invalid domain %q: %w", domain, err)
+	}
+
 	var (
 		req = Req{domain: domain, hook: hook, env: []string{`DOMAIN=` + domain}}
 		ctx = templateContext{Domain: domain, Proxy: remote, Pass: pass, Compat: compat}

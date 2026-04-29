@@ -584,3 +584,47 @@ func TestReq_String_PKCS12(t *testing.T) {
 	s := req.String()
 	assert.Contains(t, s, "1 items")
 }
+
+func TestNewReq_PathTraversal(t *testing.T) {
+	traversals := []string{
+		"../../etc/passwd",
+		"../secret",
+		"foo/../../etc/shadow",
+	}
+
+	for _, domain := range traversals {
+		_, err := NewReq(domain, "https://proxy:4433", "/certs", "", FormatPEM, "", "")
+		assert.Error(t, err, "domain %q must be rejected", domain)
+	}
+}
+
+func TestNewReq_InvalidDomainChars(t *testing.T) {
+	invalid := []string{
+		"$(rm -rf /)",
+		"foo;bar",
+		"foo|bar",
+		"foo bar",
+		"`id`",
+		"foo\x00bar",
+		"foo\nbar",
+	}
+
+	for _, domain := range invalid {
+		_, err := NewReq(domain, "https://proxy:4433", "/certs", "", FormatPEM, "", "")
+		assert.Error(t, err, "domain %q must be rejected", domain)
+	}
+}
+
+func TestNewReq_ValidDomains(t *testing.T) {
+	valid := []string{
+		"example.com",
+		"sub.example.com",
+		"*.example.com",
+		"a-b_c.example.com",
+	}
+
+	for _, domain := range valid {
+		_, err := NewReq(domain, "https://proxy:4433", "/certs", "", FormatPEM, "", "")
+		assert.NoError(t, err, "domain %q must be accepted", domain)
+	}
+}

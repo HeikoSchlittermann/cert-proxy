@@ -8,6 +8,7 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -54,6 +55,12 @@ func main() {
 
 	if err := list.AddItemsFromFile(&CNs, opt.CNfile); err != nil {
 		log.Fatal(err)
+	}
+
+	for domain := range CNs {
+		if err := list.ValidateDomain(domain); err != nil {
+			log.Fatalf("invalid domain %q in %s: %v", domain, opt.CNfile, err)
+		}
 	}
 
 	// Setup the HTTP client, some more setup is necessary, as we need
@@ -163,6 +170,10 @@ func fetchCNs(ctx context.Context) ([]string, error) {
 	s := bufio.NewScanner(resp.Body)
 	for s.Scan() {
 		if line := strings.TrimSpace(s.Text()); line != "" {
+			if err := list.ValidateDomain(line); err != nil {
+				return nil, fmt.Errorf("server returned invalid domain %q: %w", line, err)
+			}
+
 			domains = append(domains, line)
 		}
 	}
