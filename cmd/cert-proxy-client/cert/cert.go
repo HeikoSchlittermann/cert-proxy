@@ -36,7 +36,6 @@ var Force = false
 
 // Roles identify the per-domain artifacts the client may fetch.
 const (
-	RoleINVALID   role = ``
 	RoleCRT       role = `CERT`
 	RoleKEY       role = `KEY`
 	RoleCHAIN     role = `CHAIN`
@@ -49,9 +48,8 @@ type Format string
 
 // Supported certificate formats.
 const (
-	FormatINVALID Format = ``
-	FormatPEM     Format = `PEM`
-	FormatPKCS12  Format = `PKCS12`
+	FormatPEM    Format = `PEM`
+	FormatPKCS12 Format = `PKCS12`
 )
 
 // ROLES maps each Format to the set of files (by Role) it requires.

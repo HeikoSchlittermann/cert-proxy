@@ -565,7 +565,7 @@ func TestFormat_Set_Invalid(t *testing.T) {
 func TestFormat_String(t *testing.T) {
 	assert.Equal(t, "PEM", FormatPEM.String())
 	assert.Equal(t, "PKCS12", FormatPKCS12.String())
-	assert.Equal(t, "", FormatINVALID.String())
+	assert.Equal(t, "", Format("").String())
 }
 
 func TestReq_String(t *testing.T) {
