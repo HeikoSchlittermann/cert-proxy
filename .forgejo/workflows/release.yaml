@@ -1,0 +1,18 @@
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  release:
+    runs-on: gogogo
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-tags: true
+      - run: gogogo --version
+      - name: Release
+        env:
+          FORGEJO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gogogo release --force
