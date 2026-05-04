@@ -1,8 +1,7 @@
 on:
   push:
-    branches:
-      - main
-      - master
+    tags:
+      - "v*"
 
 jobs:
   release:
@@ -11,7 +10,6 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-tags: true
-      - run: gogogo --version
       - name: Release
         env:
           FORGEJO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
