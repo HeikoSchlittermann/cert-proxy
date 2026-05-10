@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#f6f6f6" />
+    </linearGradient>
+    <linearGradient id="cardinalGlow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#b00020" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#d60029" stop-opacity="1"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <rect width="800" height="400" fill="url(#bg)" rx="12" stroke="#e0e0e0" stroke-width="2" />
+  <text x="780" y="30" fill="#d60029" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="end">schlittermann.de</text>
+
+  <!-- Left: The Internet / Let's Encrypt -->
+  <g transform="translate(60, 150)">
+    <path d="M 20 40 Q 20 20 40 20 Q 50 0 70 0 Q 90 0 100 20 Q 120 20 120 40 Q 140 40 140 60 Q 140 80 120 80 L 20 80 Q 0 80 0 60 Q 0 40 20 40 Z" fill="#e6e6e6" stroke="#999" stroke-width="2"/>
+    <text x="70" y="110" fill="#1a1a1a" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle">Let's Encrypt</text>
+    <text x="70" y="130" fill="#666" font-family="Arial, sans-serif" font-size="13" text-anchor="middle">Public Internet</text>
+  </g>
+
+  <!-- Connection: Internet to Server -->
+  <path d="M 180 190 L 320 190" stroke="#999" stroke-width="3" stroke-dasharray="5,5" />
+  <text x="250" y="180" fill="#666" font-family="monospace" font-size="12" text-anchor="middle">ACME</text>
+
+  <!-- Center: cert-proxy server -->
+  <g transform="translate(320, 110)">
+    <!-- Firewall divider -->
+    <line x1="-20" y1="-50" x2="-20" y2="250" stroke="#d60029" stroke-width="2" stroke-dasharray="8,4" opacity="0.5"/>
+    <text x="-25" y="-10" fill="#d60029" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="end" transform="rotate(-90 -25 -10)">FIREWALL</text>
+
+    <!-- Server Box -->
+    <rect x="0" y="0" width="160" height="160" fill="#fff" stroke="url(#cardinalGlow)" stroke-width="4" rx="8" filter="url(#glow)"/>
+    <text x="80" y="40" fill="#1a1a1a" font-family="Arial, sans-serif" font-size="20" font-weight="bold" text-anchor="middle">cert-proxy</text>
+    <text x="80" y="60" fill="#d60029" font-family="monospace" font-size="14" text-anchor="middle">server</text>
+    
+    <!-- Cert inside -->
+    <rect x="60" y="80" width="40" height="50" fill="#f9f9f9" stroke="#333" stroke-width="2" rx="2"/>
+    <circle cx="80" cy="100" r="8" fill="#d60029"/>
+    <line x1="70" y1="115" x2="90" y2="115" stroke="#999" stroke-width="2"/>
+  </g>
+
+  <!-- Connection: Server to Client -->
+  <path d="M 480 190 L 580 190" stroke="url(#cardinalGlow)" stroke-width="6" />
+  <text x="530" y="175" fill="#d60029" font-family="monospace" font-size="12" font-weight="bold" text-anchor="middle">mTLS</text>
+
+  <!-- Right: cert-proxy client (Internal) -->
+  <g transform="translate(580, 130)">
+    <rect x="0" y="0" width="160" height="120" fill="#fff" stroke="#999" stroke-width="2" rx="8"/>
+    <text x="80" y="40" fill="#1a1a1a" font-family="Arial, sans-serif" font-size="18" font-weight="bold" text-anchor="middle">Internal Node</text>
+    <text x="80" y="60" fill="#666" font-family="monospace" font-size="12" text-anchor="middle">cert-proxy client</text>
+    
+    <!-- Receiving cert -->
+    <rect x="65" y="80" width="30" height="40" fill="#d60029" rx="2"/>
+    <circle cx="80" cy="95" r="5" fill="#fff"/>
+  </g>
+</svg>

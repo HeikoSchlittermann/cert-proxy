@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#f6f6f6" />
+    </linearGradient>
+    <linearGradient id="cardinalGlow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#b00020" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#d60029" stop-opacity="1"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <rect width="800" height="400" fill="url(#bg)" rx="12" stroke="#e0e0e0" stroke-width="2" />
+  <text x="780" y="30" fill="#d60029" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="end">schlittermann.de</text>
+
+  <!-- Title -->
+  <text x="400" y="40" fill="#1a1a1a" font-family="Arial, sans-serif" font-size="24" font-weight="bold" text-anchor="middle">Centralized Distribution Hub</text>
+  <text x="400" y="60" fill="#666" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">One ACME client. Infinite internal endpoints.</text>
+
+  <!-- Hub (cert-proxy-server) -->
+  <g transform="translate(320, 140)">
+    <circle cx="80" cy="80" r="70" fill="#fff" stroke="#1a1a1a" stroke-width="4"/>
+    <circle cx="80" cy="80" r="50" fill="none" stroke="url(#cardinalGlow)" stroke-width="8" filter="url(#glow)"/>
+    <text x="80" y="75" fill="#1a1a1a" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle">cert-proxy</text>
+    <text x="80" y="95" fill="#d60029" font-family="monospace" font-size="12" text-anchor="middle">SERVER</text>
+  </g>
+
+  <!-- Radiating Lines -->
+  <path d="M 400 140 L 400 90 L 600 90" fill="none" stroke="#d60029" stroke-width="3" stroke-dasharray="4,4"/>
+  <path d="M 400 220 L 400 330 L 600 330" fill="none" stroke="#d60029" stroke-width="3" stroke-dasharray="4,4"/>
+  <path d="M 400 220 L 600 220" fill="none" stroke="#d60029" stroke-width="3" stroke-dasharray="4,4"/>
+
+  <!-- Endpoints -->
+  <g transform="translate(600, 60)">
+    <rect x="0" y="0" width="140" height="60" fill="#fff" stroke="#333" stroke-width="2" rx="4"/>
+    <text x="70" y="25" fill="#1a1a1a" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">Web Cluster</text>
+    <text x="70" y="45" fill="#666" font-family="monospace" font-size="11" text-anchor="middle">web.example.com</text>
+    <!-- Cert icon -->
+    <rect x="-10" y="20" width="20" height="25" fill="#d60029" rx="2" />
+  </g>
+
+  <g transform="translate(600, 190)">
+    <rect x="0" y="0" width="140" height="60" fill="#fff" stroke="#333" stroke-width="2" rx="4"/>
+    <text x="70" y="25" fill="#1a1a1a" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">Mail Server</text>
+    <text x="70" y="45" fill="#666" font-family="monospace" font-size="11" text-anchor="middle">mail.example.com</text>
+    <!-- Cert icon -->
+    <rect x="-10" y="20" width="20" height="25" fill="#d60029" rx="2" />
+  </g>
+
+  <g transform="translate(600, 300)">
+    <rect x="0" y="0" width="140" height="60" fill="#fff" stroke="#333" stroke-width="2" rx="4"/>
+    <text x="70" y="25" fill="#1a1a1a" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">Database</text>
+    <text x="70" y="45" fill="#666" font-family="monospace" font-size="11" text-anchor="middle">db.internal</text>
+    <!-- Cert icon -->
+    <rect x="-10" y="20" width="20" height="25" fill="#d60029" rx="2" />
+  </g>
+
+  <!-- Let's Encrypt Input (Left) -->
+  <g transform="translate(60, 180)">
+    <rect x="0" y="0" width="120" height="80" fill="#e6e6e6" stroke="#999" stroke-width="2" rx="4"/>
+    <text x="60" y="30" fill="#1a1a1a" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">Let's Encrypt</text>
+    <text x="60" y="50" fill="#666" font-family="monospace" font-size="11" text-anchor="middle">ACME Client</text>
+  </g>
+  <path d="M 180 220 L 320 220" stroke="#333" stroke-width="4" />
+  <polygon points="310,210 320,220 310,230" fill="#333"/>
+</svg>
