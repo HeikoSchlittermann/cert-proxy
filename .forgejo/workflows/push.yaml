@@ -1,0 +1,10 @@
+name: mod-nag (Push)
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  mod-nag:
+    runs-on: mod-nag
+    uses: ius/workflows/.forgejo/workflows/mod-nag.yaml@master
