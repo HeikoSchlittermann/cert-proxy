@@ -1,0 +1,29 @@
+---
+# nagonag scheduled/manual caller for your repo's `.forgejo/workflows/`
+# directory.
+#
+# Scheduled/manual caller.
+#
+# This caller passes an explicit branch list for broad scans. Reusable
+# workflow inputs support only string, boolean, and number values, so
+# scan_branches is a JSON array encoded as a string, not a native YAML list.
+
+name: nagonag (Scheduled)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '15 4 * * *'
+
+permissions:
+  contents: write       # git push of nagonag/update-<branch>
+  pull-requests: write  # fj pr create
+  issues: write         # fj issue create / comment
+
+jobs:
+  nagonag:
+    runs-on: nagonag
+    uses: ius/workflows/.forgejo/workflows/nagonag.yaml@master
+    secrets: inherit
+    with:
+      scan_branches: '["master"]'

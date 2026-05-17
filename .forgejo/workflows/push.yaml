@@ -1,10 +1,29 @@
-name: mod-nag (Push)
+---
+# nagonag push caller for your repo's `.forgejo/workflows/` directory.
+#
+# Push-triggered caller.
+#
+# The branch filters below decide which pushes should run nagonag. The
+# reusable workflow receives no inputs here, so it checks out github.sha and
+# scans only the commit that triggered this run.
+
+name: nagonag (Push)
 
 on:
-  push:
   workflow_dispatch:
+  push:
+    branches:
+      - master
+      - release/**
+      - v*.x
+
+permissions:
+  contents: write       # git push of nagonag/update-<branch>
+  pull-requests: write  # fj pr create
+  issues: write         # fj issue create / comment
 
 jobs:
-  mod-nag:
-    runs-on: mod-nag
-    uses: ius/workflows/.forgejo/workflows/mod-nag.yaml@master
+  nagonag:
+    runs-on: nagonag
+    uses: ius/workflows/.forgejo/workflows/nagonag.yaml@master
+    secrets: inherit
