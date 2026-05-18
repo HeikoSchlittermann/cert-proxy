@@ -664,3 +664,35 @@ func TestNewReq_ValidDomains(t *testing.T) {
 		assert.NoError(t, err, "domain %q must be accepted", domain)
 	}
 }
+
+func TestReplaceSymlink_Fresh(t *testing.T) {
+	dir := t.TempDir()
+	name := filepath.Join(dir, "cert.pem")
+	target := "cert-20240101.pem"
+
+	require.NoError(t, replaceSymlink(name, target))
+
+	got, err := os.Readlink(name)
+	require.NoError(t, err)
+	assert.Equal(t, target, got)
+
+	_, err = os.Lstat(name + ".tmp")
+	assert.True(t, os.IsNotExist(err), ".tmp file must not remain after replacement")
+}
+
+func TestReplaceSymlink_ExistingSymlink(t *testing.T) {
+	dir := t.TempDir()
+	name := filepath.Join(dir, "cert.pem")
+	oldTarget := "cert-old.pem"
+	newTarget := "cert-new.pem"
+
+	require.NoError(t, os.Symlink(oldTarget, name))
+	require.NoError(t, replaceSymlink(name, newTarget))
+
+	got, err := os.Readlink(name)
+	require.NoError(t, err)
+	assert.Equal(t, newTarget, got)
+
+	_, err = os.Lstat(name + ".tmp")
+	assert.True(t, os.IsNotExist(err), ".tmp file must not remain after replacement")
+}

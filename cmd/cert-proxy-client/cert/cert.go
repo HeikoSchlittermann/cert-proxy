@@ -236,8 +236,7 @@ func (req *Req) Execute(ctx context.Context, mtx sync.Locker) error {
 		var err error
 
 		if UseSymlink {
-			_ = os.Remove(name)
-			err = os.Symlink(filepath.Base(infixed[name]), name)
+			err = replaceSymlink(name, filepath.Base(infixed[name]))
 		} else {
 			err = os.Rename(infixed[name], name)
 		}
@@ -342,4 +341,17 @@ func writeFile(name string, data []byte, private bool) error {
 	_, err = file.Write(data)
 
 	return err
+}
+
+// replaceSymlink atomically replaces the symlink at name; avoids the TOCTOU window of Remove+Symlink.
+func replaceSymlink(name, target string) error {
+	tmp := name + ".tmp"
+
+	_ = os.Remove(tmp)
+
+	if err := os.Symlink(target, tmp); err != nil {
+		return err
+	}
+
+	return os.Rename(tmp, name)
 }
