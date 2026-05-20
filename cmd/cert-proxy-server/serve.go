@@ -76,11 +76,14 @@ func serve(ctx context, w http.ResponseWriter, req *http.Request) error {
 		domains, err := cnList(ctx[REMOTE])
 		if err != nil {
 			status := http.StatusInternalServerError
+			body := err.Error()
+
 			if os.IsNotExist(err) || errors.Is(err, list.ErrInvalidName) {
 				status = http.StatusUnauthorized
+				body = "unauthorized"
 			}
 
-			http.Error(w, err.Error(), status)
+			http.Error(w, body, status)
 
 			return err
 		}

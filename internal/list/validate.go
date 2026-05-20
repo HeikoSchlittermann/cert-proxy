@@ -21,6 +21,13 @@ var validDomain = regexp.MustCompile(`^[a-zA-Z0-9*._-]+$`)
 // these resolve to devices regardless of extension or case, so a file
 // named CON.txt opens the console. Keeping the set here means client
 // names safe on Linux are also safe under a Windows-built binary.
+//
+// The set follows Microsoft's documentation in
+// https://learn.microsoft.com/en-us/windows/win32/fileio/naming-a-file
+// which lists COM0..9 and LPT0..9. Go's internal filepathlite is
+// narrower (1..9 only); we err on the side of Microsoft's list since
+// being more restrictive only ever rejects names a real CN would
+// not use.
 var windowsReserved = map[string]struct{}{
 	"CON": {}, "PRN": {}, "AUX": {}, "NUL": {},
 	"COM0": {}, "COM1": {}, "COM2": {}, "COM3": {}, "COM4": {},

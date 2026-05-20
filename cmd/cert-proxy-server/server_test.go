@@ -116,6 +116,10 @@ func TestAuthz_NoConfigFile(t *testing.T) {
 	err := authz(ctx, w, req)
 	require.Error(t, err)
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	assert.NotContains(t, w.Body.String(), "unknown-client",
+		"HTTP body must not echo CN from the underlying open error")
+	assert.NotContains(t, w.Body.String(), opt.ClientConfigDir,
+		"HTTP body must not reveal the configured clients dir path")
 }
 
 func TestAuthz_InvalidCN(t *testing.T) {
