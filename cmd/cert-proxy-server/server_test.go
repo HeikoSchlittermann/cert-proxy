@@ -317,7 +317,7 @@ func TestCnList_Missing(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestCnList_RejectsPathSeparator(t *testing.T) {
+func TestCnList_RejectsUnsafeName(t *testing.T) {
 	_, ccd := setupTestEnv(t)
 
 	// Plant a file at clients/sub/inner so that a successful traversal
@@ -327,19 +327,39 @@ func TestCnList_RejectsPathSeparator(t *testing.T) {
 		filepath.Join(ccd, "sub", "inner"),
 		[]byte("leaked.example.com\n"), 0644))
 
-	for _, cn := range []string{
-		"sub/inner",
-		`sub\inner`,
-		"with\x00nul",
-		"",
-		".hidden",
-	} {
-		t.Run(cn, func(t *testing.T) {
-			_, err := cnList(cn)
+	// Also plant a file literally named CON so a Linux-only validator
+	// would still happily open it; the Windows reserved-name guard
+	// must apply regardless of the host OS.
+	require.NoError(t, os.WriteFile(
+		filepath.Join(ccd, "CON"),
+		[]byte("device.example.com\n"), 0644))
+
+	cases := []struct {
+		name string
+		cn   string
+	}{
+		{"slash", "sub/inner"},
+		{"backslash", `sub\inner`},
+		{"nul", "with\x00nul"},
+		{"empty", ""},
+		{"leading_dot", ".hidden"},
+		{"wildcard", "*"},
+		{"win_con", "CON"},
+		{"win_con_lower", "con"},
+		{"win_con_mixed", "Con"},
+		{"win_con_with_ext", "CON.txt"},
+		{"win_nul", "NUL"},
+		{"win_com1", "COM1"},
+		{"win_lpt9", "LPT9"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := cnList(tc.cn)
 			require.Error(t, err)
 
-			if cn != "" {
-				require.NotContains(t, err.Error(), cn,
+			if tc.cn != "" {
+				require.NotContains(t, err.Error(), tc.cn,
 					"error must not echo attacker-controlled CN")
 			}
 		})

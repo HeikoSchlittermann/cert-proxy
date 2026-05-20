@@ -14,7 +14,7 @@ import (
 func cnList(cn string) (list.UniqStrings, error) {
 	// Validate before using as filename — auth.go forwards the
 	// returned error to the HTTP client, so it must not echo the CN.
-	if err := list.ValidateDomain(cn); err != nil {
+	if err := list.ValidateClientName(cn); err != nil {
 		return nil, err
 	}
 
