@@ -11,6 +11,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
+
+	"go.schlittermann.de/heiko/cert-proxy/internal/list"
 )
 
 func authn(ctx context, w http.ResponseWriter, req *http.Request) error {
@@ -46,11 +48,14 @@ func authz(ctx context, w http.ResponseWriter, req *http.Request) error {
 	allowedDomains, err := cnList(ctx[REMOTE])
 	if err != nil {
 		status := http.StatusInternalServerError
-		if os.IsNotExist(err) {
+		body := err.Error()
+
+		if os.IsNotExist(err) || errors.Is(err, list.ErrInvalidName) {
 			status = http.StatusUnauthorized
+			body = "unauthorized"
 		}
 
-		http.Error(w, err.Error(), status)
+		http.Error(w, body, status)
 
 		return err
 	}

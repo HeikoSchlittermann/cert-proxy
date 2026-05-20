@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -115,6 +116,28 @@ func TestAuthz_NoConfigFile(t *testing.T) {
 	err := authz(ctx, w, req)
 	require.Error(t, err)
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	assert.NotContains(t, w.Body.String(), "unknown-client",
+		"HTTP body must not echo CN from the underlying open error")
+	assert.NotContains(t, w.Body.String(), opt.ClientConfigDir,
+		"HTTP body must not reveal the configured clients dir path")
+}
+
+func TestAuthz_InvalidCN(t *testing.T) {
+	setupTestEnv(t)
+
+	// A client cert whose CN fails validation (here: contains a /)
+	// must yield 401, not 500. The CN never names a config file, so
+	// returning a server-error code on this path leaks the
+	// validation outcome and breaks ordinary auth handling.
+	req := mockTLSRequest("GET", "/v1/privkey/example.com", "foo/bar")
+	w := httptest.NewRecorder()
+	ctx := make(context)
+
+	err := authz(ctx, w, req)
+	require.Error(t, err)
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	assert.NotContains(t, w.Body.String(), "foo/bar",
+		"HTTP body must not echo attacker-controlled CN")
 }
 
 func TestAuthz_NotAuthorized(t *testing.T) {
@@ -222,6 +245,23 @@ func TestServe_List(t *testing.T) {
 	assert.Contains(t, body, "sub.example.com")
 }
 
+func TestServe_ListInvalidCN(t *testing.T) {
+	setupTestEnv(t)
+
+	// /v1/list goes through authn → serve, so an invalid CN
+	// reaches cnList without prior validation. serve must map
+	// the resulting ErrInvalidName to 401, not 500.
+	req := mockTLSRequest("GET", "/v1/list", "foo/bar")
+	w := httptest.NewRecorder()
+	ctx := context{REMOTE: "foo/bar"}
+
+	err := serve(ctx, w, req)
+	require.Error(t, err)
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	assert.NotContains(t, w.Body.String(), "foo/bar",
+		"HTTP body must not echo attacker-controlled CN")
+}
+
 func TestServe_NotModified(t *testing.T) {
 	certbase, _ := setupTestEnv(t)
 	createDomainFiles(t, certbase, "example.com")
@@ -315,6 +355,58 @@ func TestCnList_Missing(t *testing.T) {
 
 	_, err := cnList("nonexistent-client")
 	require.Error(t, err)
+}
+
+func TestCnList_RejectsUnsafeName(t *testing.T) {
+	_, ccd := setupTestEnv(t)
+
+	// Plant a file at clients/sub/inner so that a successful traversal
+	// would return its contents instead of an error.
+	require.NoError(t, os.MkdirAll(filepath.Join(ccd, "sub"), 0755))
+	require.NoError(t, os.WriteFile(
+		filepath.Join(ccd, "sub", "inner"),
+		[]byte("leaked.example.com\n"), 0644))
+
+	// Also plant a file literally named CON (skipped on Windows,
+	// where the name addresses the console device) so a Linux-only
+	// validator would still happily open it; the Windows reserved-name
+	// guard must apply regardless of the host OS.
+	if runtime.GOOS != "windows" {
+		require.NoError(t, os.WriteFile(
+			filepath.Join(ccd, "CON"),
+			[]byte("device.example.com\n"), 0644))
+	}
+
+	cases := []struct {
+		name string
+		cn   string
+	}{
+		{"slash", "sub/inner"},
+		{"backslash", `sub\inner`},
+		{"nul", "with\x00nul"},
+		{"empty", ""},
+		{"leading_dot", ".hidden"},
+		{"wildcard", "*"},
+		{"win_con", "CON"},
+		{"win_con_lower", "con"},
+		{"win_con_mixed", "Con"},
+		{"win_con_with_ext", "CON.txt"},
+		{"win_nul", "NUL"},
+		{"win_com1", "COM1"},
+		{"win_lpt9", "LPT9"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := cnList(tc.cn)
+			require.Error(t, err)
+
+			if tc.cn != "" {
+				require.NotContains(t, err.Error(), tc.cn,
+					"error must not echo attacker-controlled CN")
+			}
+		})
+	}
 }
 
 func TestUse_ChainStopsOnError(t *testing.T) {

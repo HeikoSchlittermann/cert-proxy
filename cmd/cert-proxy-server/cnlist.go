@@ -12,6 +12,12 @@ import (
 // cnList reads the client config file and returns
 // the list of allowed domains
 func cnList(cn string) (list.UniqStrings, error) {
+	// Validate before using as filename — auth.go forwards the
+	// returned error to the HTTP client, so it must not echo the CN.
+	if err := list.ValidateClientName(cn); err != nil {
+		return nil, err
+	}
+
 	cc, err := http.Dir(opt.ClientConfigDir).Open(cn)
 	if err != nil {
 		return nil, err
