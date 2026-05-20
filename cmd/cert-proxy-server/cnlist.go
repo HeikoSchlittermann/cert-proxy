@@ -4,23 +4,18 @@
 package main
 
 import (
-	"errors"
 	"net/http"
-	"strings"
 
 	"go.schlittermann.de/heiko/cert-proxy/internal/list"
 )
 
-// errInvalidCN is returned for a CN that cannot safely be used as
-// a filename in the clients config dir. The message deliberately
-// omits the CN, since auth.go forwards the error to the HTTP client.
-var errInvalidCN = errors.New("invalid client CN")
-
 // cnList reads the client config file and returns
 // the list of allowed domains
 func cnList(cn string) (list.UniqStrings, error) {
-	if cn == "" || cn[0] == '.' || strings.ContainsAny(cn, `/\`+"\x00") {
-		return nil, errInvalidCN
+	// Validate before using as filename — auth.go forwards the
+	// returned error to the HTTP client, so it must not echo the CN.
+	if err := list.ValidateDomain(cn); err != nil {
+		return nil, err
 	}
 
 	cc, err := http.Dir(opt.ClientConfigDir).Open(cn)

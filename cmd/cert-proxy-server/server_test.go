@@ -317,8 +317,6 @@ func TestCnList_Missing(t *testing.T) {
 	require.Error(t, err)
 }
 
-// TestCnList_RejectsPathSeparator guards against a CN that points
-// into a subdirectory of the clients config dir.
 func TestCnList_RejectsPathSeparator(t *testing.T) {
 	_, ccd := setupTestEnv(t)
 
