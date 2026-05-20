@@ -132,6 +132,8 @@ func TestAuthz_InvalidCN(t *testing.T) {
 	err := authz(ctx, w, req)
 	require.Error(t, err)
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	assert.NotContains(t, w.Body.String(), "foo/bar",
+		"HTTP body must not echo attacker-controlled CN")
 }
 
 func TestAuthz_NotAuthorized(t *testing.T) {
@@ -237,6 +239,23 @@ func TestServe_List(t *testing.T) {
 	body := w.Body.String()
 	assert.Contains(t, body, "example.com")
 	assert.Contains(t, body, "sub.example.com")
+}
+
+func TestServe_ListInvalidCN(t *testing.T) {
+	setupTestEnv(t)
+
+	// /v1/list goes through authn → serve, so an invalid CN
+	// reaches cnList without prior validation. serve must map
+	// the resulting ErrInvalidName to 401, not 500.
+	req := mockTLSRequest("GET", "/v1/list", "foo/bar")
+	w := httptest.NewRecorder()
+	ctx := context{REMOTE: "foo/bar"}
+
+	err := serve(ctx, w, req)
+	require.Error(t, err)
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	assert.NotContains(t, w.Body.String(), "foo/bar",
+		"HTTP body must not echo attacker-controlled CN")
 }
 
 func TestServe_NotModified(t *testing.T) {
