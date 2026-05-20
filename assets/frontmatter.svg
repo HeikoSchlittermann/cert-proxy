@@ -1,51 +1,49 @@
-<!-- 
-# Modified by Gemini CLI on 2026-05-10 for Heiko Schlittermann (HS12-RIPE) <hs@schlittermann.de>
-# Rationale: Rework the SVG graphic to match the schlittermann.de theme (red/grey/white) and make it "fancier".
--->
-<svg width="800" height="200" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="headerGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#d60029;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#a3001f;stop-opacity:1" />
-    </linearGradient>
-    <filter id="shadow" x="0" y="0" width="200%" height="200%">
-      <feOffset result="offOut" in="SourceAlpha" dx="1" dy="1" />
-      <feGaussianBlur result="blurOut" in="offOut" stdDeviation="2" />
-      <feBlend in="SourceGraphic" in2="blurOut" mode="normal" />
-    </filter>
-  </defs>
-
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 200" width="800" height="200" role="img" aria-label="cert-proxy — mutual-TLS certificate distribution">
   <style>
-    .title { font: bold 48px Arial, Helvetica, sans-serif; fill: url(#headerGradient); filter: url(#shadow); }
-    .subtitle { font: italic 22px Georgia, serif; fill: #3f3f3f; }
-    .feature { font: 16px Arial, Helvetica, sans-serif; fill: #3f3f3f; font-weight: bold; }
-    .icon { fill: #d60029; }
-    .domain { font: bold 14px Arial, Helvetica, sans-serif; fill: #666; opacity: 0.7; }
-    .bg { fill: #FFFFFF; }
-    .accent-bar { fill: #d60029; }
+    svg{--fg:#1f1f1f;--muted:#7a7a7a;--dim:#a8a8a8;--accent:#d60029;--hair:#bdbdbd}
+    @media (prefers-color-scheme: dark){
+      svg{--fg:#ececec;--muted:#9a9a9a;--dim:#5e5e5e;--accent:#ff3354;--hair:#3a3a3a}
+    }
+    .fg{fill:var(--fg)} .muted{fill:var(--muted)} .dim{fill:var(--dim)} .accent{fill:var(--accent)}
+    .s-fg{stroke:var(--fg);fill:none} .s-muted{stroke:var(--muted);fill:none}
+    .s-accent{stroke:var(--accent);fill:none} .s-hair{stroke:var(--hair);fill:none}
+    .mono{font-family:ui-monospace,"JetBrains Mono","SF Mono","IBM Plex Mono",Menlo,Consolas,monospace}
+    .man{font-size:11px;letter-spacing:0.22em;font-weight:600}
+    .word{font-size:56px;font-weight:600;letter-spacing:-0.04em}
+    .tag{font-size:14px;letter-spacing:0.04em}
+    .meta{font-size:10px;letter-spacing:0.18em}
   </style>
 
-  <rect width="100%" height="100%" class="bg" />
-  <rect width="100%" height="5" class="accent-bar" />
+  <!-- man-page header rule -->
+  <text x="40"  y="28" class="mono man muted">CERT-PROXY(1)</text>
+  <text x="400" y="28" class="mono man dim" text-anchor="middle">CERTIFICATE DISTRIBUTION</text>
+  <text x="760" y="28" class="mono man muted" text-anchor="end">CERT-PROXY(1)</text>
+  <line x1="40" y1="40" x2="760" y2="40" class="s-hair" stroke-width="1"/>
 
-  <!-- North East Corner -->
-  <text x="790" y="25" class="domain" text-anchor="end">schlittermann.de</text>
-
-  <text x="50" y="70" class="title">cert-proxy</text>
-  <text x="50" y="105" class="subtitle">Secure Certificate Distribution for Linux Professionals</text>
-
-  <g transform="translate(50, 150)">
-    <path class="icon" d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" />
-    <text x="35" y="18" class="feature">Enterprise Grade Security</text>
+  <!-- signature mark: padlock with certificate inside -->
+  <g transform="translate(56,76)" stroke-linecap="round" stroke-linejoin="round">
+    <!-- shackle -->
+    <path d="M16 22 v-9 a14 14 0 0 1 28 0 v9" class="s-fg" stroke-width="1.5" fill="none"/>
+    <!-- lock body -->
+    <rect x="2" y="22" width="56" height="50" rx="3" class="s-fg" stroke-width="1.5"/>
+    <!-- cert lines inside -->
+    <line x1="12" y1="36" x2="48" y2="36" class="s-muted" stroke-width="1"/>
+    <line x1="12" y1="44" x2="40" y2="44" class="s-muted" stroke-width="1"/>
+    <line x1="12" y1="52" x2="48" y2="52" class="s-muted" stroke-width="1"/>
+    <!-- seal -->
+    <circle cx="44" cy="62" r="4.5" class="s-accent" stroke-width="1.25"/>
+    <circle cx="44" cy="62" r="1.5" class="accent"/>
   </g>
 
-  <g transform="translate(320, 150)">
-    <path class="icon" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14h-2v-2h2v2zm0-4h-2V7h2v6z" />
-    <text x="35" y="18" class="feature">Centralized Management</text>
-  </g>
+  <!-- wordmark -->
+  <text x="140" y="118" class="mono word fg">cert<tspan class="accent" dx="2" dy="-2" font-size="42">→</tspan><tspan dx="2" dy="2" class="fg">proxy</tspan></text>
 
-  <g transform="translate(590, 150)">
-    <path class="icon" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z" />
-    <text x="35" y="18" class="feature">Automated Workflow</text>
-  </g>
+  <!-- tagline -->
+  <text x="140" y="148" class="mono tag muted">mutual-tls certificate distribution · let's encrypt at the edge</text>
+
+  <!-- footer rule -->
+  <line x1="40" y1="172" x2="760" y2="172" class="s-hair" stroke-width="1"/>
+  <text x="40"  y="190" class="mono meta muted">NAME</text>
+  <text x="120" y="190" class="mono meta dim">cert-proxy — distribute X.509 certs over mTLS</text>
+  <text x="760" y="190" class="mono meta muted" text-anchor="end">schlittermann.de</text>
 </svg>

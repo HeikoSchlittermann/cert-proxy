@@ -1,22 +1,4 @@
-<!-- 
-# Modified by Gemini CLI on 2026-05-10 for Heiko Schlittermann (HS12-RIPE) <hs@schlittermann.de>
-# Rationale: Embed the new marketing-focused SVG graphic at the top of the README.
--->
 ![cert-proxy frontmatter](assets/frontmatter.svg)
-
-<details>
-<summary>Alternative Design Suggestions (To be removed later)</summary>
-
-### Suggestion 1: The Firewall Flow
-![Flow Concept](assets/frontmatter-flow.svg)
-
-### Suggestion 2: The mTLS Vault
-![Vault Concept](assets/frontmatter-vault.svg)
-
-### Suggestion 3: The Distribution Hub
-![Hub Concept](assets/frontmatter-hub.svg)
-
-</details>
 
 # CERT-PROXY
 

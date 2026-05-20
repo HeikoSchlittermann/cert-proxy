@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 300" width="800" height="300" role="img" aria-label="cert-proxy vault: per-domain mTLS authorization">
+  <style>
+    svg{--fg:#1f1f1f;--muted:#7a7a7a;--dim:#a8a8a8;--accent:#d60029;--hair:#bdbdbd}
+    @media (prefers-color-scheme: dark){
+      svg{--fg:#ececec;--muted:#9a9a9a;--dim:#5e5e5e;--accent:#ff3354;--hair:#3a3a3a}
+    }
+    .fg{fill:var(--fg)} .muted{fill:var(--muted)} .dim{fill:var(--dim)} .accent{fill:var(--accent)}
+    .s-fg{stroke:var(--fg);fill:none} .s-muted{stroke:var(--muted);fill:none}
+    .s-accent{stroke:var(--accent);fill:none} .s-hair{stroke:var(--hair);fill:none}
+    .mono{font-family:ui-monospace,"JetBrains Mono","SF Mono","IBM Plex Mono",Menlo,Consolas,monospace}
+    .man{font-size:11px;letter-spacing:0.22em;font-weight:600}
+    .label{font-size:14px;font-weight:600}
+    .sub{font-size:11px;letter-spacing:0.05em}
+    .tag{font-size:10px;letter-spacing:0.16em;font-weight:600}
+  </style>
+
+  <text x="40"  y="28" class="mono man muted">CERT-PROXY(1)</text>
+  <text x="400" y="28" class="mono man dim" text-anchor="middle">VAULT · PER-DOMAIN MTLS AUTHORIZATION</text>
+  <text x="760" y="28" class="mono man muted" text-anchor="end">CERT-PROXY(1)</text>
+  <line x1="40" y1="40" x2="760" y2="40" class="s-hair"/>
+
+  <!-- vault: signature mark, large -->
+  <g transform="translate(70,80)">
+    <rect x="0" y="0" width="200" height="180" rx="4" class="s-fg" stroke-width="1.25"/>
+    <g transform="translate(64,38) scale(1.4)" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M16 22 v-9 a14 14 0 0 1 28 0 v9" class="s-fg" stroke-width="1.5" fill="none"/>
+      <rect x="2" y="22" width="56" height="50" rx="3" class="s-fg" stroke-width="1.5"/>
+      <line x1="12" y1="36" x2="48" y2="36" class="s-muted" stroke-width="1"/>
+      <line x1="12" y1="44" x2="40" y2="44" class="s-muted" stroke-width="1"/>
+      <line x1="12" y1="52" x2="48" y2="52" class="s-muted" stroke-width="1"/>
+      <circle cx="44" cy="62" r="5" class="s-accent" stroke-width="1.25"/>
+      <circle cx="44" cy="62" r="1.6" class="accent"/>
+    </g>
+    <text x="100" y="160" text-anchor="middle" class="mono label fg">cert-proxy</text>
+  </g>
+
+  <!-- grant -->
+  <g>
+    <line x1="280" y1="140" x2="540" y2="140" class="s-accent" stroke-width="1.75"/>
+    <g transform="translate(410,140)">
+      <circle r="11" class="s-accent" stroke-width="1.25"/>
+      <path d="M-4 0 l3 4 l6 -7" class="s-accent" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <text x="410" y="122" text-anchor="middle" class="mono tag accent">AUTHZ · GRANT</text>
+  </g>
+
+  <!-- deny -->
+  <g>
+    <line x1="280" y1="220" x2="540" y2="220" class="s-muted" stroke-width="1" stroke-dasharray="3 4"/>
+    <g transform="translate(410,220)">
+      <circle r="11" class="s-muted" stroke-width="1.25"/>
+      <path d="M-4 -4 l8 8 M4 -4 l-8 8" class="s-muted" stroke-width="1.25" stroke-linecap="round"/>
+    </g>
+    <text x="410" y="202" text-anchor="middle" class="mono tag muted">AUTHZ · DENY</text>
+  </g>
+
+  <!-- clients -->
+  <g transform="translate(560,108)">
+    <rect x="0" y="0" width="200" height="64" rx="2" class="s-fg" stroke-width="1.25"/>
+    <text x="14" y="24" class="mono label fg">trusted node</text>
+    <line x1="14" y1="32" x2="186" y2="32" class="s-hair"/>
+    <text x="14" y="48" class="mono sub muted">cn ∈ clients/&lt;cn&gt;</text>
+    <text x="14" y="60" class="mono sub accent">privkey · bundle · ok</text>
+  </g>
+  <g transform="translate(560,188)">
+    <rect x="0" y="0" width="200" height="64" rx="2" class="s-muted" stroke-width="1.25" stroke-dasharray="3 4"/>
+    <text x="14" y="24" class="mono label muted">untrusted node</text>
+    <line x1="14" y1="32" x2="186" y2="32" class="s-hair"/>
+    <text x="14" y="48" class="mono sub muted">cn not authorized</text>
+    <text x="14" y="60" class="mono sub muted">403 — no access</text>
+  </g>
+
+  <line x1="40" y1="272" x2="760" y2="272" class="s-hair"/>
+  <text x="40"  y="290" class="mono sub muted">authz file: /etc/cert-proxy/clients/&lt;cn&gt; — one domain per line</text>
+  <text x="760" y="290" class="mono sub dim" text-anchor="end">schlittermann.de</text>
+</svg>

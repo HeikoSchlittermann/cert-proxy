@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 280" width="800" height="280" role="img" aria-label="cert-proxy flow: ACME to vault, mTLS to client">
+  <style>
+    svg{--fg:#1f1f1f;--muted:#7a7a7a;--dim:#a8a8a8;--accent:#d60029;--hair:#bdbdbd}
+    @media (prefers-color-scheme: dark){
+      svg{--fg:#ececec;--muted:#9a9a9a;--dim:#5e5e5e;--accent:#ff3354;--hair:#3a3a3a}
+    }
+    .fg{fill:var(--fg)} .muted{fill:var(--muted)} .dim{fill:var(--dim)} .accent{fill:var(--accent)}
+    .s-fg{stroke:var(--fg);fill:none} .s-muted{stroke:var(--muted);fill:none}
+    .s-accent{stroke:var(--accent);fill:none} .s-hair{stroke:var(--hair);fill:none}
+    .mono{font-family:ui-monospace,"JetBrains Mono","SF Mono","IBM Plex Mono",Menlo,Consolas,monospace}
+    .man{font-size:11px;letter-spacing:0.22em;font-weight:600}
+    .label{font-size:15px;font-weight:600}
+    .sub{font-size:11px;letter-spacing:0.05em}
+    .tag{font-size:10px;letter-spacing:0.18em;font-weight:600}
+  </style>
+
+  <defs>
+    <marker id="mk-fg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0 0 L10 5 L0 10" fill="none" stroke="var(--fg)" stroke-width="1.25"/>
+    </marker>
+    <marker id="mk-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0 0 L10 5 L0 10" fill="none" stroke="var(--accent)" stroke-width="1.5"/>
+    </marker>
+  </defs>
+
+  <!-- man-page header -->
+  <text x="40"  y="28" class="mono man muted">CERT-PROXY(1)</text>
+  <text x="400" y="28" class="mono man dim" text-anchor="middle">FLOW · ACME → VAULT → MTLS</text>
+  <text x="760" y="28" class="mono man muted" text-anchor="end">CERT-PROXY(1)</text>
+  <line x1="40" y1="40" x2="760" y2="40" class="s-hair"/>
+
+  <!-- let's encrypt -->
+  <g transform="translate(40,110)">
+    <rect x="0" y="0" width="170" height="86" rx="2" class="s-fg" stroke-width="1.25"/>
+    <text x="14" y="26" class="mono label fg">let's encrypt</text>
+    <line x1="14" y1="38" x2="156" y2="38" class="s-hair"/>
+    <text x="14" y="58" class="mono sub muted">public acme ca</text>
+    <text x="14" y="74" class="mono sub muted">http-01 · dns-01</text>
+  </g>
+
+  <!-- acme link -->
+  <text x="280" y="142" class="mono tag muted" text-anchor="middle">ACME</text>
+  <line x1="218" y1="153" x2="335" y2="153" class="s-fg" stroke-width="1.25" stroke-dasharray="4 4" marker-end="url(#mk-fg)"/>
+
+  <!-- firewall -->
+  <line x1="342" y1="60" x2="342" y2="240" class="s-accent" stroke-width="1" stroke-dasharray="2 4"/>
+  <text x="342" y="56" class="mono tag accent" text-anchor="middle">FIREWALL</text>
+
+  <!-- cert-proxy vault, with signature mark -->
+  <g transform="translate(360,80)">
+    <rect x="0" y="0" width="200" height="148" rx="3" class="s-fg" stroke-width="1.5"/>
+    <!-- signature lock mark, scaled down, top-right -->
+    <g transform="translate(146,16) scale(0.55)" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M16 22 v-9 a14 14 0 0 1 28 0 v9" class="s-fg" stroke-width="2" fill="none"/>
+      <rect x="2" y="22" width="56" height="50" rx="3" class="s-fg" stroke-width="2"/>
+      <line x1="12" y1="36" x2="48" y2="36" class="s-muted" stroke-width="1.5"/>
+      <line x1="12" y1="44" x2="40" y2="44" class="s-muted" stroke-width="1.5"/>
+      <line x1="12" y1="52" x2="48" y2="52" class="s-muted" stroke-width="1.5"/>
+      <circle cx="44" cy="62" r="4.5" class="s-accent" stroke-width="2"/>
+    </g>
+    <text x="14" y="30" class="mono label fg">cert-proxy</text>
+    <text x="14" y="46" class="mono sub muted">server · :4433</text>
+    <line x1="14" y1="64" x2="186" y2="64" class="s-hair"/>
+    <text x="14" y="82" class="mono sub muted">/v1/cert · /v1/chain</text>
+    <text x="14" y="98" class="mono sub muted">/v1/fullchain</text>
+    <text x="14" y="114" class="mono sub accent">/v1/privkey · /v1/bundle</text>
+    <text x="14" y="134" class="mono sub muted">authz: clients/&lt;cn&gt;</text>
+  </g>
+
+  <!-- mtls link -->
+  <text x="630" y="142" class="mono tag accent" text-anchor="middle">MTLS · X509</text>
+  <line x1="570" y1="153" x2="685" y2="153" class="s-accent" stroke-width="1.75" marker-end="url(#mk-accent)"/>
+
+  <!-- client -->
+  <g transform="translate(690,110)">
+    <rect x="0" y="0" width="80" height="86" rx="2" class="s-fg" stroke-width="1.25"/>
+    <text x="14" y="26" class="mono label fg">node</text>
+    <line x1="14" y1="38" x2="66" y2="38" class="s-hair"/>
+    <text x="14" y="58" class="mono sub muted">client</text>
+    <text x="14" y="74" class="mono sub muted">hook</text>
+  </g>
+
+  <!-- footer rule -->
+  <line x1="40" y1="252" x2="760" y2="252" class="s-hair"/>
+  <text x="40"  y="270" class="mono sub muted">deploy_cert &lt;DOMAIN&gt; &lt;KEY&gt; &lt;CERT&gt; &lt;FULLCHAIN&gt; &lt;CHAIN&gt; &lt;TS&gt;</text>
+  <text x="760" y="270" class="mono sub dim" text-anchor="end">schlittermann.de</text>
+</svg>
