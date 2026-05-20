@@ -4,10 +4,16 @@
 package list
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
 )
+
+// ErrInvalidName wraps every validation failure from ValidateDomain
+// and ValidateClientName, so callers can map a bad name to the right
+// status code via errors.Is.
+var ErrInvalidName = errors.New("invalid name")
 
 var validDomain = regexp.MustCompile(`^[a-zA-Z0-9*._-]+$`)
 
@@ -28,16 +34,16 @@ var windowsReserved = map[string]struct{}{
 // sequences, shell metacharacters, and empty strings.
 func ValidateDomain(domain string) error {
 	if domain == "" {
-		return fmt.Errorf("empty domain name")
+		return fmt.Errorf("%w: empty", ErrInvalidName)
 	}
 
 	if !validDomain.MatchString(domain) {
-		return fmt.Errorf("contains invalid characters")
+		return fmt.Errorf("%w: contains invalid characters", ErrInvalidName)
 	}
 
 	for _, label := range strings.Split(domain, ".") {
 		if label == "" {
-			return fmt.Errorf("contains empty label (double dot or leading/trailing dot)")
+			return fmt.Errorf("%w: contains empty label (double dot or leading/trailing dot)", ErrInvalidName)
 		}
 	}
 
@@ -54,7 +60,7 @@ func ValidateClientName(name string) error {
 	}
 
 	if strings.ContainsRune(name, '*') {
-		return fmt.Errorf("contains invalid characters")
+		return fmt.Errorf("%w: contains invalid characters", ErrInvalidName)
 	}
 
 	base := name
@@ -63,7 +69,7 @@ func ValidateClientName(name string) error {
 	}
 
 	if _, reserved := windowsReserved[strings.ToUpper(base)]; reserved {
-		return fmt.Errorf("reserved name")
+		return fmt.Errorf("%w: reserved name", ErrInvalidName)
 	}
 
 	return nil

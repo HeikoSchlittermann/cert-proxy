@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -109,6 +110,22 @@ func TestAuthz_NoConfigFile(t *testing.T) {
 	setupTestEnv(t)
 
 	req := mockTLSRequest("GET", "/v1/privkey/example.com", "unknown-client")
+	w := httptest.NewRecorder()
+	ctx := make(context)
+
+	err := authz(ctx, w, req)
+	require.Error(t, err)
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
+
+func TestAuthz_InvalidCN(t *testing.T) {
+	setupTestEnv(t)
+
+	// A client cert whose CN fails validation (here: contains a /)
+	// must yield 401, not 500. The CN never names a config file, so
+	// returning a server-error code on this path leaks the
+	// validation outcome and breaks ordinary auth handling.
+	req := mockTLSRequest("GET", "/v1/privkey/example.com", "foo/bar")
 	w := httptest.NewRecorder()
 	ctx := make(context)
 
@@ -327,12 +344,15 @@ func TestCnList_RejectsUnsafeName(t *testing.T) {
 		filepath.Join(ccd, "sub", "inner"),
 		[]byte("leaked.example.com\n"), 0644))
 
-	// Also plant a file literally named CON so a Linux-only validator
-	// would still happily open it; the Windows reserved-name guard
-	// must apply regardless of the host OS.
-	require.NoError(t, os.WriteFile(
-		filepath.Join(ccd, "CON"),
-		[]byte("device.example.com\n"), 0644))
+	// Also plant a file literally named CON (skipped on Windows,
+	// where the name addresses the console device) so a Linux-only
+	// validator would still happily open it; the Windows reserved-name
+	// guard must apply regardless of the host OS.
+	if runtime.GOOS != "windows" {
+		require.NoError(t, os.WriteFile(
+			filepath.Join(ccd, "CON"),
+			[]byte("device.example.com\n"), 0644))
+	}
 
 	cases := []struct {
 		name string

@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"go.schlittermann.de/heiko/cert-proxy/internal/list"
 	"go.schlittermann.de/heiko/cert-proxy/internal/shared"
 )
 
@@ -74,7 +75,13 @@ func serve(ctx context, w http.ResponseWriter, req *http.Request) error {
 	case `list`:
 		domains, err := cnList(ctx[REMOTE])
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			status := http.StatusInternalServerError
+			if os.IsNotExist(err) || errors.Is(err, list.ErrInvalidName) {
+				status = http.StatusUnauthorized
+			}
+
+			http.Error(w, err.Error(), status)
+
 			return err
 		}
 
