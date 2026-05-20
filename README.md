@@ -1,4 +1,4 @@
-![cert-proxy frontmatter](assets/frontmatter.svg)
+<img src="assets/frontmatter.svg" alt="cert-proxy frontmatter" style="width:100%;max-width:1200px;height:auto">
 
 # CERT-PROXY
 

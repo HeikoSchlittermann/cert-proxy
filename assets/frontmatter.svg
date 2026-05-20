@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 200" width="800" height="200" role="img" aria-label="cert-proxy — mutual-TLS certificate distribution">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 200" preserveAspectRatio="xMidYMid meet" role="img" aria-label="cert-proxy — mutual-TLS certificate distribution">
   <style>
     svg{--fg:#1f1f1f;--muted:#7a7a7a;--dim:#a8a8a8;--accent:#d60029;--hair:#bdbdbd}
     @media (prefers-color-scheme: dark){
