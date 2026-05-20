@@ -317,6 +317,36 @@ func TestCnList_Missing(t *testing.T) {
 	require.Error(t, err)
 }
 
+// TestCnList_RejectsPathSeparator guards against a CN that points
+// into a subdirectory of the clients config dir (issue #31).
+func TestCnList_RejectsPathSeparator(t *testing.T) {
+	_, ccd := setupTestEnv(t)
+
+	// Plant a file at clients/sub/inner so that a successful traversal
+	// would return its contents instead of an error.
+	require.NoError(t, os.MkdirAll(filepath.Join(ccd, "sub"), 0755))
+	require.NoError(t, os.WriteFile(
+		filepath.Join(ccd, "sub", "inner"),
+		[]byte("leaked.example.com\n"), 0644))
+
+	for _, cn := range []string{
+		"sub/inner",
+		`sub\inner`,
+		"with\x00nul",
+		"",
+		".hidden",
+	} {
+		t.Run(cn, func(t *testing.T) {
+			_, err := cnList(cn)
+			require.Error(t, err)
+			if cn != "" {
+				require.NotContains(t, err.Error(), cn,
+					"error must not echo attacker-controlled CN (issue #29)")
+			}
+		})
+	}
+}
+
 func TestUse_ChainStopsOnError(t *testing.T) {
 	called := false
 
