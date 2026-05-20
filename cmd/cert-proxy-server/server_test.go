@@ -318,7 +318,7 @@ func TestCnList_Missing(t *testing.T) {
 }
 
 // TestCnList_RejectsPathSeparator guards against a CN that points
-// into a subdirectory of the clients config dir (issue #31).
+// into a subdirectory of the clients config dir.
 func TestCnList_RejectsPathSeparator(t *testing.T) {
 	_, ccd := setupTestEnv(t)
 
@@ -339,9 +339,10 @@ func TestCnList_RejectsPathSeparator(t *testing.T) {
 		t.Run(cn, func(t *testing.T) {
 			_, err := cnList(cn)
 			require.Error(t, err)
+
 			if cn != "" {
 				require.NotContains(t, err.Error(), cn,
-					"error must not echo attacker-controlled CN (issue #29)")
+					"error must not echo attacker-controlled CN")
 			}
 		})
 	}
