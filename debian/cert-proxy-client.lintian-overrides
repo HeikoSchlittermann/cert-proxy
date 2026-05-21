@@ -1,1 +1,2 @@
 cert-proxy-client: copyright-file-contains-full-apache-2-license
+cert-proxy-client: statically-linked-binary
