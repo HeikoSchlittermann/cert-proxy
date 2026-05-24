@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -695,4 +696,40 @@ func TestReplaceSymlink_ExistingSymlink(t *testing.T) {
 
 	_, err = os.Lstat(name + ".tmp")
 	assert.True(t, os.IsNotExist(err), ".tmp file must not remain after replacement")
+}
+
+func TestWriteFile_ExistingFile(t *testing.T) {
+	dir := t.TempDir()
+	name := filepath.Join(dir, "privkey.pem")
+
+	require.NoError(t, os.WriteFile(name, []byte("old"), 0644))
+
+	err := writeFile(name, []byte("new"), true)
+	require.Error(t, err)
+	assert.True(t, os.IsExist(err), "expected an existing-file error, got %v", err)
+
+	data, readErr := os.ReadFile(name)
+	require.NoError(t, readErr)
+	assert.Equal(t, "old", string(data))
+}
+
+func TestWriteFile_ExistingSymlink(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlink creation requires elevated privilege on Windows")
+	}
+
+	dir := t.TempDir()
+	target := filepath.Join(dir, "victim.pem")
+	name := filepath.Join(dir, "privkey.pem")
+
+	require.NoError(t, os.WriteFile(target, []byte("SAFE"), 0644))
+	require.NoError(t, os.Symlink(target, name))
+
+	err := writeFile(name, []byte("new"), true)
+	require.Error(t, err)
+	assert.True(t, os.IsExist(err), "expected an existing-path error, got %v", err)
+
+	data, readErr := os.ReadFile(target)
+	require.NoError(t, readErr)
+	assert.Equal(t, "SAFE", string(data))
 }

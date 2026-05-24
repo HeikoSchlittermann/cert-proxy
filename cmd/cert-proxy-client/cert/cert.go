@@ -328,7 +328,7 @@ func writeFile(name string, data []byte, private bool) error {
 		mode = 0644
 	}
 
-	file, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode)
+	file, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_EXCL, mode)
 	if err != nil {
 		return err
 	}
