@@ -446,6 +446,47 @@ func TestExecute_FilePermissions_PreExisting(t *testing.T) {
 		"private key must be 0600 even when pre-existing file had broader permissions")
 }
 
+func TestExecute_RenameExistingFile(t *testing.T) {
+	saveGlobals(t)
+
+	UseSymlink = false
+	Force = true
+
+	srv := newMockServer(t)
+	basedir := t.TempDir()
+
+	domainDir := filepath.Join(basedir, "example.com")
+	require.NoError(t, os.MkdirAll(domainDir, 0755))
+
+	// Pre-create files at final paths (simulating previous rotation)
+	certPath := filepath.Join(domainDir, "cert.pem")
+	keyPath := filepath.Join(domainDir, "privkey.pem")
+
+	require.NoError(t, os.WriteFile(certPath, []byte("old-cert"), 0644))
+	require.NoError(t, os.WriteFile(keyPath, []byte("old-key"), 0644))
+
+	req, err := NewReq("example.com", srv.URL, basedir, "", FormatPEM, "", "")
+	require.NoError(t, err)
+
+	var mtx sync.Mutex
+	require.NoError(t, req.Execute(context.Background(), &mtx))
+
+	// Verify files were replaced with new content
+	certData, err := os.ReadFile(certPath)
+	require.NoError(t, err)
+	assert.Equal(t, "CERT-CONTENT", string(certData), "cert should be replaced")
+
+	keyData, err := os.ReadFile(keyPath)
+	require.NoError(t, err)
+	assert.Equal(t, "KEY-CONTENT", string(keyData), "privkey should be replaced")
+
+	// Verify permissions are correct (0600 for keys)
+	fi, err := os.Lstat(keyPath)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0600), fi.Mode().Perm(),
+		"private key must have 0600 permissions after os.Rename")
+}
+
 func TestExecute_PKCS12_Download(t *testing.T) {
 	saveGlobals(t)
 
@@ -575,6 +616,51 @@ func TestExecute_ContextCancellation(t *testing.T) {
 		assert.Error(t, err, "Execute should return an error after context cancellation")
 	case <-time.After(2 * time.Second):
 		t.Fatal("Execute did not return after context cancellation")
+	}
+}
+
+func TestExecute_CleanupOnWriteFileError(t *testing.T) {
+	saveGlobals(t)
+
+	UseSymlink = false
+	Force = true
+
+	srv := newMockServer(t)
+	basedir := t.TempDir()
+
+	req, err := NewReq("example.com", srv.URL, basedir, "", FormatPEM, "", "")
+	require.NoError(t, err)
+
+	domainDir := filepath.Join(basedir, "example.com")
+	require.NoError(t, os.MkdirAll(domainDir, 0755))
+
+	// Make the directory read-only to force writeFile to fail
+	require.NoError(t, os.Chmod(domainDir, 0500))
+	t.Cleanup(func() {
+		// Restore write permissions so cleanup can work
+		_ = os.Chmod(domainDir, 0755)
+	})
+
+	var mtx sync.Mutex
+	err = req.Execute(context.Background(), &mtx)
+
+	// Expect an error since the directory is read-only
+	require.Error(t, err)
+
+	// Restore write permissions to verify cleanup
+	require.NoError(t, os.Chmod(domainDir, 0755))
+
+	// Verify that no infixed files (with timestamps) were left behind
+	entries, err := os.ReadDir(domainDir)
+	require.NoError(t, err)
+
+	for _, entry := range entries {
+		name := entry.Name()
+		// Infixed files have format like: cert-<timestamp>.pem, privkey-<timestamp>.pem, etc.
+		// Check that no such files exist by looking for the timestamp pattern
+		if strings.Count(name, "-") >= 1 && (strings.HasSuffix(name, ".pem") || strings.HasSuffix(name, ".pfx")) {
+			t.Errorf("orphaned infixed file should have been cleaned up: %s", name)
+		}
 	}
 }
 

@@ -240,6 +240,8 @@ func (req *Req) Execute(ctx context.Context, mtx sync.Locker) error {
 		if UseSymlink {
 			err = replaceSymlink(name, filepath.Base(infixed[name]))
 		} else {
+			// On Windows, Rename(src, dst) replaces dst if it's a symlink or regular file.
+			// On Unix, it follows the same atomic semantics. Safe even if dst pre-exists.
 			err = os.Rename(infixed[name], name)
 		}
 
