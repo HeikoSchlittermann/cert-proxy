@@ -1,8 +1,6 @@
-# CLAUDE.md
+# Codex instructions
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
-First, read `AGENTS.md`, then use this file for Claude-specific guidance.
+First, read `AGENTS.md`, then use this file for Codex-specific guidance.
 
 ## Project
 
