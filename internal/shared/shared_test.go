@@ -11,6 +11,7 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -91,6 +92,21 @@ func TestMkdir_ConflictWithFile(t *testing.T) {
 	_ = os.WriteFile(path, []byte("x"), 0644)
 
 	assert.Error(t, Mkdir(path))
+}
+
+func TestMkdir_SymlinkToDir(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlink creation requires elevated privilege on Windows")
+	}
+
+	base := t.TempDir()
+	realdir := filepath.Join(base, "real")
+	require.NoError(t, os.Mkdir(realdir, 0755))
+
+	link := filepath.Join(base, "link")
+	require.NoError(t, os.Symlink(realdir, link))
+
+	assert.Error(t, Mkdir(link))
 }
 
 func TestCertPool_ValidPEM(t *testing.T) {
