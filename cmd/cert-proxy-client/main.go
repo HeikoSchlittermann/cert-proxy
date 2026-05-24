@@ -10,11 +10,13 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/exec"
 	"path"
 	"strings"
+	"syscall"
 
 	"go.schlittermann.de/heiko/cert-proxy/cmd/cert-proxy-client/cert"
 	"go.schlittermann.de/heiko/cert-proxy/cmd/cert-proxy-client/worker"
@@ -52,6 +54,13 @@ func main() {
 	defer shared.Verbose("DONE")
 
 	shared.Verbose("Starting %s: %s", program.Name, program.Version)
+
+	// Check umask for too permissive settings
+	currentUmask := syscall.Umask(0)
+	syscall.Umask(currentUmask)
+	if (currentUmask & 0077) != 0077 {
+		slog.Warn(fmt.Sprintf("umask is 0%03o; recommend 0077 or stricter to protect private keys", currentUmask))
+	}
 
 	if err := list.AddItemsFromFile(&CNs, opt.CNfile); err != nil {
 		log.Fatal(err)

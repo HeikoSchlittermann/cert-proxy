@@ -732,4 +732,9 @@ func TestWriteFile_ExistingSymlink(t *testing.T) {
 	data, readErr := os.ReadFile(target)
 	require.NoError(t, readErr)
 	assert.Equal(t, "SAFE", string(data))
+
+	// Verify symlink itself was not disturbed
+	linkTarget, linkErr := os.Readlink(name)
+	require.NoError(t, linkErr, "symlink should still exist")
+	assert.Equal(t, target, linkTarget, "symlink should still point to original target")
 }

@@ -226,6 +226,8 @@ func (req *Req) Execute(ctx context.Context, mtx sync.Locker) error {
 
 		// Write the file (optionally create the directory first)
 		if err := writeFile(infixed[item.local], item.data, item.private); err != nil {
+			// Best-effort cleanup of orphaned infixed file on write failure
+			_ = os.Remove(infixed[item.local])
 			return err
 		}
 	}
@@ -328,6 +330,7 @@ func writeFile(name string, data []byte, private bool) error {
 		mode = 0644
 	}
 
+	// O_EXCL is unreliable on NFS; cert-proxy-client is not intended for NFS-backed storage.
 	file, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_EXCL, mode)
 	if err != nil {
 		return err
