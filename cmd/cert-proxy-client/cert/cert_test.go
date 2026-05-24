@@ -642,6 +642,7 @@ func TestExecute_CleanupOnWriteFileError(t *testing.T) {
 	})
 
 	var mtx sync.Mutex
+
 	err = req.Execute(context.Background(), &mtx)
 
 	// Expect an error since the directory is read-only

@@ -58,6 +58,7 @@ func main() {
 	// 0077 = no group/other read/write/execute
 	currentUmask := syscall.Umask(0)
 	syscall.Umask(currentUmask)
+
 	if (currentUmask & 0077) != 0077 {
 		shared.Verbose("umask was 0%03o (too permissive); hardening to 0077", currentUmask)
 		syscall.Umask(0077)
