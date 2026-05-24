@@ -10,6 +10,7 @@ import (
 
 func TestVersionLine(t *testing.T) {
 	origName, origVersion, origPath := program.Name, program.Version, program.Path
+
 	t.Cleanup(func() { program.Name, program.Version, program.Path = origName, origVersion, origPath })
 
 	program.Name = "cert-proxy-client"

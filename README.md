@@ -303,6 +303,35 @@ and then symlinked to the final name for atomic updates.
 ```
 
 
+## Deployment Security & Hardening
+
+### Certificate Storage Security
+
+**Umask Hardening**: The cert-proxy-client hardens the umask to `0077` at startup to ensure private keys are protected from group and other read access. While the client explicitly sets file permissions to `0600`, a restrictive umask provides defense-in-depth against inadvertent exposure.
+
+### Storage Backend Requirements
+
+**NFS Incompatibility**: Cert-proxy-client uses `O_EXCL` for atomic file creation when symlinks are enabled. This flag is unreliable on NFS, creating a race condition where stale files accumulate or clobbered files are served. **Cert-proxy-client is not suitable for NFS-backed certificate storage.** Use local filesystems (ext4, btrfs, ZFS) for `<certbase>`.
+
+### Error Recovery
+
+If certificate rotation fails (timeout, disk full), timestamped intermediate files (e.g., `cert-1714400000.pem`) may be left behind. Clean up stale files:
+
+```bash
+# Remove infixed files older than 1 day
+find /var/lib/cert-proxy/certs -name '*-[0-9]*.pem' -type f -mtime +1 -delete
+
+# Or remove those older than 1 hour
+find /var/lib/cert-proxy/certs -name '*-[0-9]*.pem' -type f -mmin +60 -delete
+```
+
+Timestamp-based naming prevents collisions; stale files indicate incomplete writes and can safely be removed.
+
+### Windows Behavior
+
+On Windows, symlink mode is disabled (`-symlink false`). Bundle files (`.pfx`) follow cleanup pattern using file age filters instead of timestamp infixes.
+
+
 ## Known Issues
 
 - [#20](https://forgejo.schlittermann.de/heiko/cert-proxy/issues/20) — PKCS12 password exposed in verbose logs via URL query parameter

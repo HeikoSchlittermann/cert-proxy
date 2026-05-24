@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -445,6 +446,47 @@ func TestExecute_FilePermissions_PreExisting(t *testing.T) {
 		"private key must be 0600 even when pre-existing file had broader permissions")
 }
 
+func TestExecute_RenameExistingFile(t *testing.T) {
+	saveGlobals(t)
+
+	UseSymlink = false
+	Force = true
+
+	srv := newMockServer(t)
+	basedir := t.TempDir()
+
+	domainDir := filepath.Join(basedir, "example.com")
+	require.NoError(t, os.MkdirAll(domainDir, 0755))
+
+	// Pre-create files at final paths (simulating previous rotation)
+	certPath := filepath.Join(domainDir, "cert.pem")
+	keyPath := filepath.Join(domainDir, "privkey.pem")
+
+	require.NoError(t, os.WriteFile(certPath, []byte("old-cert"), 0644))
+	require.NoError(t, os.WriteFile(keyPath, []byte("old-key"), 0644))
+
+	req, err := NewReq("example.com", srv.URL, basedir, "", FormatPEM, "", "")
+	require.NoError(t, err)
+
+	var mtx sync.Mutex
+	require.NoError(t, req.Execute(context.Background(), &mtx))
+
+	// Verify files were replaced with new content
+	certData, err := os.ReadFile(certPath)
+	require.NoError(t, err)
+	assert.Equal(t, "CERT-CONTENT", string(certData), "cert should be replaced")
+
+	keyData, err := os.ReadFile(keyPath)
+	require.NoError(t, err)
+	assert.Equal(t, "KEY-CONTENT", string(keyData), "privkey should be replaced")
+
+	// Verify permissions are correct (0600 for keys)
+	fi, err := os.Lstat(keyPath)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0600), fi.Mode().Perm(),
+		"private key must have 0600 permissions after os.Rename")
+}
+
 func TestExecute_PKCS12_Download(t *testing.T) {
 	saveGlobals(t)
 
@@ -577,6 +619,52 @@ func TestExecute_ContextCancellation(t *testing.T) {
 	}
 }
 
+func TestExecute_CleanupOnWriteFileError(t *testing.T) {
+	saveGlobals(t)
+
+	UseSymlink = false
+	Force = true
+
+	srv := newMockServer(t)
+	basedir := t.TempDir()
+
+	req, err := NewReq("example.com", srv.URL, basedir, "", FormatPEM, "", "")
+	require.NoError(t, err)
+
+	domainDir := filepath.Join(basedir, "example.com")
+	require.NoError(t, os.MkdirAll(domainDir, 0755))
+
+	// Make the directory read-only to force writeFile to fail
+	require.NoError(t, os.Chmod(domainDir, 0500))
+	t.Cleanup(func() {
+		// Restore write permissions so cleanup can work
+		_ = os.Chmod(domainDir, 0755)
+	})
+
+	var mtx sync.Mutex
+
+	err = req.Execute(context.Background(), &mtx)
+
+	// Expect an error since the directory is read-only
+	require.Error(t, err)
+
+	// Restore write permissions to verify cleanup
+	require.NoError(t, os.Chmod(domainDir, 0755))
+
+	// Verify that no infixed files (with timestamps) were left behind
+	entries, err := os.ReadDir(domainDir)
+	require.NoError(t, err)
+
+	for _, entry := range entries {
+		name := entry.Name()
+		// Infixed files have format like: cert-<timestamp>.pem, privkey-<timestamp>.pem, etc.
+		// Check that no such files exist by looking for the timestamp pattern
+		if strings.Count(name, "-") >= 1 && (strings.HasSuffix(name, ".pem") || strings.HasSuffix(name, ".pfx")) {
+			t.Errorf("orphaned infixed file should have been cleaned up: %s", name)
+		}
+	}
+}
+
 func TestFormat_Set_Valid(t *testing.T) {
 	var f Format
 
@@ -695,4 +783,45 @@ func TestReplaceSymlink_ExistingSymlink(t *testing.T) {
 
 	_, err = os.Lstat(name + ".tmp")
 	assert.True(t, os.IsNotExist(err), ".tmp file must not remain after replacement")
+}
+
+func TestWriteFile_ExistingFile(t *testing.T) {
+	dir := t.TempDir()
+	name := filepath.Join(dir, "privkey.pem")
+
+	require.NoError(t, os.WriteFile(name, []byte("old"), 0644))
+
+	err := writeFile(name, []byte("new"), true)
+	require.Error(t, err)
+	assert.True(t, os.IsExist(err), "expected an existing-file error, got %v", err)
+
+	data, readErr := os.ReadFile(name)
+	require.NoError(t, readErr)
+	assert.Equal(t, "old", string(data))
+}
+
+func TestWriteFile_ExistingSymlink(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlink creation requires elevated privilege on Windows")
+	}
+
+	dir := t.TempDir()
+	target := filepath.Join(dir, "victim.pem")
+	name := filepath.Join(dir, "privkey.pem")
+
+	require.NoError(t, os.WriteFile(target, []byte("SAFE"), 0644))
+	require.NoError(t, os.Symlink(target, name))
+
+	err := writeFile(name, []byte("new"), true)
+	require.Error(t, err)
+	assert.True(t, os.IsExist(err), "expected an existing-path error, got %v", err)
+
+	data, readErr := os.ReadFile(target)
+	require.NoError(t, readErr)
+	assert.Equal(t, "SAFE", string(data))
+
+	// Verify symlink itself was not disturbed
+	linkTarget, linkErr := os.Readlink(name)
+	require.NoError(t, linkErr, "symlink should still exist")
+	assert.Equal(t, target, linkTarget, "symlink should still point to original target")
 }
