@@ -41,7 +41,7 @@ func parseFlags() {
 	}
 
 	if *version {
-		fmt.Println(program.Version, program.Name, program.Path)
+		fmt.Println(versionLine())
 		os.Exit(0)
 	}
 
