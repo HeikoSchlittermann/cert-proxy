@@ -89,6 +89,11 @@
 	"Path": "github.com/rogpeppe/go-internal",
 	"Version": "v1.14.1",
 	"Time": "2025-02-25T12:37:03Z",
+	"Update": {
+		"Path": "github.com/rogpeppe/go-internal",
+		"Version": "v1.15.0",
+		"Time": "2026-04-17T09:53:34Z"
+	},
 	"Indirect": true,
 	"GoMod": "/go/pkg/mod/cache/download/github.com/rogpeppe/go-internal/@v/v1.14.1.mod",
 	"GoVersion": "1.23",
@@ -118,19 +123,14 @@
 }
 {
 	"Path": "golang.org/x/crypto",
-	"Version": "v0.51.0",
-	"Time": "2026-05-08T18:32:18Z",
-	"Update": {
-		"Path": "golang.org/x/crypto",
-		"Version": "v0.52.0",
-		"Time": "2026-05-22T00:26:06Z"
-	},
+	"Version": "v0.52.0",
+	"Time": "2026-05-22T00:26:06Z",
 	"Indirect": true,
-	"Dir": "/go/pkg/mod/golang.org/x/crypto@v0.51.0",
-	"GoMod": "/go/pkg/mod/cache/download/golang.org/x/crypto/@v/v0.51.0.mod",
+	"Dir": "/go/pkg/mod/golang.org/x/crypto@v0.52.0",
+	"GoMod": "/go/pkg/mod/cache/download/golang.org/x/crypto/@v/v0.52.0.mod",
 	"GoVersion": "1.25.0",
-	"Sum": "h1:IBPXwPfKxY7cWQZ38ZCIRPI50YLeevDLlLnyC5wRGTI=",
-	"GoModSum": "h1:8AdwkbraGNABw2kOX6YFPs3WM22XqI4EXEd8g+x7Oc8="
+	"Sum": "h1:RMs7fP2rXdep0CftQlK8Uf+kibLm7qkCcradZWYz988=",
+	"GoModSum": "h1:1QgfPxDqh0T2M/elOJtp9RvuR95kVjir0e6/BvEmGbc="
 }
 {
 	"Path": "golang.org/x/mod",
@@ -145,8 +145,8 @@
 }
 {
 	"Path": "golang.org/x/net",
-	"Version": "v0.53.0",
-	"Time": "2026-04-09T19:17:33Z",
+	"Version": "v0.54.0",
+	"Time": "2026-05-08T20:02:48Z",
 	"Update": {
 		"Path": "golang.org/x/net",
 		"Version": "v0.55.0",
@@ -156,13 +156,8 @@
 }
 {
 	"Path": "golang.org/x/sys",
-	"Version": "v0.44.0",
-	"Time": "2026-04-23T15:37:02Z",
-	"Update": {
-		"Path": "golang.org/x/sys",
-		"Version": "v0.45.0",
-		"Time": "2026-05-21T18:00:51Z"
-	},
+	"Version": "v0.45.0",
+	"Time": "2026-05-21T18:00:51Z",
 	"Indirect": true
 }
 {
