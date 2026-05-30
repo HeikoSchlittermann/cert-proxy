@@ -15,7 +15,6 @@ import (
 	"os/exec"
 	"path"
 	"strings"
-	"syscall"
 
 	"go.schlittermann.de/heiko/cert-proxy/cmd/cert-proxy-client/cert"
 	"go.schlittermann.de/heiko/cert-proxy/cmd/cert-proxy-client/worker"
@@ -54,15 +53,9 @@ func main() {
 
 	shared.Verbose("Starting %s: %s", program.Name, program.Version)
 
-	// Check umask for too permissive settings.
-	// 0077 = no group/other read/write/execute
-	currentUmask := syscall.Umask(0)
-	syscall.Umask(currentUmask)
-
-	if (currentUmask & 0077) != 0077 {
-		shared.Verbose("umask was 0%03o (too permissive); hardening to 0077", currentUmask)
-		syscall.Umask(0077)
-	}
+	// Harden the umask so freshly written certs/keys are not
+	// group/other readable. No-op on platforms without a umask.
+	hardenUmask()
 
 	if err := list.AddItemsFromFile(&CNs, opt.CNfile); err != nil {
 		log.Fatal(err)
