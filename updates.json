@@ -1,18 +1,35 @@
 [
   {
-    "Path": "github.com/rogpeppe/go-internal",
-    "Version": "v1.14.1",
-    "Time": "2025-02-25T12:37:03Z",
+    "Path": "golang.org/x/crypto",
+    "Version": "v0.52.0",
+    "Time": "2026-05-22T00:26:06Z",
     "Update": {
-      "Path": "github.com/rogpeppe/go-internal",
-      "Version": "v1.15.0",
-      "Time": "2026-04-17T09:53:34Z"
+      "Path": "golang.org/x/crypto",
+      "Version": "v0.53.0",
+      "Time": "2026-06-08T15:52:49Z"
     },
     "Indirect": true,
-    "GoMod": "/go/pkg/mod/cache/download/github.com/rogpeppe/go-internal/@v/v1.14.1.mod",
-    "GoVersion": "1.23",
-    "Sum": "h1:UQB4HGPB6osV0SQTLymcB4TgvyWu6ZyliaW0tI/otEQ=",
-    "GoModSum": "h1:MaRKkUm5W0goXpeCfT7UZI6fk/L7L7so1lCWt35ZSgc=",
+    "Dir": "/go/pkg/mod/golang.org/x/crypto@v0.52.0",
+    "GoMod": "/go/pkg/mod/cache/download/golang.org/x/crypto/@v/v0.52.0.mod",
+    "GoVersion": "1.25.0",
+    "Sum": "h1:RMs7fP2rXdep0CftQlK8Uf+kibLm7qkCcradZWYz988=",
+    "GoModSum": "h1:1QgfPxDqh0T2M/elOJtp9RvuR95kVjir0e6/BvEmGbc=",
+    "module_dir": "."
+  },
+  {
+    "Path": "software.sslmate.com/src/go-pkcs12",
+    "Version": "v0.7.1",
+    "Time": "2026-04-09T22:21:56Z",
+    "Update": {
+      "Path": "software.sslmate.com/src/go-pkcs12",
+      "Version": "v0.7.2",
+      "Time": "2026-06-09T23:20:49Z"
+    },
+    "Dir": "/go/pkg/mod/software.sslmate.com/src/go-pkcs12@v0.7.1",
+    "GoMod": "/go/pkg/mod/cache/download/software.sslmate.com/src/go-pkcs12/@v/v0.7.1.mod",
+    "GoVersion": "1.19",
+    "Sum": "h1:bxkUPRsvTPNRBZa4M/aSX4PyMOEbq3V8I6hbkG4F4Q8=",
+    "GoModSum": "h1:Qiz0EyvDRJjjxGyUQa2cCNZn/wMyzrRJ/qcDXOQazLI=",
     "module_dir": "."
   }
 ]
