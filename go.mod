@@ -4,7 +4,7 @@ go 1.26.4
 
 require (
 	github.com/stretchr/testify v1.11.1
-	software.sslmate.com/src/go-pkcs12 v0.7.2
+	software.sslmate.com/src/go-pkcs12 v0.7.3
 )
 
 require (
