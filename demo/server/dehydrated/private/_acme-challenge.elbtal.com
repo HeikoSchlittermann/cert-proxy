@@ -1,0 +1,1 @@
+_acme-challenge.elbtal.com.acme.schlittermann.de.tsig-key

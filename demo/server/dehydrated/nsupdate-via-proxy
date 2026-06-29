@@ -1,0 +1,80 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use Cwd 'realpath';
+use File::Basename;
+use Pod::Usage;
+
+my @suffixes = qw(.key .tsig-key .secret);
+
+my $keylink = shift // pod2usage;
+my $name = basename $keylink;
+my $keyfile = realpath $keylink or die "Cannot read the link $keylink: $!\n";
+my ($proxy, undef, $suffix)
+	= fileparse($keyfile, map { qr/\Q$_\E/ } @suffixes);
+
+die "Keyfile $keyfile does not have expected extension (@suffixes)\n"
+	if not $suffix;
+
+my @nsupdate = ('nsupdate', @ARGV);
+
+if ($suffix =~ /key$/) {
+	# The keyfile is complete
+	push @nsupdate, '-k', $keyfile;
+}
+else {
+	# read the secret from the keyfile
+	my $key = do { open(my $fh, $keyfile) or die "Can't open $keyfile: $!\n"; <$fh> };
+	chomp $key;
+	push @nsupdate, '-y', "$proxy:$key";
+}
+
+open(my $nsupdate, '|-', @nsupdate) or die "open @nsupdate: $!\n";
+$nsupdate->autoflush;
+while (<STDIN>) {
+	s/\b\Q$name\E\b/$proxy/
+		if /^\s*update\b/;
+	print $nsupdate $_;
+}
+close($nsupdate) or die "close @nsupdate: $!\n";
+
+__END__
+
+=head1 NAME
+
+ nsupdate-via-proxy - update the DNS
+
+=head1 SYNOPSIS
+
+ nsupdate-via-proxy KEYLINK
+
+=head1 DESCRIPTION
+
+B<nsupdate-via-proxy> is a simple wrapper around C<nsupdate>. The I<keylink> 
+should point to a file containing the TSIG key. The basename of the link target
+is expected to be the proxy name.
+
+If the link target has the extension F<.secret> it is expected to be the plain
+secret, if the extension is F<.tsig-key>, or F<.key> it is expected to be in Named
+key file format.
+
+=head1 EXAMPLE
+
+The F<private/> directory contains a TSIG key file F<_acme-challenge.foo.example.org.dyn.example.org>
+and a symlink F<_acme-challenge.foo.example.org> pointing to this file. Then the B<dehydrated>
+deploy challenge hook might look like:
+
+  nsupdate-via-proxy private/_acme-challenge.example.org <<EOF
+  update add _acme-challenge.foo.example.org 10 TXT $TOKEN_VALUE
+  send
+  EOF
+
+And the cleanup challenge hook:
+
+  nsupdate-via-proxy private/_acme-challenge.example.org <<EOF
+  update delete _acme-challenge.foo.example.org 10 TXT $TOKEN_VAULE
+  send
+  EOF
+
+=cut

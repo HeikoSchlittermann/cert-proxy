@@ -1,0 +1,70 @@
+# Local cert-proxy demo: server distributes the elbtal.com cert, client pulls it.
+# (co)authored by ai:claude-opus-4-6
+name: cert-proxy-demo
+
+services:
+  cp-server:
+    image: cert-proxy-demo
+    container_name: cp-server
+    hostname: cp-server
+    networks: [cpnet]
+    # stand-alone system: systemd (PID 1) runs dehydrated + cert-proxy-server
+    tty: true
+    stop_signal: SIGRTMIN+3
+    tmpfs:
+      - /run
+      - /tmp
+    volumes:
+      - ./server/role-server:/etc/cert-proxy/role-server:ro,z
+      - ./server/server-ssl.pem:/etc/cert-proxy/server-ssl.pem:ro,z
+      - ./server/clients:/etc/cert-proxy/clients:ro,z
+      - ./server/dehydrated/config:/etc/dehydrated/config:ro,z
+      - ./server/dehydrated/domains.txt:/etc/dehydrated/domains.txt:ro,z
+      - ./server/dehydrated/hook:/etc/dehydrated/hook:ro,z
+      - ./server/dehydrated/nsupdate-via-proxy:/etc/dehydrated/nsupdate-via-proxy:ro,z
+      - ./server/dehydrated/private:/etc/dehydrated/private:ro,z
+      - dehydrated-certs:/var/lib/dehydrated
+
+  cp-client:
+    image: cert-proxy-demo
+    container_name: cp-client
+    hostname: cp-client
+    depends_on: [cp-server]
+    networks: [cpnet]
+    # stand-alone system: systemd (PID 1) idles; the demo drives it interactively
+    tty: true
+    stop_signal: SIGRTMIN+3
+    tmpfs:
+      - /run
+      - /tmp
+    volumes:
+      - ./client/client-ssl.pem:/etc/cert-proxy/client-ssl.pem:ro,z
+      - ./client/hook:/etc/cert-proxy/hook:ro,z
+      - cpclient-certs:/var/lib/cert-proxy/certs
+
+  nginx:
+    image: cert-proxy-demo-nginx
+    container_name: cp-nginx
+    hostname: elbtal.com
+    depends_on: [cp-client]
+    networks:
+      cpnet:
+        aliases: [elbtal.com]
+    ports:
+      - "8443:443"
+    volumes:
+      - ./nginx/elbtal.conf:/etc/nginx/conf.d/elbtal.conf:ro,z
+      - cpclient-certs:/var/lib/cert-proxy/certs:ro
+    # stand-alone system: systemd (PID 1) runs cert-wait + nginx as units
+    tty: true
+    stop_signal: SIGRTMIN+3
+    tmpfs:
+      - /run
+      - /tmp
+
+networks:
+  cpnet:
+
+volumes:
+  cpclient-certs:
+  dehydrated-certs:

@@ -1,0 +1,15 @@
+# nginx image for the demo, with the same shell conveniences as the others.
+# (co)authored by ai:claude-opus-4-6
+FROM docker.io/library/nginx:stable
+RUN apt-get update && apt-get install -y --no-install-recommends neovim less procps systemd && rm -rf /var/lib/apt/lists/*
+COPY shell-extras.sh /etc/profile.d/zz-demo-extras.sh
+RUN cat /etc/profile.d/zz-demo-extras.sh >> /etc/bash.bashrc
+
+# Run as a stand-alone system: systemd as PID 1, nginx + cert-wait as units.
+COPY nginx/systemd/cert-wait.service /etc/systemd/system/cert-wait.service
+RUN mkdir -p /etc/systemd/system/nginx.service.d
+COPY nginx/systemd/nginx.override.conf /etc/systemd/system/nginx.service.d/override.conf
+RUN systemctl enable cert-wait.service nginx.service
+STOPSIGNAL SIGRTMIN+3
+ENTRYPOINT ["/lib/systemd/systemd"]
+CMD []

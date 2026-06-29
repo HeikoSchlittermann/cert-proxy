@@ -1,0 +1,20 @@
+# dehydrated config for the cert-proxy demo.
+# (co)authored by ai:claude-opus-4-6
+
+# Let's Encrypt STAGING — the demo is re-runnable; don't burn prod rate limits.
+CA="https://acme-staging-v02.api.letsencrypt.org/directory"
+
+CHALLENGETYPE="dns-01"
+# the hook copied verbatim from _ius.dns; it delegates to nsupdate-via-proxy
+HOOK="/etc/dehydrated/hook"
+HOOK_CHAIN="no"
+
+DOMAINS_TXT="/etc/dehydrated/domains.txt"
+
+# Same on-disk layout as prod: /var/lib/dehydrated/certs/<domain>/{cert,privkey,chain,fullchain}.pem
+BASEDIR="/var/lib/dehydrated"
+CERTDIR="/var/lib/dehydrated/certs"
+ACCOUNTDIR="/var/lib/dehydrated/accounts"
+
+# unattended
+ACCEPT_TERMS="yes"

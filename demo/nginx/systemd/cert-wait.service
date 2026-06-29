@@ -1,0 +1,14 @@
+# Block nginx until cert-proxy-client has delivered the elbtal.com cert.
+# (co)authored by ai:claude-opus-4-6
+[Unit]
+Description=wait for cert-proxy to deliver elbtal.com cert
+Before=nginx.service
+After=network.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/sh -c 'until [ -e /var/lib/cert-proxy/certs/elbtal.com/privkey.pem ]; do echo "waiting for cert-proxy to deliver elbtal.com cert..."; sleep 2; done'
+
+[Install]
+WantedBy=multi-user.target

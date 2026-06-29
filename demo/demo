@@ -1,0 +1,88 @@
+#!/bin/bash
+# cert-proxy live demo driver (podman).
+# (co)authored by ai:claude-opus-4-6
+#
+#   ./demo up        build image + start cp-server and cp-client
+#   ./demo run       drive the client: list, fetch, 304, -force, authz
+#   ./demo logs      show server log
+#   ./demo down      stop and remove containers
+#   ./demo rebuild   rebuild Go binaries + image
+set -eu
+export LC_ALL=C
+cd "$(dirname "$0")"
+
+CURL=(curl -s --cert /etc/cert-proxy/client-ssl.pem
+      --key /etc/cert-proxy/client-ssl.pem
+      --cacert /etc/cert-proxy/client-ssl.pem)
+SRV=https://cp-server:4433
+
+h()  { printf '\n\033[1;36m== %s ==\033[0m\n' "$*"; }
+
+build_bins() {
+    h "building static binaries"
+    GOWORK=off CGO_ENABLED=0 go build -o bin/cert-proxy-server ../cmd/cert-proxy-server
+    GOWORK=off CGO_ENABLED=0 go build -o bin/cert-proxy-client ../cmd/cert-proxy-client
+}
+
+case "${1:-}" in
+up)
+    [ -x bin/cert-proxy-server ] || build_bins
+    h "building image"; podman build -t cert-proxy-demo -f Containerfile .
+    podman build -t cert-proxy-demo-nginx -f Containerfile.nginx .
+    h "starting stack"; podman compose up -d
+    podman ps --format '{{.Names}}  {{.Status}}'
+    ;;
+rebuild)
+    build_bins
+    podman build -t cert-proxy-demo -f Containerfile .
+    podman build -t cert-proxy-demo-nginx -f Containerfile.nginx .
+    podman compose up -d --force-recreate
+    ;;
+run)
+    h "1) API /v1/list — domains this client is allowed to see"
+    podman exec cp-client "${CURL[@]}" "$SRV/v1/list"; echo
+
+    h "2) fetch certificates (mutual TLS, runs hook)"
+    podman exec cp-client cert-proxy-client -verbose \
+        -connect "$SRV" -sslfile /etc/cert-proxy/client-ssl.pem \
+        -certbase /var/lib/cert-proxy/certs -shared-hook /etc/cert-proxy/hook
+
+    h "3) nginx: HTTPS using the delivered cert"
+    # nginx auto-starts once the cert appears; reload only if already running
+    # (picks up renewed certs — the real-world hook pattern)
+    podman exec cp-nginx sh -c 'systemctl -q is-active nginx && systemctl reload nginx && echo "nginx reloaded"' || true
+    for i in $(seq 1 10); do
+        code=$(curl -s --resolve elbtal.com:8443:127.0.0.1 \
+            --cacert server/certbase/elbtal.com/fullchain.pem \
+            -o /dev/null -w '%{http_code}' https://elbtal.com:8443/ || true)
+        [ "$code" = 200 ] && break; sleep 1
+    done
+    curl -s --resolve elbtal.com:8443:127.0.0.1 \
+        --cacert server/certbase/elbtal.com/fullchain.pem \
+        -w 'https://elbtal.com:8443/  -> HTTP %{http_code}, ssl_verify_result=%{ssl_verify_result}\n' \
+        https://elbtal.com:8443/; echo
+    echo "   served cert:"
+    echo | openssl s_client -connect 127.0.0.1:8443 -servername elbtal.com 2>/dev/null \
+        | openssl x509 -noout -subject -issuer 2>/dev/null | sed 's/^/   /'
+    echo "   (browser: add '127.0.0.1 elbtal.com' to /etc/hosts, open https://elbtal.com:8443/)"
+
+    h "4) delivered cert (the real Let's Encrypt elbtal.com cert)"
+    podman exec cp-client openssl x509 \
+        -in /var/lib/cert-proxy/certs/elbtal.com/cert.pem \
+        -noout -subject -issuer -enddate
+
+    h "5) second run — server answers 304 Not Modified"
+    podman exec cp-client cert-proxy-client -verbose \
+        -connect "$SRV" -sslfile /etc/cert-proxy/client-ssl.pem \
+        -certbase /var/lib/cert-proxy/certs 2>&1 | grep -i modified || true
+
+    h "6) authorization model"
+    podman exec cp-client "${CURL[@]}" -o /dev/null \
+        -w 'privkey/elbtal.com (authorized): HTTP %{http_code}\n' "$SRV/v1/privkey/elbtal.com"
+    podman exec cp-client "${CURL[@]}" -o /dev/null \
+        -w 'privkey/other.com  (forbidden) : HTTP %{http_code}\n' "$SRV/v1/privkey/other.com"
+    ;;
+logs)  podman logs cp-server ;;
+down)  podman compose down -v ;;
+*)     sed -n '2,12p' "$0" ;;
+esac

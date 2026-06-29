@@ -1,0 +1,22 @@
+# Minimal image holding both statically-linked cert-proxy binaries.
+# (co)authored by ai:claude-opus-4-6
+FROM docker.io/library/debian:trixie-slim
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates curl neovim less procps \
+        dehydrated openssl bind9-dnsutils perl \
+        systemd \
+    && rm -rf /var/lib/apt/lists/*
+RUN mkdir -p /var/lib/dehydrated/certs /var/lib/dehydrated/accounts
+COPY bin/cert-proxy-server /usr/bin/cert-proxy-server
+COPY bin/cert-proxy-client /usr/bin/cert-proxy-client
+COPY shell-extras.sh /etc/profile.d/zz-demo-extras.sh
+RUN cat /etc/profile.d/zz-demo-extras.sh >> /etc/bash.bashrc
+
+# Run as a stand-alone system: systemd as PID 1, apps as journald-logged units.
+COPY server/systemd/dehydrated.service server/systemd/cert-proxy-server.service \
+     /etc/systemd/system/
+RUN systemctl enable dehydrated.service cert-proxy-server.service
+WORKDIR /etc/cert-proxy
+STOPSIGNAL SIGRTMIN+3
+ENTRYPOINT ["/lib/systemd/systemd"]
+CMD []

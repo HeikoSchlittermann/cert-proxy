@@ -1,0 +1,18 @@
+# cert-proxy distribution server. Serves the dehydrated certbase over mTLS.
+# (co)authored by ai:claude-opus-4-6
+[Unit]
+Description=cert-proxy distribution server
+ConditionPathExists=/etc/cert-proxy/role-server
+After=dehydrated.service
+Requires=dehydrated.service
+
+[Service]
+ExecStart=/usr/bin/cert-proxy-server -verbose \
+    -serve=:4433 \
+    -sslfile=/etc/cert-proxy/server-ssl.pem \
+    -certbase=/var/lib/dehydrated/certs \
+    -ccd=/etc/cert-proxy/clients
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

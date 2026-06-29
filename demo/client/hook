@@ -1,0 +1,2 @@
+#!/bin/sh
+echo "[hook] $1 domain=$2 -> files updated ($(date -u +%H:%M:%SZ))"

@@ -1,0 +1,7 @@
+# demo artifacts — never commit binaries or keys
+bin/
+pki/
+server/server-ssl.pem
+server/certbase/
+server/dehydrated/private/*.tsig-key
+client/client-ssl.pem

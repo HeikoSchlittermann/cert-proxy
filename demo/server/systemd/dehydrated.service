@@ -1,0 +1,17 @@
+# Obtain/renew the elbtal.com cert via dehydrated (DNS-01, LE staging).
+# Gated to the server role via the marker file.
+# (co)authored by ai:claude-opus-4-6
+[Unit]
+Description=dehydrated: obtain elbtal.com cert (DNS-01, LE staging)
+ConditionPathExists=/etc/cert-proxy/role-server
+After=network.target
+Before=cert-proxy-server.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStartPre=-/usr/bin/dehydrated --config /etc/dehydrated/config --register --accept-terms
+ExecStart=/usr/bin/dehydrated --config /etc/dehydrated/config --cron
+
+[Install]
+WantedBy=multi-user.target
