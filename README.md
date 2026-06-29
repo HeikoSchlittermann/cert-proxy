@@ -20,14 +20,15 @@ clients over mutual TLS.
                ↓
       ┌────────────────────────────┐       ┌─────┐
       │ ACME client (dehydrated)   │──────→│ DNS │
-      │ cert-proxy-server          │       └─────┘
-      └────────────────────────────┘
-               ↑
-               │ mutual TLS
-               ↓
-      ┌────────────────────────────┐
-      │ cert-proxy-client          │
-      └────────────────────────────┘
+      └────────────────────────────┘┐      └─────┘
+       │ cert-proxy-server          │
+       └────────────────────────────┘
+                ↑
+                │ mutual TLS
+                ↓
+       ┌────────────────────────────┐
+       │ cert-proxy-client          │
+       └────────────────────────────┘
 ```
 
 Authentication is mutual: the server verifies clients via X509 certificates
