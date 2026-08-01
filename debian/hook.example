@@ -9,7 +9,7 @@
 # An environment variable DOMAINS with a space separated list of the
 # domain names is provided too.
 #
-# For PKCS12 as deply_cert|shared <DOMAIN> <BUNDLEFILE> <TIMESTAMP>
+# For PKCS12 as deploy_cert|shared <DOMAIN> <BUNDLEFILE> <TIMESTAMP>
 
 # DO NOT FORGET to make this file executable!
 
