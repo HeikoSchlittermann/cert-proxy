@@ -1,0 +1,3 @@
+# Group owning the downloaded certificate material. Services that need to
+# read the private keys (nginx, exim, ...) are added to this group.
+g ssl-cert -

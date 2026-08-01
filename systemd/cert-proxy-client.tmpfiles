@@ -1,0 +1,4 @@
+# Certificate store written by cert-proxy-client (-certbase). Group readable
+# so that ssl-cert members can read the private keys.
+d /var/lib/cert-proxy       0755 root root      -
+d /var/lib/cert-proxy/certs 0750 root ssl-cert  -
