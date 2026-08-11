@@ -165,7 +165,7 @@ echo "sysusers=$(test -f /usr/lib/sysusers.d/cert-proxy-client.conf && echo yes)
 `)
 
 	for _, want := range []string{
-		"hook=644 root root",
+		"hook=755 root root",
 		"etc_cert_proxy=yes",
 		"default=644",
 		"tmpfiles=yes",

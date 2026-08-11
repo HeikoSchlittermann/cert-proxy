@@ -11,6 +11,7 @@
 #
 # For PKCS12 as deploy_cert|shared <DOMAIN> <BUNDLEFILE> <TIMESTAMP>
 
-# DO NOT FORGET to make this file executable!
+# Installed executable and empty: fill it in, it is a conffile, so your
+# edits survive package upgrades.
 
 set -eu

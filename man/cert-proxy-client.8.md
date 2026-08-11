@@ -113,7 +113,7 @@ See **cert-proxy**(7) for the protocol and the on-disk layout.
 : Client credentials used by the supplied systemd unit.
 
 */etc/cert-proxy/hook*
-: Hook program shipped as a template by the Debian package. It is not executable as installed.
+: Hook program shipped as an executable template by the Debian package; as shipped it does nothing. It is a conffile, so edits survive upgrades.
 
 */var/lib/cert-proxy/certs*
 : Certificate store used by the supplied systemd unit. The Debian package creates it with mode 0750, owned by *root* and group *ssl-cert*, through a *tmpfiles.d* snippet, and therefore depends on **systemd-tmpfiles** and **systemd-sysusers**. The client does not create it.
