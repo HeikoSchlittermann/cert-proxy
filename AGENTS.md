@@ -11,12 +11,13 @@ Cert-proxy is a mutual-TLS certificate distribution system. A central server hol
 ## Build & Test
 
 ```bash
-make all                    # build both client and server
+make all                    # build both binaries into build/
 make test                   # go test ./...
 make install                # install to /usr/local/bin
 make install-client         # client only
 make install-server         # server only
 make install-ca             # install CA scripts to /etc/cert-proxy/ca
+make man                    # pod2man the .pod sources into build/man/
 make update                 # go get -u ./... && go mod tidy
 make clean
 
@@ -25,9 +26,14 @@ go test -run TestName ./cmd/cert-proxy-client/secret/  # single test
 golangci-lint run ./...     # misspell, revive, wsl_v5
 ```
 
-Cross-compilation: `.gogogo.conf` targets `linux/amd64` and `linux/arm64` with `CGO_ENABLED=0`.
+The Makefile only covers local development and installs. Release artifacts
+(cross-built binaries, `.deb`) are built by gogogo from `.gogogo.conf`.
 
-Version is injected via linker flag from `git describe --always --dirty=+`.
+Cross-compilation: `.gogogo.conf` targets `windows/amd64`, `linux/amd64` and
+`linux/arm64` with `CGO_ENABLED=0`.
+
+Version comes from the Go build info (`runtime/debug.ReadBuildInfo`), i.e. from
+the module version the build was stamped with; no `-ldflags -X` is involved.
 
 ## Architecture
 
@@ -66,7 +72,7 @@ Password/credential sources (`secret/` package): `pass:`, `file:`, `env:` URI sc
 
 - **shared/tls.go** — `TLSClientConfig()` / `TLSServerConfig()` for mutual TLS setup
 - **shared/certpool.go** — X509 CertPool construction from PEM files
-- **program/** — Version/name/path (version set by linker)
+- **program/** — Version/name/path (version from `runtime/debug` build info)
 - **list/** — `OrderedStrings`, `UniqStrings`, `AddItemsFromFile()`
 
 ## Dependencies
