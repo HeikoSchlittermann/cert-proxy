@@ -25,8 +25,6 @@ CA_BIN  = CA/bin/mkssl-pem
 CA_LIB  = CA/lib/mkca
 CA_CONF = CA/lib/openssl.cnf CA/lib/vars.sh.example
 
-MANPAGES = ${BUILDDIR}/man/cert-proxy-client.8 ${BUILDDIR}/man/cert-proxy-server.8
-
 .PHONY: all build test update install install-client install-server install-ca man clean
 
 all: build
@@ -59,15 +57,10 @@ install-ca:
 	install -m 0755 ${CA_LIB} ${cadir}/lib/
 	install -m 0644 ${CA_CONF} ${cadir}/lib/
 
-man: ${MANPAGES}
-
-${BUILDDIR}/man/cert-proxy-client.8: cmd/cert-proxy-client/cert-proxy-client.pod
-	@install -d ${@D}
-	pod2man --release "" --center schlittermann --section 8 $< $@
-
-${BUILDDIR}/man/cert-proxy-server.8: cmd/cert-proxy-server/cert-proxy-server.pod
-	@install -d ${@D}
-	pod2man --release "" --center schlittermann --section 8 $< $@
+# The tracked man/*.gz pages are generated from man/*.md by man/gen.go
+# through the pinned go-md2man tool; see AGENTS.md.
+man:
+	go generate ./...
 
 clean:
 	go clean ./...

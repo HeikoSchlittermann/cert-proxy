@@ -17,9 +17,10 @@ make install                # install to /usr/local/bin
 make install-client         # client only
 make install-server         # server only
 make install-ca             # install CA scripts to /etc/cert-proxy/ca
-make man                    # pod2man the .pod sources into build/man/
 make update                 # go get -u ./... && go mod tidy
 make clean
+
+go generate ./...           # regenerate man/*.gz from man/*.md
 
 go test ./...               # all tests
 go test -run TestName ./cmd/cert-proxy-client/secret/  # single test
@@ -43,7 +44,7 @@ HTTP endpoints on port 4433 (TLS):
 
 | Endpoint | Auth | Purpose |
 |----------|------|---------|
-| `GET /v1/list` | authn | List all available domains |
+| `GET /v1/list` | authn | List the domains *this client* is authorized for |
 | `GET /v1/cert/<domain>` | none | Certificate (public) |
 | `GET /v1/chain/<domain>` | none | CA chain (public) |
 | `GET /v1/fullchain/<domain>` | none | Full chain (public) |
@@ -75,9 +76,32 @@ Password/credential sources (`secret/` package): `pass:`, `file:`, `env:` URI sc
 - **program/** — Version/name/path (version from `runtime/debug` build info)
 - **list/** — `OrderedStrings`, `UniqStrings`, `AddItemsFromFile()`
 
+## Manual pages
+
+- Canonical sources: `man/*.md` (go-md2man Markdown). Tracked generated pages:
+  `man/*.[1-8].gz`.
+- **Never edit the `.gz` files.** Regenerate with `go generate ./...`, which runs
+  `man/gen.go` via the pinned `go tool go-md2man`.
+- Pages: `cert-proxy-client(8)`, `cert-proxy-server(8)`, `cert-proxy-clients(5)`
+  (the `clients/<cn>` and `-cnfile` line format), `cert-proxy(7)` (protocol,
+  endpoints, on-disk layout).
+- When flags, subcommands, config formats, environment variables, files,
+  defaults, endpoints, or packaging change, update the affected Markdown page in
+  the same change and regenerate.
+- The pages are embedded in both binaries (`man/man.go`) and exposed as
+  `cert-proxy-client man [<section>] [<page>]` and the same for the server. The
+  embedded set, the `.gz` files and the `manpages:` lists in `.gogogo.conf` must
+  stay in sync.
+- Validate with `go generate ./... && git diff --exit-code man/` (determinism),
+  `gzip -t man/*.gz`, `gzip -cd man/X.gz | groff -man -Tutf8 -ww`, and
+  `go test ./man/`.
+- Manual pages must stay `gzip -9`; Debian rejects weaker compression
+  (lintian `poor-compression-in-manual-page`).
+
 ## Dependencies
 
-Pure standard library — no external Go dependencies.
+Runtime: standard library plus `software.sslmate.com/src/go-pkcs12`. Tests use
+`testify`. `go-md2man` is a build-only `tool` dependency for the manual pages.
 
 ## Deployment
 

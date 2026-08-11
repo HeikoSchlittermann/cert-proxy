@@ -11,7 +11,11 @@ import (
 
 	"go.schlittermann.de/heiko/cert-proxy/internal/program"
 	"go.schlittermann.de/heiko/cert-proxy/internal/shared"
+	"go.schlittermann.de/heiko/cert-proxy/man"
 )
+
+// manCommand is the positional argument selecting the manual subcommand.
+const manCommand = "man"
 
 func init() {
 	// Running as a systemd unit?
@@ -33,6 +37,15 @@ func parseFlags() {
 	)
 
 	flag.Parse()
+
+	// "man" as the first positional argument is the manual subcommand.
+	if args := flag.Args(); len(args) > 0 && args[0] == manCommand {
+		if err := man.Run(man.ServerRegistry(), args[1:]); err != nil {
+			log.Fatal(err)
+		}
+
+		os.Exit(0)
+	}
 
 	if *help {
 		flag.CommandLine.SetOutput(os.Stdout)

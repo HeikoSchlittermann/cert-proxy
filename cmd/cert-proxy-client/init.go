@@ -17,7 +17,11 @@ import (
 	"go.schlittermann.de/heiko/cert-proxy/internal/list"
 	"go.schlittermann.de/heiko/cert-proxy/internal/program"
 	"go.schlittermann.de/heiko/cert-proxy/internal/shared"
+	"go.schlittermann.de/heiko/cert-proxy/man"
 )
+
+// manCommand is the positional argument selecting the manual subcommand.
+const manCommand = "man"
 
 func init() {
 	// Running as a systemd unit?
@@ -27,6 +31,7 @@ func init() {
 
 	flag.Usage = func() {
 		_, _ = fmt.Fprintf(flag.CommandLine.Output(), "Usage: %s [options] [<CN>]...\n", os.Args[0])
+		_, _ = fmt.Fprintf(flag.CommandLine.Output(), "       %s man [<section>] [<page>]\n", os.Args[0])
 
 		flag.PrintDefaults()
 
@@ -105,6 +110,16 @@ func parseFlags() {
 
 	flag.Var(&logOutput, "stderr", "redirect stderr `output` (stderr|stdout)")
 	flag.Parse()
+
+	// "man" as the first positional argument is the manual subcommand, not a
+	// CN. Intercepted before the CN validation below.
+	if args := flag.Args(); len(args) > 0 && args[0] == manCommand {
+		if err := man.Run(man.ClientRegistry(), args[1:]); err != nil {
+			log.Fatal(err)
+		}
+
+		os.Exit(0)
+	}
 
 	if *help {
 		flag.CommandLine.SetOutput(os.Stdout)
