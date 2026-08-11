@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -119,4 +121,41 @@ func TestFetchCNs_RejectsInvalidDomains(t *testing.T) {
 	_, err := fetchCNs(context.Background())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid domain")
+}
+
+func TestCheckCertbase(t *testing.T) {
+	base := t.TempDir()
+
+	file := filepath.Join(base, "afile")
+	require.NoError(t, os.WriteFile(file, []byte("x"), 0644))
+
+	link := filepath.Join(base, "link")
+	require.NoError(t, os.Symlink(base, link))
+
+	tests := []struct {
+		name string
+		dir  string
+		must string
+	}{
+		{"existing directory", base, ""},
+		{"symlink to a directory", link, ""},
+		{"missing", filepath.Join(base, "absent"), "does not exist"},
+		{"missing, nested", filepath.Join(base, "a", "b"), "does not exist"},
+		{"a file", file, "not a directory"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := checkCertbase(tc.dir)
+			if tc.must == "" {
+				assert.NoError(t, err)
+
+				return
+			}
+
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tc.must)
+			assert.Contains(t, err.Error(), tc.dir, "the message must name the path")
+		})
+	}
 }

@@ -174,4 +174,29 @@ func parseFlags() {
 
 	url.Path = strings.TrimRight(url.Path, "/")
 	opt.Connect = url.String()
+
+	if err := checkCertbase(opt.Certbase); err != nil {
+		log.Fatal(err)
+	}
+}
+
+// checkCertbase verifies the certificate store is there before any work
+// starts. Creating it is not this program's job -- only the per-domain
+// directories below it are -- so its absence is reported here instead of
+// surfacing as a mkdir failure in the middle of a download.
+func checkCertbase(dir string) error {
+	fi, err := os.Stat(dir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("-certbase %q does not exist; the certificate store is created by the package or by the administrator, not by %s", dir, program.Name)
+		}
+
+		return fmt.Errorf("-certbase %q: %w", dir, err)
+	}
+
+	if !fi.IsDir() {
+		return fmt.Errorf("-certbase %q is not a directory", dir)
+	}
+
+	return nil
 }

@@ -47,7 +47,7 @@ See **cert-proxy**(7) for the protocol and the on-disk layout.
 : Fetch all CNs the server offers through its **/v1/list** endpoint. Default **true**. Use **-auto=false** to restrict the run to the domains named explicitly.
 
 **-certbase** *dir*
-: Base directory for the downloaded certificates. Default *certs*. It must exist: the client creates the per-domain directory below it, but never *dir* itself, so that ownership and mode of the store stay under the control of whoever set it up. Providing it is the job of the package or of the administrator.
+: Base directory for the downloaded certificates. Default *certs*. It must exist, and this is checked at startup before anything is fetched: the client creates the per-domain directory below it, but never *dir* itself, so that ownership and mode of the store stay under the control of whoever set it up. Providing it is the job of the package or of the administrator.
 
 **-cnfile** *file*
 : Read the domain list from *file*, or from standard input when *file* is **-**. The format is the one described in **cert-proxy-clients**(5).
@@ -125,6 +125,11 @@ See **cert-proxy**(7) for the protocol and the on-disk layout.
 
 **cert-proxy-client** exits with 0 on success and with a non-zero status if any
 part of the run failed.
+
+# DIAGNOSTICS
+
+**-certbase "..." does not exist**
+: The certificate store is missing. It is not created here; on a Debian system the package creates it through a *tmpfiles.d* snippet, otherwise the administrator does. Nothing was fetched.
 
 # THE HOOK SCRIPT
 
