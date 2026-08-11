@@ -25,7 +25,7 @@ CA_BIN  = CA/bin/mkssl-pem
 CA_LIB  = CA/lib/mkca
 CA_CONF = CA/lib/openssl.cnf CA/lib/vars.sh.example
 
-.PHONY: all build test update install install-client install-server install-ca man clean
+.PHONY: all build test test-packaging update install install-client install-server install-ca man clean
 
 all: build
 
@@ -36,6 +36,13 @@ build:
 
 test:
 	go test ./...
+
+# Opt-in: builds the .deb files with gogogo and installs them in a throwaway
+# podman container. Needs podman and gogogo; the cases covering the
+# sysusers/tmpfiles assets additionally need a one-off image build with
+# Debian archive access, and skip themselves without it.
+test-packaging:
+	go test -tags packaging ./test/packaging/
 
 update:
 	go get -t -u ./...

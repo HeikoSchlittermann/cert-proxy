@@ -1,0 +1,10 @@
+# Substrate for the package-install test: a Debian with the systemd helper
+# tools the generated postinst needs (systemd-sysusers, systemd-tmpfiles) and
+# man-db, so the installed manual pages can be rendered.
+#
+# systemd need not run as PID 1 here: sysusers and tmpfiles are standalone
+# programs, and the test drives dpkg directly rather than starting units.
+FROM docker.io/library/debian:trixie-slim
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        systemd man-db \
+    && rm -rf /var/lib/apt/lists/*

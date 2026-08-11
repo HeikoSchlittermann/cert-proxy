@@ -25,7 +25,28 @@ go generate ./...           # regenerate man/*.gz from man/*.md
 go test ./...               # all tests
 go test -run TestName ./cmd/cert-proxy-client/secret/  # single test
 golangci-lint run ./...     # misspell, revive, wsl_v5
+
+make test-packaging         # opt-in: install the .deb in a podman container
 ```
+
+### Packaging test
+
+`test/packaging/` is guarded by the `packaging` build tag, so `go test ./...`
+never needs podman. It builds real packages with `gogogo pack` and installs them
+in a throwaway container, because the issue #45 class of regression -- packaging
+quietly stopping to ship a file or create a directory -- is invisible to unit
+tests and to lintian.
+
+- `CERT_PROXY_DEB_DIR=<dir>` reuses already-built packages instead of packing.
+- Most cases run on `debian:trixie-slim` unchanged. The script removes
+  `/etc/dpkg/dpkg.cfg.d/docker` first, or the slim image's `path-exclude` would
+  discard `/usr/share/man` during install.
+- The cases asserting the `ssl-cert` group and `/var/lib/cert-proxy/certs` need
+  `systemd-sysusers`/`systemd-tmpfiles`, which the slim image lacks and the
+  generated postinst tolerates silently. They build
+  `testdata/Containerfile` once and skip when the Debian archive is unreachable.
+- Every manual page must be packaged **exactly once**. Two packages shipping the
+  same path cannot be co-installed; `TestBothPackagesCoInstall` pins that.
 
 The Makefile only covers local development and installs. Release artifacts
 (cross-built binaries, `.deb`) are built by gogogo from `.gogogo.conf`.
