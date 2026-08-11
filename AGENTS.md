@@ -43,8 +43,10 @@ tests and to lintian.
   discard `/usr/share/man` during install.
 - The cases asserting the `ssl-cert` group and `/var/lib/cert-proxy/certs` need
   `systemd-sysusers`/`systemd-tmpfiles`, which the slim image lacks and the
-  generated postinst tolerates silently. They build
-  `testdata/Containerfile` once and skip when the Debian archive is unreachable.
+  generated postinst tolerates silently. They use the image built by
+  `make test-packaging-image` and skip while it is absent — provisioning it is
+  an operator concern, since a restricted network needs proxy/TLS arguments
+  (see that target).
 - Every manual page must be packaged **exactly once**. Two packages shipping the
   same path cannot be co-installed; `TestBothPackagesCoInstall` pins that.
 

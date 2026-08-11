@@ -25,7 +25,21 @@ CA_BIN  = CA/bin/mkssl-pem
 CA_LIB  = CA/lib/mkca
 CA_CONF = CA/lib/openssl.cnf CA/lib/vars.sh.example
 
-.PHONY: all build test test-packaging update install install-client install-server install-ca man clean
+.PHONY: all build test test-packaging test-packaging-image update install install-client install-server install-ca man clean
+
+# Image used by the packaging cases that need systemd-sysusers and
+# systemd-tmpfiles. Provisioning it is an operator concern, not the test's:
+# the test skips those cases while the image is absent.
+#
+# Plain networks:
+#   make test-packaging-image
+# Behind an apt proxy on the host loopback, intercepting TLS:
+#   make test-packaging-image APT_PROXY=http://localhost:3128/ \
+#        APT_VERIFY_PEER=false PODMAN_BUILD_FLAGS=--network=host
+PKGTEST_IMAGE    ?= localhost/cert-proxy-pkgtest
+APT_PROXY        ?=
+APT_VERIFY_PEER  ?= true
+PODMAN_BUILD_FLAGS ?=
 
 all: build
 
@@ -43,6 +57,13 @@ test:
 # Debian archive access, and skip themselves without it.
 test-packaging:
 	go test -tags packaging ./test/packaging/
+
+test-packaging-image:
+	podman build ${PODMAN_BUILD_FLAGS} \
+	    --build-arg APT_PROXY='${APT_PROXY}' \
+	    --build-arg APT_VERIFY_PEER='${APT_VERIFY_PEER}' \
+	    -t ${PKGTEST_IMAGE} \
+	    -f test/packaging/testdata/Containerfile test/packaging/testdata/
 
 update:
 	go get -t -u ./...

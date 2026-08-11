@@ -21,7 +21,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -35,8 +34,8 @@ const (
 
 	// systemdImage additionally carries systemd-sysusers, systemd-tmpfiles
 	// and man-db, which the generated postinst needs to create the
-	// ssl-cert group and the certificate store. Built from
-	// testdata/Containerfile on demand.
+	// ssl-cert group and the certificate store. Built by
+	// "make test-packaging-image".
 	systemdImage = "localhost/cert-proxy-pkgtest"
 
 	// unslim drops the slim image's dpkg exclusion of /usr/share/man, which
@@ -59,6 +58,7 @@ func TestMain(m *testing.M) {
 	// run builds the packages itself.
 	if dir := os.Getenv("CERT_PROXY_DEB_DIR"); dir != "" {
 		debDir = dir
+
 		os.Exit(m.Run())
 	}
 
@@ -293,29 +293,15 @@ MANPAGER=cat MANWIDTH=80 man 8 cert-proxy-client | head -4
 	assert.Contains(t, out, "fetch certificates from a cert-proxy server")
 }
 
-// requireSystemdImage builds testdata/Containerfile once. Creating it needs
-// Debian archive access; where that is unavailable the affected cases are
-// skipped rather than reported as product failures.
+// requireSystemdImage skips unless the prepared image exists. Building it is
+// deliberately not done here: it needs Debian archive access, and on a
+// restricted network it needs proxy and TLS settings that belong in the
+// operator's hands rather than in a test.
 func requireSystemdImage(t *testing.T) {
 	t.Helper()
 
-	if exec.Command("podman", "image", "exists", systemdImage).Run() == nil {
-		return
-	}
-
-	cmd := exec.Command("podman", "build", "-t", systemdImage,
-		"-f", "testdata/Containerfile", "testdata/")
-
-	if out, err := cmd.CombinedOutput(); err != nil {
-		if unreachableArchive.MatchString(string(out)) {
-			t.Skipf("cannot build %s: no access to the Debian archive; "+
-				"build it once on a networked host to enable this case", systemdImage)
-		}
-
-		t.Fatalf("building %s failed:\n%s", systemdImage, out)
+	if exec.Command("podman", "image", "exists", systemdImage).Run() != nil {
+		t.Skipf("%s missing; create it with \"make test-packaging-image\" "+
+			"(see that target for proxy/TLS options on restricted networks)", systemdImage)
 	}
 }
-
-// unreachableArchive matches apt's wording for an unreachable mirror.
-var unreachableArchive = regexp.MustCompile(
-	`(?i)(Unable to locate package|Could not connect|Network is unreachable|Temporary failure resolving|Failed to fetch)`)
