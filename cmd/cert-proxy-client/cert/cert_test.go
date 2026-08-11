@@ -825,3 +825,29 @@ func TestWriteFile_ExistingSymlink(t *testing.T) {
 	require.NoError(t, linkErr, "symlink should still exist")
 	assert.Equal(t, target, linkTarget, "symlink should still point to original target")
 }
+
+// TestExecute_DoesNotCreateCertbase pins a scope decision: the client creates
+// the per-domain directory and nothing above it. Providing -certbase is the
+// job of the package (a tmpfiles.d snippet) or of the administrator, so a
+// missing store is an error rather than something to silently materialise
+// with whatever ownership and mode the process happens to have.
+func TestExecute_DoesNotCreateCertbase(t *testing.T) {
+	saveGlobals(t)
+
+	UseSymlink = false
+	Force = false
+
+	srv := newMockServer(t)
+
+	base := t.TempDir()
+	certbase := filepath.Join(base, "absent")
+
+	req, err := NewReq("example.com", srv.URL, certbase, "", FormatPEM, "", "")
+	require.NoError(t, err)
+
+	var mtx sync.Mutex
+
+	err = req.Execute(context.Background(), &mtx)
+	require.Error(t, err, "a missing -certbase must not be created")
+	assert.NoDirExists(t, certbase)
+}

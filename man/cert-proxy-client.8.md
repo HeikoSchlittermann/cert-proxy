@@ -47,7 +47,7 @@ See **cert-proxy**(7) for the protocol and the on-disk layout.
 : Fetch all CNs the server offers through its **/v1/list** endpoint. Default **true**. Use **-auto=false** to restrict the run to the domains named explicitly.
 
 **-certbase** *dir*
-: Base directory for the downloaded certificates. Default *certs*. The per-domain subdirectory is created on demand, but *dir* itself must already exist.
+: Base directory for the downloaded certificates. Default *certs*. It must exist: the client creates the per-domain directory below it, but never *dir* itself, so that ownership and mode of the store stay under the control of whoever set it up. Providing it is the job of the package or of the administrator.
 
 **-cnfile** *file*
 : Read the domain list from *file*, or from standard input when *file* is **-**. The format is the one described in **cert-proxy-clients**(5).
@@ -116,7 +116,7 @@ See **cert-proxy**(7) for the protocol and the on-disk layout.
 : Hook program shipped as a template by the Debian package. It is not executable as installed.
 
 */var/lib/cert-proxy/certs*
-: Certificate store used by the supplied systemd unit. The Debian package creates it with mode 0750, owned by *root* and group *ssl-cert*.
+: Certificate store used by the supplied systemd unit. The Debian package creates it with mode 0750, owned by *root* and group *ssl-cert*, through a *tmpfiles.d* snippet, and therefore depends on **systemd-tmpfiles** and **systemd-sysusers**. The client does not create it.
 
 */etc/default/cert-proxy-client*
 : Read by the systemd unit. The variable **OPTS** is appended to the command line.

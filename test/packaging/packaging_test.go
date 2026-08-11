@@ -132,10 +132,15 @@ func mustRun(t *testing.T, image, script string) string {
 }
 
 // installBoth is the install step shared by most cases. Both packages are
-// installed together, which is what caught them shipping the same manual
-// page path and therefore refusing to co-install.
+// installed together, which is what caught them shipping the same manual page
+// path and therefore refusing to co-install.
+//
+// --force-depends because the base image deliberately has no systemd, which
+// the client package now requires. These cases are about the payload, not
+// about dependency resolution; the dependency has its own two cases, one
+// checking the field and one checking that it actually refuses.
 const installBoth = unslim + `
-dpkg -i /debs/cert-proxy-client_*_amd64.deb /debs/cert-proxy-server_*_amd64.deb
+dpkg -i --force-depends /debs/cert-proxy-client_*_amd64.deb /debs/cert-proxy-server_*_amd64.deb
 `
 
 // TestBothPackagesCoInstall is the regression test for two packages claiming
@@ -168,6 +173,41 @@ echo "sysusers=$(test -f /usr/lib/sysusers.d/cert-proxy-client.conf && echo yes)
 	} {
 		assert.Contains(t, out, want)
 	}
+}
+
+// TestClientDependsOnSystemdHelpers pins the dependency that makes the
+// silent-no-op impossible: the generated postinst calls systemd-sysusers and
+// systemd-tmpfiles behind "|| true", so without them the package would install
+// happily and create neither the ssl-cert group nor the certificate store.
+func TestClientDependsOnSystemdHelpers(t *testing.T) {
+	out := mustRun(t, baseImage, `
+dpkg-deb -f /debs/cert-proxy-client_*_amd64.deb Depends
+`)
+
+	for _, want := range []string{
+		"systemd | systemd-standalone-sysusers | systemd-sysusers",
+		"systemd | systemd-standalone-tmpfiles | systemd-tmpfiles",
+	} {
+		assert.Contains(t, out, want)
+	}
+}
+
+// TestDependencyRefusedWithoutSystemd is the regression test for the silent
+// no-op: on a host lacking systemd-sysusers and systemd-tmpfiles the client
+// package must refuse to configure rather than install cleanly and create
+// neither the ssl-cert group nor the certificate store.
+func TestDependencyRefusedWithoutSystemd(t *testing.T) {
+	out, err := run(t, baseImage, unslim+`
+dpkg -i /debs/cert-proxy-client_*_amd64.deb
+`)
+	require.Error(t, err, "install must fail without the systemd helpers:\n%s", out)
+	assert.Contains(t, out, "dependency problems prevent configuration")
+
+	out = mustRun(t, baseImage, unslim+`
+dpkg -i /debs/cert-proxy-client_*_amd64.deb 2>/dev/null || true
+echo "state=$(dpkg -l cert-proxy-client | tail -1 | cut -c1-2)"
+`)
+	assert.Contains(t, out, "state=iU", "unpacked but not configured")
 }
 
 // TestConffilesRegistered guards the upgrade behaviour: an admin's edits to
