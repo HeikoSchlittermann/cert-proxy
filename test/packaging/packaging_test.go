@@ -227,6 +227,34 @@ dpkg-query -W -f='${Conffiles}\n' cert-proxy-client cert-proxy-server
 	}
 }
 
+// TestCAPayloadIsExactlyTheTrackedFiles pins the CA payload against two
+// different accidents. gogogo refuses untracked sources itself since v0.24.2,
+// which covers the admin's gitignored vars.sh and any stray key material left
+// in the tree; it cannot judge a file that is tracked but does not belong in
+// /etc, such as CA/.gitignore. A directory entry would ship that one.
+func TestCAPayloadIsExactlyTheTrackedFiles(t *testing.T) {
+	out := mustRun(t, baseImage, installBoth+`
+find /etc/cert-proxy/ca -type f | sort
+`)
+
+	for _, want := range []string{
+		"/etc/cert-proxy/ca/bin/mkssl-pem",
+		"/etc/cert-proxy/ca/lib/mkca",
+		"/etc/cert-proxy/ca/lib/openssl.cnf",
+		"/etc/cert-proxy/ca/lib/vars.sh.example",
+	} {
+		assert.Contains(t, out, want)
+	}
+
+	for _, unwanted := range []string{
+		"/etc/cert-proxy/ca/lib/vars.sh\n", // the admin's own, gitignored
+		"/etc/cert-proxy/ca/.gitignore",    // tracked, but not configuration
+		".pem",                             // key material from exercising the CA
+	} {
+		assert.NotContains(t, out, unwanted)
+	}
+}
+
 // TestNoStrayUnitFiles pins the fix for the over-broad systemd glob, which
 // used to install cert-proxy-*.default as if it were a unit.
 func TestNoStrayUnitFiles(t *testing.T) {
