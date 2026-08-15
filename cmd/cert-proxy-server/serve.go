@@ -19,7 +19,7 @@ import (
 
 func serve(ctx context, w http.ResponseWriter, req *http.Request) error {
 	shared.Verbose("Serving url=%v%s%s\n",
-		req.URL,
+		redactedURL(req.URL),
 		func() string {
 			if s := req.Header.Get(`if-modified-since`); s != "" {
 				return " ims=" + s

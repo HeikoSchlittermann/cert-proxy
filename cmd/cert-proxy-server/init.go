@@ -14,9 +14,6 @@ import (
 	"go.schlittermann.de/heiko/cert-proxy/man"
 )
 
-// manCommand is the positional argument selecting the manual subcommand.
-const manCommand = "man"
-
 func init() {
 	// Running as a systemd unit?
 	if os.Getenv(`INVOCATION_ID`) != "" {
@@ -38,15 +35,6 @@ func parseFlags() {
 
 	flag.Parse()
 
-	// "man" as the first positional argument is the manual subcommand.
-	if args := flag.Args(); len(args) > 0 && args[0] == manCommand {
-		if err := man.Run(man.ServerRegistry(), args[1:]); err != nil {
-			log.Fatal(err)
-		}
-
-		os.Exit(0)
-	}
-
 	if *help {
 		flag.CommandLine.SetOutput(os.Stdout)
 		flag.Usage()
@@ -55,6 +43,16 @@ func parseFlags() {
 
 	if *version {
 		fmt.Println(versionLine())
+		os.Exit(0)
+	}
+
+	// "man" as the first positional argument is the manual subcommand. After
+	// -help and -version, so those keep working with an argument following.
+	if args := flag.Args(); len(args) > 0 && args[0] == man.Command {
+		if err := man.Run(man.ServerRegistry(), args[1:]); err != nil {
+			log.Fatal(err)
+		}
+
 		os.Exit(0)
 	}
 

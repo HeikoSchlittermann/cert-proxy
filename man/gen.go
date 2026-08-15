@@ -19,17 +19,32 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
+// manualPage matches the only thing this generator will touch:
+// <topic>.<section>.md, the layout the packaging and the embed rely on.
+// Anything else in the directory -- README.md, an editor scratch file -- is
+// not a manual page and must not be turned into one.
+var manualPage = regexp.MustCompile(`^[A-Za-z0-9._-]+\.[1-9]\.md$`)
+
 func main() {
-	sources, err := filepath.Glob("*.md")
+	candidates, err := filepath.Glob("*.md")
 	if err != nil {
 		fail(err)
 	}
 
+	var sources []string
+
+	for _, c := range candidates {
+		if manualPage.MatchString(filepath.Base(c)) {
+			sources = append(sources, c)
+		}
+	}
+
 	if len(sources) == 0 {
-		fail(fmt.Errorf("no *.md sources found in %s", must(os.Getwd())))
+		fail(fmt.Errorf("no <topic>.<section>.md sources found in %s; run this through go generate", must(os.Getwd())))
 	}
 
 	for _, src := range sources {

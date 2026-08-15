@@ -20,8 +20,22 @@ import (
 	"go.schlittermann.de/heiko/cert-proxy/man"
 )
 
-// manCommand is the positional argument selecting the manual subcommand.
-const manCommand = "man"
+// withScheme prefixes a scheme when the address does not carry one, so that
+// -certbase style shorthands parse as an address rather than as something
+// else. Without it url.Parse reads "host:4433" as scheme "host" with opaque
+// "4433", and the client then requests "host:4433/v1/...".
+func withScheme(addr string) string {
+	switch {
+	case strings.Contains(addr, "://"):
+		return addr
+	case strings.HasPrefix(addr, "//"):
+		return "https:" + addr
+	case addr == "":
+		return addr
+	default:
+		return "https://" + addr
+	}
+}
 
 func init() {
 	// Running as a systemd unit?
@@ -111,16 +125,6 @@ func parseFlags() {
 	flag.Var(&logOutput, "stderr", "redirect stderr `output` (stderr|stdout)")
 	flag.Parse()
 
-	// "man" as the first positional argument is the manual subcommand, not a
-	// CN. Intercepted before the CN validation below.
-	if args := flag.Args(); len(args) > 0 && args[0] == manCommand {
-		if err := man.Run(man.ClientRegistry(), args[1:]); err != nil {
-			log.Fatal(err)
-		}
-
-		os.Exit(0)
-	}
-
 	if *help {
 		flag.CommandLine.SetOutput(os.Stdout)
 		flag.Usage()
@@ -129,6 +133,17 @@ func parseFlags() {
 
 	if *version {
 		fmt.Println(versionLine())
+		os.Exit(0)
+	}
+
+	// "man" as the first positional argument is the manual subcommand, not a
+	// CN. After -help and -version, so those keep working with an argument
+	// following them, and before the CN validation below.
+	if args := flag.Args(); len(args) > 0 && args[0] == man.Command {
+		if err := man.Run(man.ClientRegistry(), args[1:]); err != nil {
+			log.Fatal(err)
+		}
+
 		os.Exit(0)
 	}
 
@@ -163,7 +178,7 @@ func parseFlags() {
 	}
 
 	// Sanitize the Connect option
-	url, err := url.Parse(opt.Connect)
+	url, err := url.Parse(withScheme(opt.Connect))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -188,6 +203,12 @@ func checkCertbase(dir string) error {
 	fi, err := os.Stat(dir)
 	if err != nil {
 		if os.IsNotExist(err) {
+			// Stat follows symlinks, so a dangling one lands here too; say
+			// which of the two it is instead of claiming nothing is there.
+			if _, lerr := os.Lstat(dir); lerr == nil {
+				return fmt.Errorf("-certbase %q is a symlink pointing nowhere", dir)
+			}
+
 			return fmt.Errorf("-certbase %q does not exist; the certificate store is created by the package or by the administrator, not by %s", dir, program.Name)
 		}
 

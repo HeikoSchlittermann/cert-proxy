@@ -15,6 +15,7 @@ import (
 	"embed"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"os/exec"
 	"sort"
@@ -23,8 +24,16 @@ import (
 
 //go:generate go run gen.go
 
+// Command is the positional argument that selects the manual subcommand.
+const Command = "man"
+
 //go:embed cert-proxy-client.8.gz cert-proxy-server.8.gz cert-proxy-clients.5.gz cert-proxy.7.gz
 var pages embed.FS
+
+// pagesFS is the source Roff reads from. It is a variable so tests can supply
+// deliberately damaged data without shipping a corrupt page inside the
+// binaries.
+var pagesFS fs.FS = pages
 
 // Page is a single manual page embedded in the binary.
 type Page struct {
@@ -36,7 +45,7 @@ type Page struct {
 
 // Roff returns the decompressed roff source of the page.
 func (p Page) Roff() ([]byte, error) {
-	compressed, err := pages.ReadFile(p.file)
+	compressed, err := fs.ReadFile(pagesFS, p.file)
 	if err != nil {
 		return nil, fmt.Errorf("man: %s(%s): %w", p.Name, p.Section, err)
 	}
@@ -129,9 +138,11 @@ func (r *Registry) Resolve(args []string) (Page, error) {
 	}
 }
 
-// byName looks a bare page name up across all sections. Sections are
-// scanned in ascending order, so the lowest section wins when a name is
-// registered more than once -- the behaviour of man(1) itself.
+// byName looks a bare page name up across all sections. Sections are scanned
+// in ascending numeric order, so the lowest section wins when a name is
+// registered more than once. (man(1) resolves such a collision by its
+// configured SECTION order, which is not ascending; ascending is merely a
+// stable rule that happens to agree with it for the sections shipped here.)
 func (r *Registry) byName(name string) (Page, error) {
 	for _, s := range r.Sections() {
 		for _, p := range r.sections[s] {

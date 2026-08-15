@@ -5,9 +5,11 @@ package man
 
 import (
 	"bytes"
+	"compress/gzip"
 	"errors"
 	"fmt"
 	"testing"
+	"testing/fstest"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -192,12 +194,26 @@ func TestDisplayPropagatesFailures(t *testing.T) {
 	})
 }
 
-// TestRoffReportsDecompressionFailure ensures corrupt embedded data is
-// reported rather than panicking.
-func TestRoffReportsDecompressionFailure(t *testing.T) {
-	_, err := Page{Name: "bogus", Section: "9", file: "cert-proxy.7.md"}.Roff()
+// TestRoffReportsMissingPage covers a page whose embedded file is absent.
+func TestRoffReportsMissingPage(t *testing.T) {
+	_, err := Page{Name: "bogus", Section: "9", file: "not-embedded.9.gz"}.Roff()
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "bogus(9)")
+}
+
+// TestRoffReportsCorruptGzip exercises the decompression path itself, which a
+// missing file never reaches: the embedded .md source is valid UTF-8 but not
+// gzip, so gzip.NewReader rejects it.
+func TestRoffReportsCorruptGzip(t *testing.T) {
+	restore := pagesFS
+	pagesFS = fstest.MapFS{"corrupt.9.gz": &fstest.MapFile{Data: []byte("not gzip at all\n")}}
+
+	t.Cleanup(func() { pagesFS = restore })
+
+	_, err := Page{Name: "corrupt", Section: "9", file: "corrupt.9.gz"}.Roff()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "corrupt(9)")
+	assert.ErrorIs(t, err, gzip.ErrHeader)
 }
 
 func TestSectionsAndPagesAreOrdered(t *testing.T) {
