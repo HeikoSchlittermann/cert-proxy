@@ -1,4 +1,8 @@
-# Certificate store written by cert-proxy-client (-certbase). Group readable
-# so that ssl-cert members can read the private keys.
+# Certificate store written by cert-proxy-client (-certbase). The client
+# refuses to create this itself, so it has to exist before the first run.
+#
+# The ssl-cert group only grants traversal of this directory: the client
+# writes the per-domain directories 0700 and the keys 0600 under its own
+# umask, so group membership alone does not make a key readable.
 d /var/lib/cert-proxy       0755 root root      -
 d /var/lib/cert-proxy/certs 0750 root ssl-cert  -

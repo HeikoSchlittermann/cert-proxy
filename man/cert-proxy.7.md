@@ -33,8 +33,9 @@ the domains listed in its own file, which need not include *www.example.com*.
 
 # ENDPOINTS
 
-All requests have the form **/v1/***req*[**/***domain*]. Any other shape is
-answered with **400 Bad Request**.
+All requests have the form **/v1/***req*[**/***domain*]. A path with more
+segments than that is answered with **400 Bad Request**, and one that matches no
+endpoint at all with **404 Not Found**.
 
 */v1/list*
 : Requires a client certificate. Returns the domains the requesting client is authorized for, one per line, taken from that client's own authorization file. It is not a catalogue of everything the server holds.
@@ -71,18 +72,24 @@ bundle that contains it are restricted.
 
 # RESPONSES
 
-Every response carries an **x-version** header naming the server's version.
+Responses that reach the content handler carry an **x-version** header naming
+the server's version. Responses rejected earlier, by authentication or
+authorization, do not.
 
-Missing or unusable client credentials, and a client that is not authorized for
-the requested domain, both yield **401 Unauthorized** with the body
-*unauthorized*; the two cases are deliberately not distinguished.
+Failures on the authenticated endpoints are all **401 Unauthorized**, but the
+body differs by cause: *no (valid) client certificate* when none was presented,
+*unauthorized* when the client has no authorization file or its common name is
+unusable as a file name, and *client CN not authorized for DOMAIN* when the file
+exists but does not list the domain. The last one echoes the requested domain and
+the client's own common name back to the peer.
 
 Content is served with **If-Modified-Since** support, so a client that already
 holds a current copy receives **304 Not Modified**. This is what makes a frequent
 timer cheap.
 
-A request for a domain the server does not hold currently yields
-**500 Internal Server Error** rather than **404 Not Found**.
+A request for a domain the server does not hold yields **500 Internal Server
+Error** rather than **404 Not Found**, because the missing file is reported as an
+ordinary read failure.
 
 # FILE LAYOUT
 
@@ -99,7 +106,8 @@ certs/example.com/privkey.pem
 An optional *bundle.p12* is served in preference to generating one.
 
 On the client, below the directory named by **-certbase**, the same names appear
-per domain. On Unix each name is a symlink to a file carrying the timestamp of
+per domain for PEM; a PKCS12 bundle is stored as *bundle.pfx*, because Windows
+dislikes *.p12* there. On Unix each name is a symlink to a file carrying the timestamp of
 the version it holds, so a replacement is atomic and the previous version stays
 on disk; **-symlink=false** writes the plain file instead. On Windows the plain
 file is replaced by rename. Private keys are written with mode 0600, everything

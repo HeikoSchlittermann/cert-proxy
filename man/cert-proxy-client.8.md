@@ -53,7 +53,7 @@ See **cert-proxy**(7) for the protocol and the on-disk layout.
 : Read the domain list from *file*, or from standard input when *file* is **-**. The format is the one described in **cert-proxy-clients**(5).
 
 **-connect** *[scheme://]server[:port]*
-: Address of the cert-proxy server. Default *https://localhost:4433*. A missing scheme is taken as **https**, which implies port 443 unless a port is given. Trailing slashes are removed.
+: Address of the cert-proxy server. Default *https://localhost:4433*. The scheme may be omitted, in which case **https** is used, and https implies port 443 unless a port is given. Trailing slashes are removed.
 
 **-force**
 : Download unconditionally, ignoring *If-Modified-Since*. Default **false**.
@@ -68,7 +68,7 @@ See **cert-proxy**(7) for the protocol and the on-disk layout.
 : Maximum number of domains processed in parallel. Default: the number of CPUs.
 
 **-passout** *scheme*:*password*
-: Password protecting the PKCS12 bundle. Default: none. See **PASSWORD SOURCES** below.
+: Password protecting the PKCS12 bundle. Default: none. See **PASSWORD SOURCES** below. The password is sent to the server as a query parameter, so avoid it on a connection you do not trust.
 
 **-pkcs12-compat** *legacy*|*modern*
 : PKCS12 compatibility level requested from the server. Default **modern** on Unix and **legacy** on Windows.
@@ -116,7 +116,7 @@ See **cert-proxy**(7) for the protocol and the on-disk layout.
 : Hook program shipped as an executable template by the Debian package; as shipped it does nothing. It is a conffile, so edits survive upgrades.
 
 */var/lib/cert-proxy/certs*
-: Certificate store used by the supplied systemd unit. The Debian package creates it with mode 0750, owned by *root* and group *ssl-cert*, through a *tmpfiles.d* snippet, and therefore depends on **systemd-tmpfiles** and **systemd-sysusers**. The client does not create it.
+: Certificate store used by the supplied systemd unit. The Debian package creates it with mode 0750, owned by *root* and group *ssl-cert*, through a *tmpfiles.d* snippet, and therefore depends on **systemd-tmpfiles** and **systemd-sysusers**. The client does not create it. Note that group membership only grants traversal of this directory: the per-domain directories below it are created *0700* and private keys *0600*, both owned by the user running the client, so a reader of the keys has to be that user.
 
 */etc/default/cert-proxy-client*
 : Read by the systemd unit. The variable **OPTS** is appended to the command line.
@@ -153,9 +153,13 @@ have finished:
 shared-hook shared DOMAIN...
 ```
 
-Environment variables of the same names as the positional parameters are set for
-the child, possibly overriding variables inherited from the caller. The shared
-hook additionally receives **DOMAINS**, a space separated list of the domains.
+The child also receives the following environment variables, overriding any of
+the same name inherited from the caller: **DOMAIN**, and for each artifact that
+was requested **KEYFILE**, **CERTFILE**, **CHAINFILE**, **FULLCHAINFILE** and
+**BUNDLEFILE**. Note that the variable for the full chain is **FULLCHAINFILE**,
+and that the timestamp is passed as a positional parameter only -- there is no
+**TIMESTAMP** variable. The shared hook receives **DOMAINS** instead, a space
+separated list of the domains.
 
 Hooks never run concurrently with each other: at no point is more than one hook
 instance active. While a hook runs, however, other workers continue and may
@@ -172,7 +176,7 @@ The value of **-passout** is a scheme followed by a colon:
 : The password literally, on the command line.
 
 **file:***path*
-: The first line of *path*.
+: The contents of *path*, with trailing newlines, spaces and tabs removed. The whole file is used, so a second line becomes part of the password.
 
 **env:***name*
 : The value of the environment variable *name*.
