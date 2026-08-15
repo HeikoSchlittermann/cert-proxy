@@ -147,9 +147,9 @@ dpkg -i --force-depends /debs/cert-proxy-client_*_amd64.deb /debs/cert-proxy-ser
 // the same file: dpkg refuses the second one.
 func TestBothPackagesCoInstall(t *testing.T) {
 	out := mustRun(t, baseImage, installBoth+`
-dpkg -l cert-proxy-client cert-proxy-server | grep '^ii' | wc -l
+echo "installed=$(dpkg -l cert-proxy-client cert-proxy-server | grep -c '^ii')"
 `)
-	assert.Contains(t, out, "2", "both packages must reach state ii")
+	assert.Contains(t, out, "installed=2", "both packages must reach state ii")
 	assert.NotContains(t, out, "trying to overwrite")
 }
 
@@ -208,6 +208,23 @@ dpkg -i /debs/cert-proxy-client_*_amd64.deb 2>/dev/null || true
 echo "state=$(dpkg -l cert-proxy-client | tail -1 | cut -c1-2)"
 `)
 	assert.Contains(t, out, "state=iU", "unpacked but not configured")
+}
+
+// TestTimerIsEnabledOnFirstInstall guards the renewal path. gogogo's generated
+// postinst only reloads and restarts on upgrade, so without the after-install
+// fragment a fresh install leaves the timer disabled and nothing ever renews.
+// The container has no running manager, so the preset cannot be observed
+// directly; assert the logic reached the package and is valid shell.
+func TestTimerIsEnabledOnFirstInstall(t *testing.T) {
+	out := mustRun(t, baseImage, `
+dpkg-deb -I /debs/cert-proxy-client_*_amd64.deb postinst > /tmp/postinst
+sh -n /tmp/postinst && echo "syntax=ok"
+grep -c "preset cert-proxy-client.timer" /tmp/postinst | sed "s/^/preset=/"
+grep -c "is-enabled cert-proxy-client.timer" /tmp/postinst | sed "s/^/isenabled=/"
+`)
+	assert.Contains(t, out, "syntax=ok", "the composed postinst must be valid shell")
+	assert.Contains(t, out, "preset=1")
+	assert.Contains(t, out, "isenabled=1")
 }
 
 // TestConffilesRegistered guards the upgrade behaviour: an admin's edits to
