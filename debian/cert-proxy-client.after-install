@@ -1,14 +1,12 @@
-# Enable the timer on first install. gogogo's generated postinst only
-# reloads the manager and restarts units on upgrade, so without this a fresh
-# install leaves cert-proxy-client.timer disabled and certificates are never
-# fetched again -- the same silent omission as issue #45.
+# Enable the timer on first install. Do this whether or not credentials have
+# been provisioned yet: cert-proxy-client.service has ConditionPathExists for
+# client-ssl.pem, so early timer runs are skipped cleanly and provisioning the
+# file later needs no second package configuration step.
 #
-# Only on first install ($2 empty), so an admin who disabled the timer keeps
-# it disabled across upgrades, and only once credentials exist, because a
-# timer without client-ssl.pem would just fail every day. systemctl may be
-# absent: the package depends on the sysusers/tmpfiles helpers, and the
-# standalone variants of those do not bring the manager with them.
-if [ -z "$2" ] && [ -f /etc/cert-proxy/client-ssl.pem ] && command -v systemctl >/dev/null 2>&1; then
+# Only on first install ($2 empty), so an admin who disables the timer keeps it
+# disabled across upgrades. systemctl may be absent: the package dependency can
+# be satisfied by standalone sysusers/tmpfiles binaries without the manager.
+if [ -z "$2" ] && command -v systemctl >/dev/null 2>&1; then
     systemctl --system preset cert-proxy-client.timer >/dev/null 2>&1 || true
 
     if systemctl --system is-enabled cert-proxy-client.timer >/dev/null 2>&1; then

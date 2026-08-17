@@ -1,5 +1,6 @@
 [Unit]
 Description=cert-proxy-client
+ConditionPathExists=/etc/cert-proxy/client-ssl.pem
 
 [Service]
 Type=oneshot

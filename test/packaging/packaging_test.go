@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -47,10 +48,17 @@ const (
 var debDir string
 
 func TestMain(m *testing.M) {
+	os.Exit(runTests(m))
+}
+
+// runTests returns instead of exiting so temporary package output can be
+// removed before TestMain calls os.Exit (which never runs deferred cleanup).
+func runTests(m *testing.M) int {
 	for _, tool := range []string{"podman", "gogogo"} {
 		if _, err := exec.LookPath(tool); err != nil {
 			fmt.Fprintf(os.Stderr, "skip: %s not in PATH\n", tool)
-			os.Exit(0)
+
+			return 0
 		}
 	}
 
@@ -59,23 +67,33 @@ func TestMain(m *testing.M) {
 	if dir := os.Getenv("CERT_PROXY_DEB_DIR"); dir != "" {
 		debDir = dir
 
-		os.Exit(m.Run())
+		return m.Run()
 	}
 
 	tmp, err := os.MkdirTemp("", "cert-proxy-packaging-*")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "temp dir: %v\n", err)
-		os.Exit(1)
-	}
 
-	defer os.RemoveAll(tmp) //nolint:errcheck // best effort
+		return 1
+	}
 
 	if debDir, err = buildPackages(tmp); err != nil {
 		fmt.Fprintf(os.Stderr, "building packages: %v\n", err)
-		os.Exit(1)
+		_ = os.RemoveAll(tmp)
+
+		return 1
 	}
 
-	os.Exit(m.Run())
+	status := m.Run()
+	if err := os.RemoveAll(tmp); err != nil {
+		fmt.Fprintf(os.Stderr, "removing package test directory: %v\n", err)
+
+		if status == 0 {
+			status = 1
+		}
+	}
+
+	return status
 }
 
 // buildPackages runs gogogo from the module root and returns the directory
@@ -86,9 +104,22 @@ func buildPackages(outDir string) (string, error) {
 		return "", err
 	}
 
+	// A dupload destination makes gogogo run debsign while packing. These
+	// tests inspect unsigned package payloads and must not require the
+	// developer's release key, so put a successful no-op debsign first in PATH.
+	binDir := filepath.Join(outDir, "test-bin")
+	if err := os.Mkdir(binDir, 0o755); err != nil {
+		return "", err
+	}
+
+	if err := os.WriteFile(filepath.Join(binDir, "debsign"), []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+		return "", err
+	}
+
 	cmd := exec.Command("gogogo", "pack",
 		"--no-network", "--allow-unclean", "--skip-doctor", "--out", outDir)
 	cmd.Dir = root
+	cmd.Env = append(os.Environ(), "PATH="+binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
@@ -162,6 +193,7 @@ echo "etc_cert_proxy=$(test -d /etc/cert-proxy && echo yes)"
 echo "default=$(stat -c '%a' /etc/default/cert-proxy-client)"
 echo "tmpfiles=$(test -f /usr/lib/tmpfiles.d/cert-proxy-client.conf && echo yes)"
 echo "sysusers=$(test -f /usr/lib/sysusers.d/cert-proxy-client.conf && echo yes)"
+echo "credential_condition=$(grep -c '^ConditionPathExists=/etc/cert-proxy/client-ssl.pem$' /usr/lib/systemd/system/cert-proxy-client.service)"
 `)
 
 	for _, want := range []string{
@@ -170,6 +202,7 @@ echo "sysusers=$(test -f /usr/lib/sysusers.d/cert-proxy-client.conf && echo yes)
 		"default=644",
 		"tmpfiles=yes",
 		"sysusers=yes",
+		"credential_condition=1",
 	} {
 		assert.Contains(t, out, want)
 	}
@@ -210,21 +243,44 @@ echo "state=$(dpkg -l cert-proxy-client | tail -1 | cut -c1-2)"
 	assert.Contains(t, out, "state=iU", "unpacked but not configured")
 }
 
-// TestTimerIsEnabledOnFirstInstall guards the renewal path. gogogo's generated
-// postinst only reloads and restarts on upgrade, so without the after-install
-// fragment a fresh install leaves the timer disabled and nothing ever renews.
-// The container has no running manager, so the preset cannot be observed
-// directly; assert the logic reached the package and is valid shell.
-func TestTimerIsEnabledOnFirstInstall(t *testing.T) {
+// TestTimerLifecycle executes the generated scripts with a fake systemctl.
+// This covers the normal install-then-provision workflow: the postinst must
+// preset the timer even though client-ssl.pem is not present yet, while the
+// service condition suppresses runs until it arrives. Purge must remove the
+// preset symlink, which lives outside the package payload.
+func TestTimerLifecycle(t *testing.T) {
 	out := mustRun(t, baseImage, `
 dpkg-deb -I /debs/cert-proxy-client_*_amd64.deb postinst > /tmp/postinst
-sh -n /tmp/postinst && echo "syntax=ok"
-grep -c "preset cert-proxy-client.timer" /tmp/postinst | sed "s/^/preset=/"
-grep -c "is-enabled cert-proxy-client.timer" /tmp/postinst | sed "s/^/isenabled=/"
+dpkg-deb -I /debs/cert-proxy-client_*_amd64.deb prerm > /tmp/prerm
+dpkg-deb -I /debs/cert-proxy-client_*_amd64.deb postrm > /tmp/postrm
+sh -n /tmp/postinst
+sh -n /tmp/prerm
+sh -n /tmp/postrm
+
+mkdir /tmp/test-bin
+cat >/tmp/test-bin/systemctl <<'EOF'
+#!/bin/sh
+printf '%s\n' "$*" >>/tmp/systemctl.log
+exit 0
+EOF
+chmod 755 /tmp/test-bin/systemctl
+
+test ! -e /etc/cert-proxy/client-ssl.pem
+PATH=/tmp/test-bin:$PATH sh /tmp/postinst configure
+grep -F -- "--system preset cert-proxy-client.timer" /tmp/systemctl.log
+grep -F -- "--system start cert-proxy-client.timer" /tmp/systemctl.log
+
+mkdir -p /etc/systemd/system/timers.target.wants
+ln -s /usr/lib/systemd/system/cert-proxy-client.timer \
+    /etc/systemd/system/timers.target.wants/cert-proxy-client.timer
+PATH=/tmp/test-bin:$PATH sh /tmp/prerm remove
+grep -F -- "--system stop cert-proxy-client.timer" /tmp/systemctl.log
+PATH=/tmp/test-bin:$PATH sh /tmp/postrm purge
+test ! -L /etc/systemd/system/timers.target.wants/cert-proxy-client.timer
+grep -F -- "--system disable --now cert-proxy-client.timer" /tmp/systemctl.log
+echo "timer_lifecycle=ok"
 `)
-	assert.Contains(t, out, "syntax=ok", "the composed postinst must be valid shell")
-	assert.Contains(t, out, "preset=1")
-	assert.Contains(t, out, "isenabled=1")
+	assert.Contains(t, out, "timer_lifecycle=ok")
 }
 
 // TestConffilesRegistered guards the upgrade behaviour: an admin's edits to
@@ -244,32 +300,27 @@ dpkg-query -W -f='${Conffiles}\n' cert-proxy-client cert-proxy-server
 	}
 }
 
-// TestCAPayloadIsExactlyTheTrackedFiles pins the CA payload against two
-// different accidents. gogogo refuses untracked sources itself since v0.24.2,
-// which covers the admin's gitignored vars.sh and any stray key material left
-// in the tree; it cannot judge a file that is tracked but does not belong in
-// /etc, such as CA/.gitignore. A directory entry would ship that one.
+// TestCAPayloadIsExactlyTheTrackedFiles compares the complete installed set,
+// not selected required/forbidden substrings. That keeps an unanticipated
+// README, ignored local configuration, or key file from passing unnoticed.
 func TestCAPayloadIsExactlyTheTrackedFiles(t *testing.T) {
 	out := mustRun(t, baseImage, installBoth+`
-find /etc/cert-proxy/ca -type f | sort
+find /etc/cert-proxy/ca \( -type f -o -type l \) | sort
 `)
 
-	for _, want := range []string{
+	var got []string
+	for _, line := range strings.Split(out, "\n") {
+		if strings.HasPrefix(line, "/etc/cert-proxy/ca/") {
+			got = append(got, line)
+		}
+	}
+
+	assert.Equal(t, []string{
 		"/etc/cert-proxy/ca/bin/mkssl-pem",
 		"/etc/cert-proxy/ca/lib/mkca",
 		"/etc/cert-proxy/ca/lib/openssl.cnf",
 		"/etc/cert-proxy/ca/lib/vars.sh.example",
-	} {
-		assert.Contains(t, out, want)
-	}
-
-	for _, unwanted := range []string{
-		"/etc/cert-proxy/ca/lib/vars.sh\n", // the admin's own, gitignored
-		"/etc/cert-proxy/ca/.gitignore",    // tracked, but not configuration
-		".pem",                             // key material from exercising the CA
-	} {
-		assert.NotContains(t, out, unwanted)
-	}
+	}, got)
 }
 
 // TestNoStrayUnitFiles pins the fix for the over-broad systemd glob, which
