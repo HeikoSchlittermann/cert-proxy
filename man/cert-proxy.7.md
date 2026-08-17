@@ -20,9 +20,10 @@ server publishes.
 Both sides authenticate with certificates issued by a local CA that exists only
 for cert-proxy; the scripts under */etc/cert-proxy/ca* create and operate it.
 
-The client verifies the server certificate against that CA and checks its common
-name, which defaults to the FQDN the client connects to and can be overridden
-with **-servername**. The server requires a client certificate for everything
+The client verifies the server certificate against that CA and checks the host
+name (or IP address) in its Subject Alternative Name extension. The expected
+name defaults to the host the client connects to and can be overridden with
+**-servername**. The server requires a client certificate for everything
 except the public endpoints below, and uses the common name of that certificate
 as the client's identity. Authorization is then a per-client list of domains, one
 file per common name, described in **cert-proxy-clients**(5).

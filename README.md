@@ -197,7 +197,7 @@ Additional flags can be set in `/etc/default/cert-proxy-client` (variable `OPTS`
 | `-shared-hook` | | Hook script called once after all certs are processed |
 | `-passout` | | Password for PKCS12 bundles (see notation below) |
 | `-pkcs12-compat` | `modern` (Linux), `legacy` (Windows) | PKCS12 compatibility level (`legacy`\|`modern`) |
-| `-servername` | | Expected server CN (default: hostname from `-connect`) |
+| `-servername` | | Expected host/IP SAN in the server certificate (default: host from `-connect`) |
 | `-symlink` | `true` (Linux), `false` (Windows) | Use symlinks for atomic file updates |
 | `-force` | `false` | Download even if server reports not-modified |
 | `-jobs` | number of CPUs | Parallel download workers |

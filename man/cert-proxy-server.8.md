@@ -48,7 +48,7 @@ See **cert-proxy**(7) for the endpoints and the on-disk layout.
 : Address the TLS listener binds to. Default *:4433*.
 
 **-sslfile** *file*
-: PEM file holding the server credentials: certificate, private key and CA. Default *server-ssl.pem*. Clients that are started without **-servername** expect the certificate's common name to be the FQDN they connect to.
+: PEM file holding the server credentials: certificate, private key and CA. Default *server-ssl.pem*. Clients that are started without **-servername** expect the certificate's Subject Alternative Name extension to contain the host name or IP address they connect to.
 
 **-verbose**
 : Report every request. Default **false**.

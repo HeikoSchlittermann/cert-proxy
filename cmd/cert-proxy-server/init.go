@@ -46,9 +46,9 @@ func parseFlags() {
 		os.Exit(0)
 	}
 
-	// "man" as the first positional argument is the manual subcommand. After
+	// "man" immediately after the program name is the manual subcommand. After
 	// -help and -version, so those keep working with an argument following.
-	if args := flag.Args(); len(args) > 0 && args[0] == man.Command {
+	if args := flag.Args(); man.IsCommand(os.Args) {
 		if err := man.Run(man.ServerRegistry(), args[1:]); err != nil {
 			log.Fatal(err)
 		}

@@ -38,7 +38,7 @@ var (
 		Passout      string      // PKC12 password
 		Pkcs12Compat string      // PKCS12 compatibility level
 		SharedHook   string      // Shared hook file
-		ServerCN     string      // X509 CN of the server
+		ServerCN     string      // X509 verification name of the server
 		SSLFile      string      // SSL auth file
 		Verbose      bool
 	}{

@@ -28,6 +28,14 @@ func TestEmbeddedPagesDecompress(t *testing.T) {
 	}
 }
 
+func TestIsCommand(t *testing.T) {
+	assert.True(t, IsCommand([]string{"cert-proxy-client", "man"}))
+	assert.True(t, IsCommand([]string{"cert-proxy-client", "man", "8"}))
+	assert.False(t, IsCommand([]string{"cert-proxy-client", "--", "man"}), "-- must escape a literal domain named man")
+	assert.False(t, IsCommand([]string{"cert-proxy-client", "-verbose", "man"}))
+	assert.False(t, IsCommand(nil))
+}
+
 func TestResolveDefaults(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -57,8 +65,8 @@ func TestResolveDefaults(t *testing.T) {
 	}
 }
 
-// TestResolveBareNameLowestSectionWins documents the man(1) tiebreak: a name
-// registered in more than one section resolves to the lowest section.
+// TestResolveBareNameLowestSectionWins documents this registry's tiebreak: a
+// name registered in more than one section resolves to the lowest section.
 func TestResolveBareNameLowestSectionWins(t *testing.T) {
 	r := newRegistry("8",
 		Page{Name: "dup", Section: "8", file: clientPage.file},
@@ -67,7 +75,7 @@ func TestResolveBareNameLowestSectionWins(t *testing.T) {
 
 	p, err := r.Resolve([]string{"dup"})
 	require.NoError(t, err)
-	assert.Equal(t, "5", p.Section, "lowest section must win, as man(1) does")
+	assert.Equal(t, "5", p.Section, "the registry's stable rule is lowest section first")
 
 	p, err = r.Resolve([]string{"8", "dup"})
 	require.NoError(t, err)

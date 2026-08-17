@@ -27,6 +27,13 @@ import (
 // Command is the positional argument that selects the manual subcommand.
 const Command = "man"
 
+// IsCommand reports whether argv uses the documented "binary man ..." form.
+// Looking at argv[1], rather than the first argument left after flag parsing,
+// keeps "binary -- man" available for a literal positional domain named man.
+func IsCommand(argv []string) bool {
+	return len(argv) > 1 && argv[1] == Command
+}
+
 //go:embed cert-proxy-client.8.gz cert-proxy-server.8.gz cert-proxy-clients.5.gz cert-proxy.7.gz
 var pages embed.FS
 

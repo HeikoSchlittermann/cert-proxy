@@ -53,7 +53,7 @@ See **cert-proxy**(7) for the protocol and the on-disk layout.
 : Read the domain list from *file*, or from standard input when *file* is **-**. The format is the one described in **cert-proxy-clients**(5).
 
 **-connect** *[scheme://]server[:port]*
-: Address of the cert-proxy server. Default *https://localhost:4433*. The scheme may be omitted, in which case **https** is used, and https implies port 443 unless a port is given. Trailing slashes are removed.
+: Base HTTP(S) address of the cert-proxy server. Default *https://localhost:4433*. The scheme may be omitted, in which case **https** is used, and https implies port 443 unless a port is given. Trailing slashes are removed. User information, queries and fragments are rejected because protocol endpoint paths are appended to this address and authentication uses the client certificate.
 
 **-force**
 : Download unconditionally, ignoring *If-Modified-Since*. Default **false**.
@@ -73,8 +73,8 @@ See **cert-proxy**(7) for the protocol and the on-disk layout.
 **-pkcs12-compat** *legacy*|*modern*
 : PKCS12 compatibility level requested from the server. Default **modern** on Unix and **legacy** on Windows.
 
-**-servername** *CN*
-: Common name expected in the server's certificate. When empty, the FQDN of the host being connected to is used. Default: empty.
+**-servername** *name*
+: Host name or IP address required in the server certificate's Subject Alternative Name extension. When empty, the host being connected to is used. Default: empty.
 
 **-shared-hook** *file*
 : Program to run once after all per-domain hooks have finished. See **THE HOOK SCRIPT** below.
@@ -100,7 +100,7 @@ See **cert-proxy**(7) for the protocol and the on-disk layout.
 # ARGUMENTS
 
 *CN*
-: A domain to fetch. May be repeated. Each value is validated as a domain name; an invalid value is fatal.
+: A domain to fetch. May be repeated. Each value is validated as a domain name; an invalid value is fatal. Because an initial **man** selects the manual subcommand, pass a domain literally named *man* after the option terminator: **cert-proxy-client -- man**.
 
 # ENVIRONMENT
 
