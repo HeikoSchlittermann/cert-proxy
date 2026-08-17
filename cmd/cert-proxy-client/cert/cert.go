@@ -8,9 +8,11 @@ package cert
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -88,7 +90,7 @@ var TEMPLATES = map[role]templates{
 		env:    tt(`FULLCHAINFILE={{.Local}}`),
 	},
 	RoleBUNDLE: {
-		remote: tt(`{{.Proxy}}/v1/bundle/{{.Domain}}?format=PKCS12{{with .Pass}}&pass={{.}}{{end}}{{with .Compat}}&pkcs12-compat={{.}}{{end}}`),
+		remote: tt(`{{.Proxy}}/v1/bundle/{{.Domain}}`),
 		local:  tt(`{{.Domain}}/bundle.pfx`), // Windows does not like .p12 here
 		env:    tt(`BUNDLEFILE={{.Local}}`),
 	},
@@ -114,8 +116,6 @@ type templateContext struct {
 	Domain string
 	Proxy  string
 	Local  string
-	Pass   string
-	Compat string
 }
 
 // NewReq builds a Req for one domain, expanding the URL, file-path, and env
@@ -127,7 +127,7 @@ func NewReq(domain, remote, basedir, hook string, format Format, pass, compat st
 
 	var (
 		req = Req{domain: domain, hook: hook, env: []string{`DOMAIN=` + domain}}
-		ctx = templateContext{Domain: domain, Proxy: remote, Pass: pass, Compat: compat}
+		ctx = templateContext{Domain: domain, Proxy: remote}
 	)
 
 	// This format may require RoleCRT, RoleKey, … or RoleBUNDLE
@@ -151,6 +151,24 @@ func NewReq(domain, remote, basedir, hook string, format Format, pass, compat st
 		r, err := http.NewRequestWithContext(context.Background(), `GET`, mustExpand(templates.remote, ctx), nil)
 		if err != nil {
 			return Req{}, err
+		}
+
+		// Query parameters are data, not a URL template. Values.Set escapes
+		// passwords containing &, %, #, semicolons, spaces, or newlines rather
+		// than changing the request or making it unparsable.
+		if role == RoleBUNDLE {
+			q := r.URL.Query()
+			q.Set("format", "PKCS12")
+
+			if pass != "" {
+				q.Set("pass", pass)
+			}
+
+			if compat != "" {
+				q.Set("pkcs12-compat", compat)
+			}
+
+			r.URL.RawQuery = q.Encode()
 		}
 
 		r.Header.Add(`x-version`, program.Version)
@@ -177,11 +195,12 @@ func (req *Req) Execute(ctx context.Context, mtx sync.Locker) error {
 			}
 		}
 
-		shared.Verbose("Requesting %s ims:%s", item.remote.URL, item.remote.Header.Get(`if-modified-since`))
+		requestURL := shared.RedactedURL(item.remote.URL, "pass")
+		shared.Verbose("Requesting %s ims:%s", requestURL, item.remote.Header.Get(`if-modified-since`))
 
 		resp, err := http.DefaultClient.Do(item.remote.WithContext(ctx))
 		if err != nil {
-			return err
+			return redactRequestError(err)
 		}
 		defer resp.Body.Close() //nolint:errcheck
 
@@ -191,8 +210,7 @@ func (req *Req) Execute(ctx context.Context, mtx sync.Locker) error {
 			shared.Verbose("%s", resp.Status)
 			continue
 		default:
-			return fmt.Errorf("%v: %v",
-				item.remote.URL, resp.Status)
+			return fmt.Errorf("%s: %v", requestURL, resp.Status)
 		}
 
 		req.items[i].data, err = io.ReadAll(resp.Body)
@@ -311,6 +329,25 @@ func (req Req) String() string {
 func tt(txt string) *template.Template {
 	return template.Must(template.New(txt).Parse(txt))
 }
+
+// redactRequestError removes a secret-bearing request URL from errors returned
+// by http.Client.Do while retaining the underlying network error and its type.
+func redactRequestError(err error) error {
+	var urlErr *url.Error
+	if !errors.As(err, &urlErr) {
+		return err
+	}
+
+	clone := *urlErr
+	if parsed, parseErr := url.Parse(urlErr.URL); parseErr == nil {
+		clone.URL = shared.RedactedURL(parsed, "pass")
+	} else {
+		clone.URL = "REDACTED"
+	}
+
+	return &clone
+}
+
 func mustExpand(t *template.Template, ctx templateContext) string {
 	var b = &bytes.Buffer{}
 	if err := t.Execute(b, &ctx); err != nil {
