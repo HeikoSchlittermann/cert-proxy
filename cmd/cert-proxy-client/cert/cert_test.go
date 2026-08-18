@@ -2,8 +2,10 @@ package cert
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -165,6 +167,32 @@ func TestNewReq_PKCS12_Compat(t *testing.T) {
 
 	item = req.items[0]
 	assert.Contains(t, item.remote.URL.String(), "pkcs12-compat=modern")
+}
+
+func TestNewReq_PKCS12_EscapesPassword(t *testing.T) {
+	password := "ampersand&semicolon;percent%hash# space newline\n"
+	req, err := NewReq("example.com", "https://proxy:4433", "/certs", "", FormatPKCS12, password, "modern")
+	require.NoError(t, err)
+
+	got := req.items[0].remote.URL
+	assert.Equal(t, password, got.Query().Get("pass"))
+	assert.Equal(t, "modern", got.Query().Get("pkcs12-compat"))
+	assert.NotContains(t, got.RawQuery, "ampersand&semicolon")
+	assert.NotContains(t, got.RawQuery, "hash#")
+}
+
+func TestRedactRequestError(t *testing.T) {
+	original := &url.Error{
+		Op:  "Get",
+		URL: "https://proxy/v1/bundle/example.com?format=PKCS12&pass=hunter2",
+		Err: errors.New("connection refused"),
+	}
+
+	got := redactRequestError(original)
+	assert.NotContains(t, got.Error(), "hunter2")
+	assert.Contains(t, got.Error(), "pass=REDACTED")
+	assert.ErrorIs(t, got, original.Err)
+	assert.Contains(t, original.Error(), "hunter2", "redaction must not mutate the source error")
 }
 
 func TestNewReq_Hook(t *testing.T) {
@@ -824,4 +852,30 @@ func TestWriteFile_ExistingSymlink(t *testing.T) {
 	linkTarget, linkErr := os.Readlink(name)
 	require.NoError(t, linkErr, "symlink should still exist")
 	assert.Equal(t, target, linkTarget, "symlink should still point to original target")
+}
+
+// TestExecute_DoesNotCreateCertbase pins a scope decision: the client creates
+// the per-domain directory and nothing above it. Providing -certbase is the
+// job of the package (a tmpfiles.d snippet) or of the administrator, so a
+// missing store is an error rather than something to silently materialise
+// with whatever ownership and mode the process happens to have.
+func TestExecute_DoesNotCreateCertbase(t *testing.T) {
+	saveGlobals(t)
+
+	UseSymlink = false
+	Force = false
+
+	srv := newMockServer(t)
+
+	base := t.TempDir()
+	certbase := filepath.Join(base, "absent")
+
+	req, err := NewReq("example.com", srv.URL, certbase, "", FormatPEM, "", "")
+	require.NoError(t, err)
+
+	var mtx sync.Mutex
+
+	err = req.Execute(context.Background(), &mtx)
+	require.Error(t, err, "a missing -certbase must not be created")
+	assert.NoDirExists(t, certbase)
 }

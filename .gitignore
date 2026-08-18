@@ -1,6 +1,6 @@
 **/*.sw?
 *.pem
-#build/
+build/
 #cert-proxy-client
 #cert-proxy-client.exe
 #cns

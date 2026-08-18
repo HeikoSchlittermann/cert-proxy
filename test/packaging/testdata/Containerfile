@@ -1,0 +1,33 @@
+# Substrate for the package-install test: a Debian carrying the systemd helper
+# programs the generated postinst calls (systemd-sysusers, systemd-tmpfiles)
+# and man-db, so installed manual pages can be rendered.
+#
+# systemd need not run as PID 1 here: sysusers and tmpfiles are standalone
+# programs, and the test drives dpkg directly instead of starting units.
+#
+# Built by "make test-packaging-image". Two build arguments exist for
+# networks that do not allow a plain apt run; see that target.
+FROM docker.io/library/debian:trixie-slim
+
+# Empty means "no proxy"; otherwise an apt proxy URL such as
+# http://localhost:3128/ (needs podman --network=host when it is on the host's
+# loopback).
+ARG APT_PROXY=""
+
+# "false" disables apt's TLS peer verification, which is needed behind an
+# intercepting proxy. Archive signatures are still verified, so packages
+# remain authenticated; only the transport check is relaxed.
+ARG APT_VERIFY_PEER="true"
+
+# The published images point at http://deb.debian.org. https is preferable and
+# is also the only option on networks that block port 80.
+RUN sed -i 's|http://|https://|g' /etc/apt/sources.list.d/debian.sources \
+    && if [ -n "$APT_PROXY" ]; then \
+           echo "Acquire::https::Proxy \"$APT_PROXY\";" >> /etc/apt/apt.conf.d/99test; \
+       fi \
+    && if [ "$APT_VERIFY_PEER" = "false" ]; then \
+           echo 'Acquire::https::Verify-Peer "false";' >> /etc/apt/apt.conf.d/99test; \
+       fi \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends systemd man-db \
+    && rm -rf /var/lib/apt/lists/* /etc/apt/apt.conf.d/99test

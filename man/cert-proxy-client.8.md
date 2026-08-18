@@ -1,0 +1,219 @@
+% cert-proxy-client 8 "August 2026" "cert-proxy" "System Administration"
+
+# NAME
+
+cert-proxy-client - fetch certificates from a cert-proxy server
+
+# SYNOPSIS
+
+**cert-proxy-client** [*options*] [*CN*]...
+
+**cert-proxy-client** **man** [*section*] [*page*]
+
+**cert-proxy-client** **-help** | **-version**
+
+# DESCRIPTION
+
+**cert-proxy-client** is the client side of the cert-proxy suite. It connects to
+a **cert-proxy-server**(8) over HTTPS, authenticates with an X509 client
+certificate, and downloads the certificate material for one or more domains.
+
+Normally it is not run by hand but by the supplied
+*cert-proxy-client.timer* systemd unit.
+
+Domains are selected in one of three ways, which may be combined: the *CN*
+positional arguments, a list file given with **-cnfile**, and - unless
+**-auto** is disabled - the list the server itself offers via its
+**/v1/list** endpoint. If **-auto** is disabled and neither **-cnfile** nor a
+positional *CN* is given, the client prints its usage and exits with status 1.
+
+Each domain is dispatched to a worker pool. A worker downloads the artifacts
+with an *If-Modified-Since* condition, so unchanged material is not transferred
+again unless **-force** is given. Files are written atomically. On Unix the
+current version of each file is exposed through a symlink pointing at a
+timestamped file, unless **-symlink** is disabled; on Windows the file is
+replaced by rename.
+
+See **cert-proxy**(7) for the protocol and the on-disk layout.
+
+# COMMANDS
+
+**man** [*section*] [*page*]
+: Display a manual page shipped inside the binary. With no argument the page **cert-proxy-client**(8) is selected. A single numeric argument selects a section, a single non-numeric argument is looked up as a page name in every section, and two arguments select section and page explicitly. When standard output is a terminal the page is rendered through **man**(1); otherwise the raw roff source is written to standard output.
+
+# OPTIONS
+
+**-auto**
+: Fetch all CNs the server offers through its **/v1/list** endpoint. Default **true**. Use **-auto=false** to restrict the run to the domains named explicitly.
+
+**-certbase** *dir*
+: Base directory for the downloaded certificates. Default *certs*. It must exist, and this is checked at startup before anything is fetched: the client creates the per-domain directory below it, but never *dir* itself, so that ownership and mode of the store stay under the control of whoever set it up. Providing it is the job of the package or of the administrator.
+
+**-cnfile** *file*
+: Read the domain list from *file*, or from standard input when *file* is **-**. The format is the one described in **cert-proxy-clients**(5).
+
+**-connect** *[scheme://]server[:port]*
+: Base HTTP(S) address of the cert-proxy server. Default *https://localhost:4433*. The scheme may be omitted, in which case **https** is used, and https implies port 443 unless a port is given. Trailing slashes are removed. User information, queries and fragments are rejected because protocol endpoint paths are appended to this address and authentication uses the client certificate.
+
+**-force**
+: Download unconditionally, ignoring *If-Modified-Since*. Default **false**.
+
+**-format** *PEM*|*PKCS12*
+: Format of the requested certificates. **PEM** writes *cert.pem*, *chain.pem*, *fullchain.pem* and *privkey.pem*; **PKCS12** writes a single bundle. Default **PEM** on Unix and **PKCS12** on Windows. The value is case-insensitive.
+
+**-hook** *file*
+: Program to run for each domain once its certificates are done, whether they were fetched or found unmodified. See **THE HOOK SCRIPT** below.
+
+**-jobs** *number*
+: Maximum number of domains processed in parallel. Default: the number of CPUs.
+
+**-passout** *scheme*:*password*
+: Password protecting the PKCS12 bundle. Default: none. See **PASSWORD SOURCES** below. The password is sent to the server as a query parameter, so avoid it on a connection you do not trust.
+
+**-pkcs12-compat** *legacy*|*modern*
+: PKCS12 compatibility level requested from the server. Default **modern** on Unix and **legacy** on Windows.
+
+**-servername** *name*
+: Host name or IP address required in the server certificate's Subject Alternative Name extension. When empty, the host being connected to is used. Default: empty.
+
+**-shared-hook** *file*
+: Program to run once after all per-domain hooks have finished. See **THE HOOK SCRIPT** below.
+
+**-sslfile** *file*
+: PEM file holding the client credentials: certificate, private key and CA. Default *client-ssl.pem*.
+
+**-stderr** *stderr*|*stdout*
+: Channel diagnostics are written to. Default **stderr** on Unix and **stdout** on Windows. Selecting **stdout** helps when running under PowerShell.
+
+**-symlink**
+: Expose the current file of each artifact through a symlink. Default **true** on Unix, **false** on Windows.
+
+**-verbose**
+: Report progress. Default **false**.
+
+**-help**
+: Print the usage to standard output and exit with status 0.
+
+**-version**
+: Print the program version and exit with status 0.
+
+# ARGUMENTS
+
+*CN*
+: A domain to fetch. May be repeated. Each value is validated as a domain name; an invalid value is fatal. Because an initial **man** selects the manual subcommand, pass a domain literally named *man* after the option terminator: **cert-proxy-client -- man**.
+
+# ENVIRONMENT
+
+**JOURNAL_STREAM**
+: Set by systemd. When present, timestamps are omitted from log lines because the journal records them already.
+
+# FILES
+
+*/etc/cert-proxy/client-ssl.pem*
+: Client credentials used by the supplied systemd unit.
+
+*/etc/cert-proxy/hook*
+: Hook program shipped as an executable template by the Debian package; as shipped it does nothing. It is a conffile, so edits survive upgrades.
+
+*/var/lib/cert-proxy/certs*
+: Certificate store used by the supplied systemd unit. The Debian package creates it with mode 0750, owned by *root* and group *ssl-cert*, through a *tmpfiles.d* snippet, and therefore depends on **systemd-tmpfiles** and **systemd-sysusers**. The client does not create it. Note that group membership only grants traversal of this directory: the per-domain directories below it are created *0700* and private keys *0600*, both owned by the user running the client, so a reader of the keys has to be that user.
+
+*/etc/default/cert-proxy-client*
+: Read by the systemd unit. The variable **OPTS** is appended to the command line.
+
+# EXIT STATUS
+
+**cert-proxy-client** exits with 0 on success and with a non-zero status if any
+part of the run failed.
+
+# DIAGNOSTICS
+
+**-certbase "..." does not exist**
+: The certificate store is missing. It is not created here; on a Debian system the package creates it through a *tmpfiles.d* snippet, otherwise the administrator does. Nothing was fetched.
+
+# THE HOOK SCRIPT
+
+The program named by **-hook** is called for each domain as soon as that domain
+is done. For **-format PEM** the call is:
+
+```
+hook deploy_cert DOMAIN KEYFILE CERTFILE FULLCHAIN CHAINFILE TIMESTAMP
+```
+
+For **-format PKCS12** it is:
+
+```
+hook deploy_cert DOMAIN BUNDLEFILE TIMESTAMP
+```
+
+The program named by **-shared-hook** is called once after all per-domain hooks
+have finished:
+
+```
+shared-hook shared DOMAIN...
+```
+
+The child also receives the following environment variables, overriding any of
+the same name inherited from the caller: **DOMAIN**, and for each artifact that
+was requested **KEYFILE**, **CERTFILE**, **CHAINFILE**, **FULLCHAINFILE** and
+**BUNDLEFILE**. Note that the variable for the full chain is **FULLCHAINFILE**,
+and that the timestamp is passed as a positional parameter only -- there is no
+**TIMESTAMP** variable. The shared hook receives **DOMAINS** instead, a space
+separated list of the domains.
+
+Hooks never run concurrently with each other: at no point is more than one hook
+instance active. While a hook runs, however, other workers continue and may
+replace certificate files the hook indirectly relies on.
+
+On Windows, running a PowerShell hook may require
+**set-executionpolicy remotesigned**.
+
+# PASSWORD SOURCES
+
+The value of **-passout** is a scheme followed by a colon:
+
+**pass:***password*
+: The password literally, on the command line.
+
+**file:***path*
+: The contents of *path*, with trailing newlines, spaces and tabs removed. The whole file is used, so a second line becomes part of the password.
+
+**env:***name*
+: The value of the environment variable *name*.
+
+# EXAMPLES
+
+Fetch everything the server offers, with explicit credentials:
+
+```
+cert-proxy-client -connect https://cert-proxy.example.com \
+    -servername cert-proxy.example.com \
+    -sslfile client-ssl.pem \
+    -verbose
+```
+
+Fetch two named domains only, and run a hook for each:
+
+```
+cert-proxy-client -auto=false \
+    -connect https://cert-proxy.example.com \
+    -hook /etc/cert-proxy/hook \
+    www.example.com mail.example.com
+```
+
+The command line used by the supplied systemd unit is:
+
+```
+cert-proxy-client -verbose \
+    -sslfile /etc/cert-proxy/client-ssl.pem \
+    -certbase /var/lib/cert-proxy/certs $OPTS
+```
+
+# SEE ALSO
+
+**cert-proxy**(7), **cert-proxy-clients**(5), **cert-proxy-server**(8),
+**systemd.timer**(5)
+
+# AUTHORS
+
+Heiko Schlittermann <hs@schlittermann.de>

@@ -1,0 +1,5 @@
+# Stop the active timer while its unit file is still present. Keep enablement
+# state across an ordinary remove/reinstall; after-remove deletes it on purge.
+if command -v systemctl >/dev/null 2>&1; then
+    systemctl --system stop cert-proxy-client.timer >/dev/null 2>&1 || true
+fi

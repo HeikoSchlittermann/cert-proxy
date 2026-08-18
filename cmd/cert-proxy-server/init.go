@@ -11,6 +11,7 @@ import (
 
 	"go.schlittermann.de/heiko/cert-proxy/internal/program"
 	"go.schlittermann.de/heiko/cert-proxy/internal/shared"
+	"go.schlittermann.de/heiko/cert-proxy/man"
 )
 
 func init() {
@@ -42,6 +43,16 @@ func parseFlags() {
 
 	if *version {
 		fmt.Println(versionLine())
+		os.Exit(0)
+	}
+
+	// "man" immediately after the program name is the manual subcommand. After
+	// -help and -version, so those keep working with an argument following.
+	if args := flag.Args(); man.IsCommand(os.Args) {
+		if err := man.Run(man.ServerRegistry(), args[1:]); err != nil {
+			log.Fatal(err)
+		}
+
 		os.Exit(0)
 	}
 

@@ -17,7 +17,25 @@ import (
 	"go.schlittermann.de/heiko/cert-proxy/internal/list"
 	"go.schlittermann.de/heiko/cert-proxy/internal/program"
 	"go.schlittermann.de/heiko/cert-proxy/internal/shared"
+	"go.schlittermann.de/heiko/cert-proxy/man"
 )
+
+// withScheme prefixes a scheme when the address does not carry one, so that
+// -connect shorthands parse as an address rather than as something
+// else. Without it url.Parse reads "host:4433" as scheme "host" with opaque
+// "4433", and the client then requests "host:4433/v1/...".
+func withScheme(addr string) string {
+	switch {
+	case strings.Contains(addr, "://"):
+		return addr
+	case strings.HasPrefix(addr, "//"):
+		return "https:" + addr
+	case addr == "":
+		return addr
+	default:
+		return "https://" + addr
+	}
+}
 
 func init() {
 	// Running as a systemd unit?
@@ -27,6 +45,7 @@ func init() {
 
 	flag.Usage = func() {
 		_, _ = fmt.Fprintf(flag.CommandLine.Output(), "Usage: %s [options] [<CN>]...\n", os.Args[0])
+		_, _ = fmt.Fprintf(flag.CommandLine.Output(), "       %s man [<section>] [<page>]\n", os.Args[0])
 
 		flag.PrintDefaults()
 
@@ -90,7 +109,7 @@ Example:
 	flag.StringVar(&opt.Passout, "passout", "", "`password` to protect the PKCS12³")
 	flag.StringVar(&opt.Pkcs12Compat, "pkcs12-compat", cert.PKCS12Compat, "PKCS12 compatibility `level` (legacy|modern)")
 	flag.StringVar(&opt.SharedHook, "shared-hook", "", "shared hook script `file`²")
-	flag.StringVar(&opt.ServerCN, "servername", "", "name (`CN`) of the cert proxy server (if empty: use the FQDN of the host we connect to)")
+	flag.StringVar(&opt.ServerCN, "servername", "", "host `name` or IP address required in the cert proxy server certificate SAN (if empty: use the host we connect to)")
 	flag.StringVar(&opt.SSLFile, "sslfile", "client-ssl.pem", "SSL auth `file` (crt+key+ca) PEM")
 	flag.Var(&opt.Format, "format", "`format` of the requested certificate(s) (PEM|PKCS12)")
 }
@@ -114,6 +133,18 @@ func parseFlags() {
 
 	if *version {
 		fmt.Println(versionLine())
+		os.Exit(0)
+	}
+
+	// "man" immediately after the program name is the manual subcommand, not
+	// a CN. After -help and -version, so those keep working with an argument
+	// following them, and before the CN validation below. "-- man" remains a
+	// literal domain.
+	if args := flag.Args(); man.IsCommand(os.Args) {
+		if err := man.Run(man.ClientRegistry(), args[1:]); err != nil {
+			log.Fatal(err)
+		}
+
 		os.Exit(0)
 	}
 
@@ -148,15 +179,74 @@ func parseFlags() {
 	}
 
 	// Sanitize the Connect option
-	url, err := url.Parse(opt.Connect)
+	connectURL, err := url.Parse(withScheme(opt.Connect))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if url.Scheme == "" {
-		url.Scheme = "https"
+	if err := checkConnectURL(connectURL); err != nil {
+		log.Fatal(err)
 	}
 
-	url.Path = strings.TrimRight(url.Path, "/")
-	opt.Connect = url.String()
+	connectURL.Path = strings.TrimRight(connectURL.Path, "/")
+	opt.Connect = connectURL.String()
+
+	if err := checkCertbase(opt.Certbase); err != nil {
+		log.Fatal(err)
+	}
+}
+
+// checkConnectURL verifies -connect is a base HTTP URL. Queries and fragments
+// cannot be preserved by the client's endpoint construction: appending
+// /v1/... to their string form would put that endpoint inside the query or
+// fragment instead of in the request path.
+func checkConnectURL(u *url.URL) error {
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return fmt.Errorf("-connect scheme must be http or https, got %q", u.Scheme)
+	}
+
+	if u.Host == "" {
+		return fmt.Errorf("-connect must name a server")
+	}
+
+	if u.User != nil {
+		return fmt.Errorf("-connect must not contain user information")
+	}
+
+	if u.RawQuery != "" || u.ForceQuery {
+		return fmt.Errorf("-connect must not contain a query")
+	}
+
+	if u.Fragment != "" {
+		return fmt.Errorf("-connect must not contain a fragment")
+	}
+
+	return nil
+}
+
+// checkCertbase verifies the certificate store is there before any work
+// starts. Creating it is not this program's job -- only the per-domain
+// directories below it are -- so its absence is reported here instead of
+// surfacing as a mkdir failure in the middle of a download.
+func checkCertbase(dir string) error {
+	fi, err := os.Stat(dir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			// Stat follows symlinks, so a dangling one lands here too; say
+			// which of the two it is instead of claiming nothing is there.
+			if _, lerr := os.Lstat(dir); lerr == nil {
+				return fmt.Errorf("-certbase %q is a symlink pointing nowhere", dir)
+			}
+
+			return fmt.Errorf("-certbase %q does not exist; the certificate store is created by the package or by the administrator, not by %s", dir, program.Name)
+		}
+
+		return fmt.Errorf("-certbase %q: %w", dir, err)
+	}
+
+	if !fi.IsDir() {
+		return fmt.Errorf("-certbase %q is not a directory", dir)
+	}
+
+	return nil
 }

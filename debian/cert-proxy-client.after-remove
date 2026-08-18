@@ -1,0 +1,12 @@
+# A preset creates this symlink outside the package payload. Remove it on
+# purge, while preserving an administrator's enable/disable choice across an
+# ordinary remove followed by reinstall. systemctl may no longer know the unit
+# because postrm runs after its file has gone, so remove the known WantedBy
+# link explicitly as the reliable fallback.
+if [ "$1" = purge ]; then
+    if command -v systemctl >/dev/null 2>&1; then
+        systemctl --system disable --now cert-proxy-client.timer >/dev/null 2>&1 || true
+    fi
+
+    rm -f /etc/systemd/system/timers.target.wants/cert-proxy-client.timer
+fi

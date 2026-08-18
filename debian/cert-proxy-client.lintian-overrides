@@ -1,4 +1,2 @@
 cert-proxy-client: copyright-file-contains-full-apache-2-license
 cert-proxy-client: statically-linked-binary
-# Shipped as a template; the admin edits it and makes it executable.
-cert-proxy-client: script-not-executable [etc/cert-proxy/hook]
