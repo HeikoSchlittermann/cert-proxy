@@ -15,10 +15,11 @@ on:
   schedule:
     - cron: '15 4 * * *'
 
-permissions:
-  contents: write       # git push of nagonag/update-<branch>
-  pull-requests: write  # fj pr create
-  issues: write         # fj issue create / comment
+# No `permissions:` block: Forgejo ignores it and warns on every run. The
+# default ${{ github.token }} must allow:
+#   contents: write       # git push of nagonag/update-<branch>
+#   pull-requests: write  # fj pr create
+#   issues: write         # fj issue create / comment
 
 jobs:
   nagonag:
