@@ -1,0 +1,6 @@
+# (co)authored by ai:claude-opus-5-5
+# Supplementary group of the cert-proxy-server service user under the
+# opt-in dynamic-user drop-in. Grant it read access to server-ssl.pem,
+# clients/ and the ACME certbase.
+# Shared with cert-proxy-client, which ships the same entry.
+g ssl-cert -

@@ -95,13 +95,27 @@ dependency bot.
       `[Unit] After=network-online.target Wants=network-online.target`.
       Document how the service user gets read access to the ACME cert store
       (group or ACL).
-- [ ] `systemd/cert-proxy-client.service` — same hardening set; the client
+      *Partly, decided otherwise:* sandboxing done, but the unit stays
+      root (upgrade safety: `server-ssl.pem` and dehydrated's store are
+      root-only and renewals re-create them so) with
+      `CapabilityBoundingSet=CAP_NET_BIND_SERVICE CAP_DAC_READ_SEARCH`.
+      `DynamicUser=yes` + `SupplementaryGroups=ssl-cert` is an opt-in
+      drop-in (`systemd/cert-proxy-server.dynamic-user.conf`). Default
+      flip is a candidate for the next major release.
+- [x] `systemd/cert-proxy-client.service` — same hardening set; the client
       needs write to `-certbase` and exec of the hook, so `ProtectSystem=full`
       + `ReadWritePaths=/var/lib/cert-proxy`.
 - [ ] `systemd/cert-proxy-server.service` `-certbase /var/lib/dehydrated/certs`
       — dehydrated-specific. Move into `/etc/default/cert-proxy-server` as a
       documented example alongside certbot (`/etc/letsencrypt/live`) and
       acme.sh layouts.
+      *Decided otherwise:* stays in `ExecStart` before `$OPTS` (last
+      flag wins) so a locally modified conffile cannot lose it on
+      upgrade; dehydrated and certbot examples are in the `.default`
+      file. No acme.sh example yet.
+- [ ] Follow-up: `test/packaging` does not assert that
+      `usr/share/doc/cert-proxy-server/examples/dynamic-user.conf` and
+      the server's sysusers snippet land in the server package.
 - [ ] Update `man/cert-proxy-server.8.md`, `man/cert-proxy-client.8.md`,
       `.gogogo.conf` (sysusers) and regenerate man pages.
 
