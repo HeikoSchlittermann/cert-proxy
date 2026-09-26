@@ -18,6 +18,7 @@ var (
 		if !ok {
 			panic("can't read built-in build info")
 		}
+
 		return bi.Main.Version
 	}()
 

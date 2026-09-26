@@ -31,7 +31,7 @@ dependency bot.
       `go generate ./... && git diff --exit-code man/`, `gzip -t man/*.gz`.
 - [ ] Scheduled job (weekly) running `make test-packaging`
       (needs podman on the runner — verify availability first).
-- [ ] Fix current lint debt: `internal/program/program.go:21` (wsl_v5 ×2).
+- [x] Fix current lint debt: `internal/program/program.go:21` (wsl_v5 ×2).
 
 ### 1.2 Server hardening
 
