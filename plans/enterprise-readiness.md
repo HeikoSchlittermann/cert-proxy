@@ -70,17 +70,18 @@ dependency bot.
 
 - [ ] `cmd/cert-proxy-client/cert/const_windows.go` — `PKCS12Compat = "legacy"`
       → `"modern"`. Document the Windows import caveat instead.
-- [ ] `cmd/cert-proxy-client/init.go` `checkConnectURL` — reject `http://`
+- [x] `cmd/cert-proxy-client/init.go` `checkConnectURL` — reject `http://`
       (private keys over plaintext); keep `https` only, or add
       `-insecure-http` with a loud warning.
-- [ ] `cmd/cert-proxy-client/cert/cert.go` `Execute` and
+      *Done:* https only, no `-insecure-http`.
+- [x] `cmd/cert-proxy-client/cert/cert.go` `Execute` and
       `cmd/cert-proxy-client/main.go` `fetchCNs` — no timeouts anywhere
       (`grep Timeout` → 0 hits). Add `-timeout` (default e.g. 60s) applied
       via `http.Client{Timeout}` or per-request `context.WithTimeout`.
-- [ ] `cmd/cert-proxy-client/secret/secret.go:17,36` — index panic on
+- [x] `cmd/cert-proxy-client/secret/secret.go:17,36` — index panic on
       `-passout foo` (no colon) and explicit `panic` on unknown scheme.
       Return errors.
-- [ ] `cmd/cert-proxy-client/init.go:89` — help text typo `-servernae`.
+- [x] `cmd/cert-proxy-client/init.go:89` — help text typo `-servernae`.
 
 ### 1.4 systemd units
 

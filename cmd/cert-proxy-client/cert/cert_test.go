@@ -150,8 +150,11 @@ func TestNewReq_PKCS12_NoPass(t *testing.T) {
 	req, err := NewReq("example.com", "https://proxy:4433", "/certs", "", FormatPKCS12, "", "")
 	require.NoError(t, err)
 
+	// An empty password is still sent as "pass=": the server treats an
+	// absent pass parameter as deprecated and logs a warning.
 	item := req.items[0]
-	assert.NotContains(t, item.remote.URL.String(), "&pass=")
+	assert.True(t, item.remote.URL.Query().Has("pass"))
+	assert.Empty(t, item.remote.URL.Query().Get("pass"))
 	assert.NotContains(t, item.remote.URL.String(), "pkcs12-compat=")
 }
 

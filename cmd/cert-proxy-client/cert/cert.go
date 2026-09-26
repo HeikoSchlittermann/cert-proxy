@@ -160,9 +160,9 @@ func NewReq(domain, remote, basedir, hook string, format Format, pass, compat st
 			q := r.URL.Query()
 			q.Set("format", "PKCS12")
 
-			if pass != "" {
-				q.Set("pass", pass)
-			}
+			// Always sent, even empty: the server accepts an absent pass
+			// parameter only as a deprecated legacy form and logs a warning.
+			q.Set("pass", pass)
 
 			if compat != "" {
 				q.Set("pkcs12-compat", compat)
