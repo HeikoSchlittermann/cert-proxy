@@ -41,8 +41,9 @@ access which private key.
 
 Requires Go 1.26+.
 
+Get the source (see "Source & support" at the end), then:
+
 ```shell
-git clone https://git.schlittermann.de/heiko/cert-proxy
 cd cert-proxy
 make install            # installs both binaries to /usr/local/bin/
 ```
@@ -119,10 +120,18 @@ The default systemd unit runs:
 cert-proxy-server -verbose \
     -sslfile /etc/cert-proxy/server-ssl.pem \
     -certbase /var/lib/dehydrated/certs \
-    -ccd /etc/cert-proxy/clients
+    -ccd /etc/cert-proxy/clients $OPTS
 ```
 
-Additional flags can be set in `/etc/default/cert-proxy-server` (variable `OPTS`).
+`OPTS` comes from `/etc/default/cert-proxy-server` (unset as shipped); being
+last, it overrides the unit's options, e.g.
+`OPTS="-certbase /etc/letsencrypt/live"` for certbot.
+
+The unit runs as root with the capabilities reduced to `CAP_NET_BIND_SERVICE`
+and `CAP_DAC_READ_SEARCH`. An opt-in drop-in running it as an unprivileged
+dynamic user is shipped as
+`/usr/share/doc/cert-proxy-server/examples/dynamic-user.conf`; see
+cert-proxy-server(8), FILES, for its preconditions.
 
 ### Server flags
 
@@ -133,6 +142,13 @@ Additional flags can be set in `/etc/default/cert-proxy-server` (variable `OPTS`
 | `-certbase` | `certs` | Base directory for certificates |
 | `-ccd` | `clients` | Client configuration directory |
 | `-verbose` | `false` | Verbose logging |
+| `-tls-min` | `1.2` | Minimum TLS version (`1.2`\|`1.3`) |
+| `-read-header-timeout` | `10s` | Time limit for reading request headers (incl. TLS handshake) |
+| `-read-timeout` | `30s` | Time limit for reading the whole request |
+| `-write-timeout` | `60s` | Time limit for writing the response |
+| `-idle-timeout` | `120s` | Keep-alive idle limit |
+
+The server shuts down gracefully (up to 10s) on SIGTERM/SIGINT.
 
 
 ## Client Setup
@@ -187,7 +203,7 @@ Additional flags can be set in `/etc/default/cert-proxy-client` (variable `OPTS`
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `-connect` | `https://localhost:4433` | Server address |
+| `-connect` | `https://localhost:4433` | Server address (`https` only; `http://` is refused) |
 | `-sslfile` | `client-ssl.pem` | SSL auth file (crt+key+ca) PEM |
 | `-certbase` | `certs` | Base directory for downloaded certificates |
 | `-format` | `PEM` (Linux), `PKCS12` (Windows) | Output format |
@@ -196,7 +212,8 @@ Additional flags can be set in `/etc/default/cert-proxy-client` (variable `OPTS`
 | `-hook` | | Per-certificate hook script |
 | `-shared-hook` | | Hook script called once after all certs are processed |
 | `-passout` | | Password for PKCS12 bundles (see notation below) |
-| `-pkcs12-compat` | `modern` (Linux), `legacy` (Windows) | PKCS12 compatibility level (`legacy`\|`modern`) |
+| `-pkcs12-compat` | `modern` | PKCS12 compatibility level (`legacy`\|`modern`); Windows before Server 2019 needs `legacy` |
+| `-timeout` | `60s` | Time limit per HTTP request (`0`: none) |
 | `-servername` | | Expected host/IP SAN in the server certificate (default: host from `-connect`) |
 | `-symlink` | `true` (Linux), `false` (Windows) | Use symlinks for atomic file updates |
 | `-force` | `false` | Download even if server reports not-modified |
@@ -227,8 +244,12 @@ Optional query parameters for `/v1/bundle/`:
 | Parameter | Values | Default | Description |
 |-----------|--------|---------|-------------|
 | `format` | `PKCS12`, `PFX`, `P12` | | Output format |
-| `pass` | string | | Password protecting the bundle |
-| `pkcs12-compat` | `legacy`, `modern` | `legacy` | Encryption algorithm (`legacy` = 3DES for Java compatibility, `modern` = AES-256) |
+| `pass` | string | | Password protecting a generated bundle; empty `pass=` → no password; absent → deprecated, treated as empty (logged) |
+| `pkcs12-compat` | `legacy`, `modern` | `modern` | Encryption algorithm (`modern` = AES-256, `legacy` = 3DES for old Windows/Java; only on explicit request) |
+
+A domain or file the server does not hold yields `404` with body `not found`;
+other read failures yield `500` with body `internal error`. The `X-Version`
+header is sent only to clients presenting a valid client certificate.
 
 - **authn** — valid client certificate required
 - **authz** — client must be authorized for the requested domain
@@ -247,7 +268,7 @@ Called for each domain after its certificate files are written:
 <script> deploy_cert <DOMAIN> <KEYFILE> <CERTFILE> <FULLCHAIN> <CHAINFILE> <TIMESTAMP>
 ```
 
-For PKCS12 format (see [#14](https://forgejo.schlittermann.de/heiko/cert-proxy/issues/14)):
+For PKCS12 format (see #14):
 
 ```
 <script> deploy_cert <DOMAIN> <BUNDLEFILE> <TIMESTAMP>
@@ -335,8 +356,14 @@ On Windows, symlink mode is disabled (`-symlink false`). Bundle files (`.pfx`) f
 
 ## Known Issues
 
-- [#20](https://forgejo.schlittermann.de/heiko/cert-proxy/issues/20) — PKCS12 password exposed in verbose logs via URL query parameter
-- [#23](https://forgejo.schlittermann.de/heiko/cert-proxy/issues/23) — Symlink replacement is non-atomic (TOCTOU race window)
-- [#18](https://forgejo.schlittermann.de/heiko/cert-proxy/issues/18) — Replace openssl dependency in CA scripts with native Go implementation
-- [#10](https://forgejo.schlittermann.de/heiko/cert-proxy/issues/10) — Shared hook should run only if certs are modified
-- [#5](https://forgejo.schlittermann.de/heiko/cert-proxy/issues/5) — Remove certs no longer available on the server
+- #20 — PKCS12 password exposed in verbose logs via URL query parameter
+- #23 — Symlink replacement is non-atomic (TOCTOU race window)
+- #18 — Replace openssl dependency in CA scripts with native Go implementation
+- #10 — Shared hook should run only if certs are modified
+- #5 — Remove certs no longer available on the server
+
+
+## Source & support
+
+- Source: `git clone https://git.schlittermann.de/heiko/cert-proxy`
+- Issue tracker (the `#N` references above): <https://forgejo.schlittermann.de/heiko/cert-proxy/issues>

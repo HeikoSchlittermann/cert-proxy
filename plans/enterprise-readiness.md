@@ -68,7 +68,7 @@ dependency bot.
 
 ### 1.3 Client hardening
 
-- [ ] `cmd/cert-proxy-client/cert/const_windows.go` — `PKCS12Compat = "legacy"`
+- [x] `cmd/cert-proxy-client/cert/const_windows.go` — `PKCS12Compat = "legacy"`
       → `"modern"`. Document the Windows import caveat instead.
 - [x] `cmd/cert-proxy-client/init.go` `checkConnectURL` — reject `http://`
       (private keys over plaintext); keep `https` only, or add
@@ -116,7 +116,7 @@ dependency bot.
 - [ ] Follow-up: `test/packaging` does not assert that
       `usr/share/doc/cert-proxy-server/examples/dynamic-user.conf` and
       the server's sysusers snippet land in the server package.
-- [ ] Update `man/cert-proxy-server.8.md`, `man/cert-proxy-client.8.md`,
+- [x] Update `man/cert-proxy-server.8.md`, `man/cert-proxy-client.8.md`,
       `.gogogo.conf` (sysusers) and regenerate man pages.
 
 ### 1.5 Scrub author-specific infrastructure from shipped files
@@ -125,7 +125,7 @@ dependency bot.
       → `cert-proxy.example.com`.
 - [x] `CA/lib/vars.sh.example` — `DE/Sachsen/Dresden/IUS` → neutral
       placeholders with a comment.
-- [ ] `README.md:45` clone URL; `README.md:250,338-342` issue links → plain
+- [x] `README.md:45` clone URL; `README.md:250,338-342` issue links → plain
       `#N` references plus one "issue tracker" link in a Support section.
 - [x] `.gogogo.conf:268` `publish.deb: dupload` — private repo. Either move
       to a non-tracked override or document that operators must set their
