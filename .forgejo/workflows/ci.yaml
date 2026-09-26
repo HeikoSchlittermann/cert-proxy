@@ -31,8 +31,18 @@ jobs:
       - name: vet
         run: go vet ./...
 
-      - name: test
-        run: go test -count=1 ./...
+      # Not as root: the job container runs as root, and root bypasses file
+      # permission bits, which some tests rely on (e.g. a read-only directory
+      # forcing a write error). Run on a copy owned by an unprivileged user,
+      # so the checkout stays root-owned for the later git-based steps.
+      - name: test (unprivileged)
+        run: |
+          useradd --create-home --shell /bin/sh builder
+          src=$(mktemp -d)
+          cp -a . "$src"
+          chown -R builder: "$src"
+          runuser -u builder -- env HOME=/home/builder PATH="$PATH" \
+            sh -ec 'cd "$1"; test "$(id -u)" != 0; go test -count=1 ./...' sh "$src"
 
       - name: lint
         run: golangci-lint run ./...
