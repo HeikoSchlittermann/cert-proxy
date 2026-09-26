@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -16,6 +18,19 @@ import (
 	"go.schlittermann.de/heiko/cert-proxy/internal/list"
 	"go.schlittermann.de/heiko/cert-proxy/internal/shared"
 )
+
+// fileError reports a failure to read certificate material to the client
+// without revealing paths or other details: a missing file is 404, anything
+// else 500. The full error is returned, so use() logs it.
+func fileError(w http.ResponseWriter, err error) error {
+	if errors.Is(err, fs.ErrNotExist) {
+		http.Error(w, "not found", http.StatusNotFound)
+	} else {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+	}
+
+	return err
+}
 
 func serve(ctx context, w http.ResponseWriter, req *http.Request) error {
 	shared.Verbose("Serving url=%v%s%s\n",
@@ -34,7 +49,7 @@ func serve(ctx context, w http.ResponseWriter, req *http.Request) error {
 
 			return ""
 		}())
-	versionCheck(w, req)
+	versionCheck(ctx, w, req)
 
 	var ext string
 
@@ -99,28 +114,36 @@ func serve(ctx context, w http.ResponseWriter, req *http.Request) error {
 
 			fi, err := file.Stat()
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return err
+				return fileError(w, err)
 			}
 
 			mtime = fi.ModTime()
 		} else if os.IsNotExist(err) {
+			// Clients up to v1.21.0 omit pass= when fetching without
+			// -passout; accept that as the empty password, but say so.
+			// Never log the password itself.
+			if !req.URL.Query().Has("pass") {
+				log.Printf("Remote %v cn=%s: bundle request without pass=; treating as empty password (deprecated, will be rejected in a future major release)", req.RemoteAddr, ctx[REMOTE])
+			}
+
 			content, mtime, err = createPKCS12(opt.Certbase, domain, req.URL.Query().Get("pass"), req.URL.Query().Get("pkcs12-compat"))
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+			if errors.Is(err, errInvalidCompat) {
+				http.Error(w, errInvalidCompat.Error(), http.StatusBadRequest)
 				return err
 			}
+
+			if err != nil {
+				return fileError(w, err)
+			}
 		} else {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return err
+			return fileError(w, err)
 		}
 	case `cert`, `chain`, `fullchain`, `privkey`:
 		fn := filepath.Join(domain, role+ext)
 
 		file, err := http.Dir(opt.Certbase).Open(fn)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return err
+			return fileError(w, err)
 		}
 		defer file.Close() //nolint:errcheck // fh is passed to content
 
@@ -128,8 +151,7 @@ func serve(ctx context, w http.ResponseWriter, req *http.Request) error {
 
 		fi, err := file.Stat()
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return err
+			return fileError(w, err)
 		}
 
 		mtime = fi.ModTime()

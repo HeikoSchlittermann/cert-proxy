@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -15,6 +17,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"software.sslmate.com/src/go-pkcs12"
 )
 
 func mockTLSRequest(method, path, cn string) *http.Request {
@@ -301,14 +304,120 @@ func TestServe_InvalidRole(t *testing.T) {
 }
 
 func TestServe_MissingDomain(t *testing.T) {
-	setupTestEnv(t)
+	certbase, _ := setupTestEnv(t)
 
-	req := mockTLSRequest("GET", "/v1/cert/nonexistent.com", "")
+	for _, role := range []string{"cert", "chain", "fullchain", "privkey"} {
+		t.Run(role, func(t *testing.T) {
+			req := mockTLSRequest("GET", "/v1/"+role+"/nonexistent.com", "")
+			w := httptest.NewRecorder()
+
+			err := serve(make(context), w, req)
+			require.Error(t, err)
+			assert.Equal(t, http.StatusNotFound, w.Code)
+			assert.Equal(t, "not found\n", w.Body.String(),
+				"HTTP body must be opaque")
+			assert.NotContains(t, w.Body.String(), certbase)
+		})
+	}
+}
+
+func TestServe_BundleMissingDomain(t *testing.T) {
+	certbase, _ := setupTestEnv(t)
+
+	req := mockTLSRequest("GET", "/v1/bundle/nonexistent.com?format=PKCS12&pass=x", "")
+	w := httptest.NewRecorder()
+
+	err := serve(make(context), w, req)
+	require.Error(t, err)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+	assert.Equal(t, "not found\n", w.Body.String())
+	assert.NotContains(t, w.Body.String(), certbase)
+}
+
+func TestServe_UnreadableIsOpaque500(t *testing.T) {
+	certbase, _ := setupTestEnv(t)
+
+	// A self-referencing symlink fails with ELOOP, which is not
+	// fs.ErrNotExist: it must be a 500 with an opaque body.
+	if runtime.GOOS == "windows" {
+		t.Skip("symlink loop not portable")
+	}
+
+	dir := filepath.Join(certbase, "loop.example.com")
+	require.NoError(t, os.MkdirAll(dir, 0755))
+	require.NoError(t, os.Symlink("cert.pem", filepath.Join(dir, "cert.pem")))
+
+	req := mockTLSRequest("GET", "/v1/cert/loop.example.com", "")
 	w := httptest.NewRecorder()
 
 	err := serve(make(context), w, req)
 	require.Error(t, err)
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Equal(t, "internal error\n", w.Body.String())
+	assert.NotContains(t, w.Body.String(), certbase)
+}
+
+func TestServe_BundlePass(t *testing.T) {
+	certbase, _ := setupTestEnv(t)
+	domain := "example.com"
+	dir := filepath.Join(certbase, domain)
+	require.NoError(t, os.MkdirAll(dir, 0755))
+	createTestCertAndKey(t, dir)
+
+	tests := []struct {
+		name  string
+		query string
+		code  int
+	}{
+		{"empty", "format=PKCS12&pass=", http.StatusOK},
+		{"set", "format=PKCS12&pass=secret", http.StatusOK},
+		{"legacy", "format=PKCS12&pass=secret&pkcs12-compat=legacy", http.StatusOK},
+		{"invalid compat", "format=PKCS12&pass=secret&pkcs12-compat=bogus", http.StatusBadRequest},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			req := mockTLSRequest("GET", "/v1/bundle/"+domain+"?"+tc.query, "")
+			w := httptest.NewRecorder()
+
+			_ = serve(make(context), w, req)
+			assert.Equal(t, tc.code, w.Code, w.Body.String())
+		})
+	}
+}
+
+// TestServe_BundleWithoutPass pins the upgrade path: clients up to v1.21.0
+// omit pass= without -passout. That is served with the empty password and
+// logged as deprecated, without echoing any password.
+func TestServe_BundleWithoutPass(t *testing.T) {
+	certbase, _ := setupTestEnv(t)
+	domain := "example.com"
+	dir := filepath.Join(certbase, domain)
+	require.NoError(t, os.MkdirAll(dir, 0755))
+	createTestCertAndKey(t, dir)
+
+	var logs bytes.Buffer
+
+	orig := log.Writer()
+
+	log.SetOutput(&logs)
+	t.Cleanup(func() { log.SetOutput(orig) })
+
+	req := mockTLSRequest("GET", "/v1/bundle/"+domain+"?format=PKCS12", "myhost")
+	w := httptest.NewRecorder()
+	ctx := context{REMOTE: "myhost"}
+
+	require.NoError(t, serve(ctx, w, req))
+	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
+
+	key, cert, _, err := pkcs12.DecodeChain(w.Body.Bytes(), "")
+	require.NoError(t, err, "must decode with the empty password")
+	assert.NotNil(t, key)
+	assert.Equal(t, "test.example.com", cert.Subject.CommonName)
+
+	assert.Contains(t, logs.String(), "bundle request without pass=")
+	assert.Contains(t, logs.String(), "cn=myhost")
+	assert.Equal(t, 1, strings.Count(logs.String(), "bundle request without pass="), "warn once per request")
 }
 
 func TestServe_FormatPKCS12_Alias(t *testing.T) {
@@ -452,9 +561,145 @@ func TestUse_ChainCompletesOnSuccess(t *testing.T) {
 }
 
 func TestVersionCheck_SetsHeader(t *testing.T) {
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/", nil)
+	t.Run("authn", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req := mockTLSRequest("GET", "/", "test-client")
 
-	versionCheck(w, req)
-	assert.NotEmpty(t, w.Header().Get("x-version"))
+		versionCheck(context{REMOTE: "test-client"}, w, req)
+		assert.NotEmpty(t, w.Header().Get("x-version"))
+	})
+
+	t.Run("client cert", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req := mockTLSRequest("GET", "/", "test-client")
+
+		versionCheck(make(context), w, req)
+		assert.NotEmpty(t, w.Header().Get("x-version"))
+	})
+}
+
+func TestVersionCheck_AnonymousNoHeader(t *testing.T) {
+	for _, req := range []*http.Request{
+		httptest.NewRequest("GET", "/", nil),
+		mockTLSRequest("GET", "/", ""),
+	} {
+		w := httptest.NewRecorder()
+
+		versionCheck(make(context), w, req)
+		assert.Empty(t, w.Header().Values("x-version"))
+	}
+}
+
+func TestParseTLSVersion(t *testing.T) {
+	v, err := parseTLSVersion("1.2")
+	require.NoError(t, err)
+	assert.Equal(t, uint16(tls.VersionTLS12), v)
+
+	v, err = parseTLSVersion("1.3")
+	require.NoError(t, err)
+	assert.Equal(t, uint16(tls.VersionTLS13), v)
+
+	for _, bad := range []string{"", "1.1", "1.0", "TLS1.2", "1.4"} {
+		_, err := parseTLSVersion(bad)
+		assert.Error(t, err, bad)
+	}
+}
+
+func TestCheckDir(t *testing.T) {
+	base := t.TempDir()
+
+	file := filepath.Join(base, "afile")
+	require.NoError(t, os.WriteFile(file, []byte("x"), 0644))
+
+	tests := []struct {
+		name string
+		dir  string
+		must string
+	}{
+		{"existing directory", base, ""},
+		{"missing", filepath.Join(base, "absent"), "does not exist"},
+		{"a file", file, "not a directory"},
+	}
+
+	if runtime.GOOS != "windows" {
+		link := filepath.Join(base, "link")
+		require.NoError(t, os.Symlink(base, link))
+
+		dangling := filepath.Join(base, "dangling")
+		require.NoError(t, os.Symlink(filepath.Join(base, "absent"), dangling))
+
+		tests = append(tests,
+			struct {
+				name string
+				dir  string
+				must string
+			}{"symlink to a directory", link, ""},
+			struct {
+				name string
+				dir  string
+				must string
+			}{"dangling symlink", dangling, "symlink pointing nowhere"},
+		)
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := checkDir(tc.dir)
+			if tc.must == "" {
+				assert.NoError(t, err)
+
+				return
+			}
+
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tc.must)
+			assert.Contains(t, err.Error(), tc.dir, "the message must name the path")
+		})
+	}
+}
+
+// The server only reads: an empty or read-only directory passes, an
+// unreadable one does not.
+func TestCheckDirPermissions(t *testing.T) {
+	t.Run("empty directory", func(t *testing.T) {
+		assert.NoError(t, checkDir(t.TempDir()))
+	})
+
+	if runtime.GOOS == "windows" {
+		t.Skip("POSIX permission bits")
+	}
+
+	if os.Geteuid() == 0 {
+		t.Skip("root bypasses permission bits")
+	}
+
+	t.Run("read-only directory", func(t *testing.T) {
+		dir := t.TempDir()
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "example.com"), []byte("x"), 0644))
+		require.NoError(t, os.Chmod(dir, 0500))
+		t.Cleanup(func() { _ = os.Chmod(dir, 0700) })
+
+		assert.NoError(t, checkDir(dir), "write access must not be required")
+	})
+
+	t.Run("unreadable directory", func(t *testing.T) {
+		dir := t.TempDir()
+		require.NoError(t, os.Chmod(dir, 0))
+		t.Cleanup(func() { _ = os.Chmod(dir, 0700) })
+
+		err := checkDir(dir)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), dir, "the message must name the path")
+		assert.Contains(t, err.Error(), "is not readable")
+	})
+
+	t.Run("search but no read permission", func(t *testing.T) {
+		dir := t.TempDir()
+		require.NoError(t, os.Chmod(dir, 0100))
+		t.Cleanup(func() { _ = os.Chmod(dir, 0700) })
+
+		err := checkDir(dir)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "is not readable")
+	})
 }

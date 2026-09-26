@@ -4,9 +4,15 @@
 package main
 
 import (
+	gocontext "context"
 	"crypto/tls"
+	"errors"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"go.schlittermann.de/heiko/cert-proxy/internal/program"
 	"go.schlittermann.de/heiko/cert-proxy/internal/shared"
@@ -19,8 +25,17 @@ var (
 		Serve           string
 		ClientConfigDir string
 		Verbose         bool
+		TLSMin          uint16
+		// HTTP server timeouts, see net/http.Server
+		ReadHeaderTimeout time.Duration
+		ReadTimeout       time.Duration
+		WriteTimeout      time.Duration
+		IdleTimeout       time.Duration
 	}
 )
+
+// shutdownTimeout bounds the graceful shutdown on SIGTERM/SIGINT.
+const shutdownTimeout = 10 * time.Second
 
 type contextKey int
 
@@ -45,18 +60,26 @@ func use(handlers ...handleFuncCTX) handleFunc {
 	}
 }
 
+// newMux returns the request router of the v1 API.
+func newMux() *http.ServeMux {
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/v1/list", use(authn, serve))
+	mux.HandleFunc("/v1/cert/", use(serve))
+	mux.HandleFunc("/v1/chain/", use(serve))
+	mux.HandleFunc("/v1/fullchain/", use(serve))
+	mux.HandleFunc("/v1/privkey/", use(authz, serve))
+	mux.HandleFunc("/v1/bundle/", use(authz, serve))
+
+	return mux
+}
+
 func main() {
 	parseFlags()
 
-	http.HandleFunc("/v1/list", use(authn, serve))
-	http.HandleFunc("/v1/cert/", use(serve))
-	http.HandleFunc("/v1/chain/", use(serve))
-	http.HandleFunc("/v1/fullchain/", use(serve))
-	http.HandleFunc("/v1/privkey/", use(authz, serve))
-	http.HandleFunc("/v1/bundle/", use(authz, serve))
-
 	tlsConfig, err := shared.TLSServerConfig(opt.SSLFile, &tls.Config{
 		ClientAuth: tls.VerifyClientCertIfGiven,
+		MinVersion: opt.TLSMin,
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -67,6 +90,40 @@ func main() {
 		log.Fatal(err)
 	}
 
+	srv := &http.Server{
+		Handler:           newMux(),
+		ReadHeaderTimeout: opt.ReadHeaderTimeout,
+		ReadTimeout:       opt.ReadTimeout,
+		WriteTimeout:      opt.WriteTimeout,
+		IdleTimeout:       opt.IdleTimeout,
+	}
+
+	ctx, stop := signal.NotifyContext(gocontext.Background(), syscall.SIGTERM, os.Interrupt)
+	defer stop()
+
+	served := make(chan error, 1)
+
 	log.Printf("Starting listener %v (%s: %s)\n", listener.Addr(), program.Path, program.Version)
-	_ = http.Serve(listener, nil)
+
+	go func() { served <- srv.Serve(listener) }()
+
+	select {
+	case err := <-served:
+		log.Fatal(err)
+	case <-ctx.Done():
+	}
+
+	stop()
+	log.Print("shutting down")
+
+	shutdownCtx, cancel := gocontext.WithTimeout(gocontext.Background(), shutdownTimeout)
+	defer cancel()
+
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		log.Printf("shutdown: %v", err)
+	}
+
+	if err := <-served; err != nil && !errors.Is(err, http.ErrServerClosed) {
+		log.Printf("serve: %v", err)
+	}
 }

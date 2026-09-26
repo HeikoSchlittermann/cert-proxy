@@ -35,27 +35,36 @@ dependency bot.
 
 ### 1.2 Server hardening
 
-- [ ] `cmd/cert-proxy-server/main.go:73` — replace `http.Serve(listener, nil)`
+- [x] `cmd/cert-proxy-server/main.go:73` — replace `http.Serve(listener, nil)`
       with explicit `http.ServeMux` + `http.Server{ReadHeaderTimeout,
       ReadTimeout, WriteTimeout, IdleTimeout}`; graceful shutdown on
       SIGTERM/SIGINT.
-- [ ] `cmd/cert-proxy-server/serve.go` (`cert|chain|fullchain|privkey` branch
+- [x] `cmd/cert-proxy-server/serve.go` (`cert|chain|fullchain|privkey` branch
       and `bundle` branch) — *verified*: unauthenticated `/v1/cert/<unknown>`
       returns 500 with `open certs/<x>/cert.pem: no such file or directory`
       (leaks `-certbase`). Map `fs.ErrNotExist` → 404 with opaque body; other
       errors → 500 with opaque body, details only in the log.
-- [ ] `cmd/cert-proxy-server/version.go:14` — *verified*: `X-Version` sent to
+- [x] `cmd/cert-proxy-server/version.go:14` — *verified*: `X-Version` sent to
       unauthenticated clients. Send only when `ctx[REMOTE] != ""`, or make it
       a flag.
-- [ ] `cmd/cert-proxy-server/main.go` TLS config — set
+- [x] `cmd/cert-proxy-server/main.go` TLS config — set
       `MinVersion: tls.VersionTLS12` explicitly (Go default today, *verified*
       1.0/1.1 rejected); add `-tls-min 1.2|1.3`.
-- [ ] `cmd/cert-proxy-server/pkcs12.go:70` — default encoder is
+- [x] `cmd/cert-proxy-server/pkcs12.go:70` — default encoder is
       `pkcs12.LegacyDES` when `pkcs12-compat` is absent. Make `modern` the
       default; `legacy` only on explicit request.
 - [ ] `serve.go` bundle path — refuse empty PKCS12 password unless the
       client sent `pass=` explicitly (define semantics: empty `pass=` allowed,
       absent not).
+      *Decided otherwise for now:* absent `pass` is served with an empty
+      password and a deprecation warning in the server log, so v1.21
+      clients keep working. Rejecting it is left for the next major
+      release.
+- [x] Follow-up: the startup check for `-certbase`/`-ccd` tests existence
+      and type only, not readability (`cmd/cert-proxy-server/init.go`
+      `checkDir`).
+      *Done:* read and search access checked (`Readdirnames(1)`); write
+      access deliberately not required, the server never writes.
 
 ### 1.3 Client hardening
 
