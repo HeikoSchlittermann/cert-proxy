@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -15,7 +16,29 @@ import (
 	"software.sslmate.com/src/go-pkcs12"
 )
 
+// errInvalidCompat is returned for a pkcs12-compat value other than
+// "modern", "legacy" or empty.
+var errInvalidCompat = errors.New("invalid pkcs12-compat")
+
+// pkcs12Encoder maps the pkcs12-compat request parameter to an encoder.
+// Modern is the default; the weak legacy encoding needs an explicit request.
+func pkcs12Encoder(compat string) (*pkcs12.Encoder, error) {
+	switch compat {
+	case "modern", "":
+		return pkcs12.Modern2023, nil
+	case "legacy":
+		return pkcs12.LegacyDES, nil
+	default:
+		return nil, fmt.Errorf("%w %q", errInvalidCompat, compat)
+	}
+}
+
 func createPKCS12(certbase, domain, pass, compat string) (*bytes.Reader, time.Time, error) {
+	encoder, err := pkcs12Encoder(compat)
+	if err != nil {
+		return nil, time.Time{}, err
+	}
+
 	var (
 		certPath  = filepath.Join(certbase, domain, "cert.pem")
 		keyPath   = filepath.Join(certbase, domain, "privkey.pem")
@@ -58,15 +81,6 @@ func createPKCS12(certbase, domain, pass, compat string) (*bytes.Reader, time.Ti
 	chainCerts, err := parseCertificates(chainPEM)
 	if err != nil {
 		return nil, mtime, fmt.Errorf("parsing chain: %w", err)
-	}
-
-	var encoder *pkcs12.Encoder
-
-	switch compat {
-	case "modern":
-		encoder = pkcs12.Modern2023
-	default:
-		encoder = pkcs12.LegacyDES
 	}
 
 	pfxData, err := encoder.Encode(privateKey, cert, chainCerts, pass)

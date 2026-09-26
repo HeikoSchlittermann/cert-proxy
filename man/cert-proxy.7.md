@@ -66,16 +66,18 @@ bundle that contains it are restricted.
 : Selects the *.pem* or *.p12* file extension within the domain directory. **PFX** and **P12** are accepted as synonyms of **PKCS12**. Case-insensitive, default **PEM**. Any other value gives **400 Bad Request**.
 
 **pkcs12-compat**=*legacy*|*modern*
-: Algorithm profile used when a bundle is generated on the fly. **legacy** is for consumers that cannot read modern PKCS12 encryption, such as older Windows and Java releases.
+: Algorithm profile used when a bundle is generated on the fly. Default **modern** (PBES2 with AES-256 and an HMAC-SHA-256 MAC). **legacy** (3DES, SHA-1 MAC) is for consumers that cannot read modern PKCS12 encryption, such as Windows before Server 2019 and older Java releases; it is used only when requested explicitly. Any other value gives **400 Bad Request**.
 
 **pass**=*password*
-: Password protecting a bundle that is generated on the fly.
+: Password protecting a bundle that is generated on the fly. An empty value, **pass=**, yields a bundle without password. Omitting the parameter is deprecated: it is accepted and treated as the empty password, but the server logs a warning, and a future major release will reject it. A stored *bundle.p12* is served regardless of this parameter. **cert-proxy-client**(8) always sends it, empty when no **-passout** is given.
 
 # RESPONSES
 
 Responses that reach the content handler carry an **x-version** header naming
-the server's version. Responses rejected earlier, by authentication or
-authorization, do not.
+the server's version, but only for authenticated clients, that is, clients
+that presented a valid client certificate. Anonymous requests to the public
+endpoints do not get it, nor do responses rejected earlier, by authentication
+or authorization.
 
 Failures on the authenticated endpoints are all **401 Unauthorized**, but the
 body differs by cause: *no (valid) client certificate* when none was presented,
@@ -88,9 +90,10 @@ Content is served with **If-Modified-Since** support, so a client that already
 holds a current copy receives **304 Not Modified**. This is what makes a frequent
 timer cheap.
 
-A request for a domain the server does not hold yields **500 Internal Server
-Error** rather than **404 Not Found**, because the missing file is reported as an
-ordinary read failure.
+A request for a domain or file the server does not hold yields **404 Not
+Found** with the body *not found*. Any other failure to read the material yields
+**500 Internal Server Error** with the body *internal error*. Neither reveals
+paths or other details to the peer; the full error is logged by the server.
 
 # FILE LAYOUT
 

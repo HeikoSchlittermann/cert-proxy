@@ -11,6 +11,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"time"
 
 	"go.schlittermann.de/heiko/cert-proxy/cmd/cert-proxy-client/cert"
 	"go.schlittermann.de/heiko/cert-proxy/cmd/cert-proxy-client/secret"
@@ -86,7 +87,7 @@ is a problem.
 Example:
 
 	cert-proxy-client -connect https://cert-proxy/ \
-					  -servernae certs.example.com \
+					  -servername certs.example.com \
 					  -sslfile client-ssl.pem \
 					  -verbose
 `)
@@ -111,6 +112,7 @@ Example:
 	flag.StringVar(&opt.SharedHook, "shared-hook", "", "shared hook script `file`²")
 	flag.StringVar(&opt.ServerCN, "servername", "", "host `name` or IP address required in the cert proxy server certificate SAN (if empty: use the host we connect to)")
 	flag.StringVar(&opt.SSLFile, "sslfile", "client-ssl.pem", "SSL auth `file` (crt+key+ca) PEM")
+	flag.DurationVar(&opt.Timeout, "timeout", 60*time.Second, "`duration` limit for each HTTP request, including the response body (0: no limit)")
 	flag.Var(&opt.Format, "format", "`format` of the requested certificate(s) (PEM|PKCS12)")
 }
 
@@ -196,13 +198,18 @@ func parseFlags() {
 	}
 }
 
-// checkConnectURL verifies -connect is a base HTTP URL. Queries and fragments
+// checkConnectURL verifies -connect is a base HTTPS URL. Plain http is
+// refused: the client fetches private keys. Queries and fragments
 // cannot be preserved by the client's endpoint construction: appending
 // /v1/... to their string form would put that endpoint inside the query or
 // fragment instead of in the request path.
 func checkConnectURL(u *url.URL) error {
-	if u.Scheme != "http" && u.Scheme != "https" {
-		return fmt.Errorf("-connect scheme must be http or https, got %q", u.Scheme)
+	if u.Scheme == "http" {
+		return fmt.Errorf("-connect must use https (private keys are transferred)")
+	}
+
+	if u.Scheme != "https" {
+		return fmt.Errorf("-connect scheme must be https, got %q", u.Scheme)
 	}
 
 	if u.Host == "" {

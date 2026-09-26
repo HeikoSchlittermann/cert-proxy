@@ -52,8 +52,8 @@ See **cert-proxy**(7) for the protocol and the on-disk layout.
 **-cnfile** *file*
 : Read the domain list from *file*, or from standard input when *file* is **-**. The format is the one described in **cert-proxy-clients**(5).
 
-**-connect** *[scheme://]server[:port]*
-: Base HTTP(S) address of the cert-proxy server. Default *https://localhost:4433*. The scheme may be omitted, in which case **https** is used, and https implies port 443 unless a port is given. Trailing slashes are removed. User information, queries and fragments are rejected because protocol endpoint paths are appended to this address and authentication uses the client certificate.
+**-connect** *[https://]server[:port]*
+: Base HTTPS address of the cert-proxy server. Default *https://localhost:4433*. The scheme may be omitted, in which case **https** is used, and https implies port 443 unless a port is given. The scheme **http** is rejected, because private keys are transferred. Trailing slashes are removed. User information, queries and fragments are rejected because protocol endpoint paths are appended to this address and authentication uses the client certificate.
 
 **-force**
 : Download unconditionally, ignoring *If-Modified-Since*. Default **false**.
@@ -68,10 +68,10 @@ See **cert-proxy**(7) for the protocol and the on-disk layout.
 : Maximum number of domains processed in parallel. Default: the number of CPUs.
 
 **-passout** *scheme*:*password*
-: Password protecting the PKCS12 bundle. Default: none. See **PASSWORD SOURCES** below. The password is sent to the server as a query parameter, so avoid it on a connection you do not trust.
+: Password protecting the PKCS12 bundle. Default: none, which requests a bundle without password: the client always sends the parameter, here an empty **pass=**; omitting it, as clients up to v1.21.0 do, is deprecated on the server side. See **PASSWORD SOURCES** below. The password is sent to the server as a query parameter, so avoid it on a connection you do not trust. A value without a colon or with an unknown scheme is fatal.
 
 **-pkcs12-compat** *legacy*|*modern*
-: PKCS12 compatibility level requested from the server. Default **modern** on Unix and **legacy** on Windows.
+: PKCS12 compatibility level requested from the server. Default **modern** on all platforms. Windows releases before Server 2019 (and older Java releases) cannot import a modern bundle; request **legacy** for those.
 
 **-servername** *name*
 : Host name or IP address required in the server certificate's Subject Alternative Name extension. When empty, the host being connected to is used. Default: empty.
@@ -87,6 +87,9 @@ See **cert-proxy**(7) for the protocol and the on-disk layout.
 
 **-symlink**
 : Expose the current file of each artifact through a symlink. Default **true** on Unix, **false** on Windows.
+
+**-timeout** *duration*
+: Time limit for each HTTP request, including reading the response body, in Go duration syntax (for example *60s*, *2m*). Default *60s*. **0** disables the limit.
 
 **-verbose**
 : Report progress. Default **false**.
@@ -120,6 +123,14 @@ See **cert-proxy**(7) for the protocol and the on-disk layout.
 
 */etc/default/cert-proxy-client*
 : Read by the systemd unit. The variable **OPTS** is appended to the command line.
+
+The supplied *cert-proxy-client.service* runs as *root*, because hooks commonly
+need to reload or restart other services. It is hardened with
+**NoNewPrivileges=**, **PrivateTmp=**, **ProtectHome=** and
+**ProtectSystem=full**: */usr*, */boot* and */etc* are read-only, home
+directories are inaccessible, and */var/lib/cert-proxy* is writable. A hook
+that has to write elsewhere below */etc* or */usr* (for example to copy keys
+into a service's configuration) needs a drop-in adding **ReadWritePaths=**.
 
 # EXIT STATUS
 

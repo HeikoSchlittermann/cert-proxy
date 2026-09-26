@@ -1,8 +1,17 @@
 [Unit]
 Description=cert-proxy-client
+Documentation=man:cert-proxy-client(8)
 ConditionPathExists=/etc/cert-proxy/client-ssl.pem
 
 [Service]
 Type=oneshot
 EnvironmentFile=-/etc/default/cert-proxy-client
 ExecStart=cert-proxy-client -verbose -sslfile /etc/cert-proxy/client-ssl.pem -certbase /var/lib/cert-proxy/certs $OPTS
+
+# Runs as root on purpose: hooks commonly reload or restart other services.
+# Hooks writing below /etc or /usr need a drop-in with ReadWritePaths=.
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
+ProtectHome=yes
+ReadWritePaths=/var/lib/cert-proxy

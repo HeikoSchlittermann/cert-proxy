@@ -15,6 +15,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"software.sslmate.com/src/go-pkcs12"
 )
 
 func createTestCertAndKey(t *testing.T, dir string) {
@@ -147,20 +148,34 @@ func TestCreatePKCS12_CompatModern(t *testing.T) {
 	assert.Greater(t, reader.Len(), 0)
 }
 
-func TestCreatePKCS12_CompatUnknownDefaultsToLegacy(t *testing.T) {
+func TestPKCS12Encoder(t *testing.T) {
+	tests := []struct {
+		compat string
+		want   *pkcs12.Encoder
+	}{
+		{"", pkcs12.Modern2023},
+		{"modern", pkcs12.Modern2023},
+		{"legacy", pkcs12.LegacyDES},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.compat, func(t *testing.T) {
+			got, err := pkcs12Encoder(tc.compat)
+			require.NoError(t, err)
+			assert.Same(t, tc.want, got)
+		})
+	}
+}
+
+func TestCreatePKCS12_CompatUnknownRejected(t *testing.T) {
 	certbase := t.TempDir()
 	domain := "test.example.com"
 	domainDir := filepath.Join(certbase, domain)
 	require.NoError(t, os.MkdirAll(domainDir, 0755))
 	createTestCertAndKey(t, domainDir)
 
-	readerDefault, _, err := createPKCS12(certbase, domain, "pass", "")
-	require.NoError(t, err)
-
-	readerLegacy, _, err := createPKCS12(certbase, domain, "pass", "legacy")
-	require.NoError(t, err)
-
-	// Both should produce output (can't compare bytes due to randomness in encryption)
-	assert.Greater(t, readerDefault.Len(), 0)
-	assert.Greater(t, readerLegacy.Len(), 0)
+	for _, compat := range []string{"bogus", "Modern", "LEGACY"} {
+		_, _, err := createPKCS12(certbase, domain, "pass", compat)
+		require.ErrorIs(t, err, errInvalidCompat, compat)
+	}
 }

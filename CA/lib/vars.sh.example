@@ -1,9 +1,11 @@
 export CA_DIR=$PWD/CA
 export OPENSSL_CONF=$CA_DIR/openssl.cnf
-export CA_DEFAULT_C=DE
-export CA_DEFAULT_ST=Sachsen
-export CA_DEFAULT_L=Dresden
-export CA_DEFAULT_O=IUS
+# Distinguished name defaults of the CA and the issued certificates:
+# adjust to your organisation (C is the two-letter ISO country code).
+export CA_DEFAULT_C=XX
+export CA_DEFAULT_ST=State
+export CA_DEFAULT_L=City
+export CA_DEFAULT_O="Example Org"
 export CA_DEFAULT_OU=cert-proxy
 
 export GIT_COMMITTER_NAME=${GIT_COMMITTER_NAME:-"AUTO Cert-Proxy CA"}

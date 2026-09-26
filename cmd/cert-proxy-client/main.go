@@ -15,6 +15,7 @@ import (
 	"os/exec"
 	"path"
 	"strings"
+	"time"
 
 	"go.schlittermann.de/heiko/cert-proxy/cmd/cert-proxy-client/cert"
 	"go.schlittermann.de/heiko/cert-proxy/cmd/cert-proxy-client/worker"
@@ -28,18 +29,19 @@ const apiVersion = `v1`
 var (
 	CNs = list.UniqStrings{}
 	opt = struct {
-		Auto         bool        // Fetch all (Issue /list first)
-		Certbase     string      // where to put the output
-		CNfile       string      // the CNs to fetch
-		Connect      string      // Server address
-		Format       cert.Format // PEM|PKCS12
-		Hook         string      // Hook file
-		Jobs         int         // parallel Jobs
-		Passout      string      // PKC12 password
-		Pkcs12Compat string      // PKCS12 compatibility level
-		SharedHook   string      // Shared hook file
-		ServerCN     string      // X509 verification name of the server
-		SSLFile      string      // SSL auth file
+		Auto         bool          // Fetch all (Issue /list first)
+		Certbase     string        // where to put the output
+		CNfile       string        // the CNs to fetch
+		Connect      string        // Server address
+		Format       cert.Format   // PEM|PKCS12
+		Hook         string        // Hook file
+		Jobs         int           // parallel Jobs
+		Passout      string        // PKC12 password
+		Pkcs12Compat string        // PKCS12 compatibility level
+		SharedHook   string        // Shared hook file
+		ServerCN     string        // X509 verification name of the server
+		SSLFile      string        // SSL auth file
+		Timeout      time.Duration // per HTTP request, 0: none
 		Verbose      bool
 	}{
 		Format: cert.FORMAT, // platform dependend, PEM (*nix) vs PKCS12 (Win*)
@@ -91,6 +93,9 @@ func main() {
 			return cfg
 		}(),
 	}
+	// Bounds every request including reading the body; 0 disables it.
+	http.DefaultClient.Timeout = opt.Timeout
+
 	// WTF is going on here, I need to explore this in more detail
 	// And this CloseIdleConnections doesn't seem to help either
 	defer http.DefaultClient.Transport.(*http.Transport).CloseIdleConnections()

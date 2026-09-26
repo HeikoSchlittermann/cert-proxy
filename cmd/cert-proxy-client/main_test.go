@@ -210,13 +210,13 @@ func TestCheckConnectURL(t *testing.T) {
 		name, raw, want string
 	}{
 		{"https", "https://host:4433/base", ""},
-		{"http", "http://host", ""},
+		{"http", "http://host", "-connect must use https (private keys are transferred)"},
 		{"query", "https://host?token=x", "must not contain a query"},
 		{"empty query", "https://host?", "must not contain a query"},
 		{"fragment", "https://host#part", "must not contain a fragment"},
 		{"missing host", "https:", "must name a server"},
 		{"user information", "https://user:secret@host", "must not contain user information"},
-		{"unsupported scheme", "file:///tmp/socket", "scheme must be http or https"},
+		{"unsupported scheme", "file:///tmp/socket", "scheme must be https"},
 	}
 
 	for _, tc := range tests {

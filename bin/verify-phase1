@@ -1,0 +1,210 @@
+#!/bin/sh
+# (co)authored by ai:claude-opus-5-5
+#
+# Verification gates for Phase 1 of plans/enterprise-readiness.md.
+# Run from anywhere; operates on the repository containing this script.
+# Needs: go, golangci-lint, git, gzip, openssl, curl, python3 (free port).
+set -eu
+
+cd "$(dirname "$0")/.."
+
+step() { printf '\n=== %s\n' "$*"; }
+fail() { printf 'FAIL: %s\n' "$*" >&2; exit 1; }
+ok()   { printf 'ok: %s\n' "$*"; }
+
+step "1. go build ./... && go vet ./..."
+go build ./... && go vet ./...
+ok "build + vet"
+
+step "2. go test ./... (-count=1: the integration test execs go build, which the test cache cannot see)"
+go test -count=1 ./...
+
+step "3. golangci-lint run ./..."
+golangci-lint run ./...
+
+step "4. man pages: go generate determinism (decompressed content), gzip -t"
+# Compare the decompressed pages before and after regeneration: they must
+# already be what go generate produces. Not the .gz bytes: compress/gzip's
+# output may differ across Go versions for identical content.
+mansums() { for f in man/*.gz; do printf '%s ' "$f"; gzip -cd "$f" | sha256sum; done; }
+gzip -t man/*.gz
+before=$(mansums)
+go generate ./...
+after=$(mansums)
+[ "$before" = "$after" ] || { printf '%s\n' "$before" "$after"; fail "man/*.gz content not in sync with man/*.md"; }
+ok "go generate left the content of man/*.gz unchanged"
+if ! git diff --quiet HEAD -- man/; then
+	echo "note: man/ differs from HEAD (uncommitted changes, or re-compressed by another Go version):"
+	git diff --stat HEAD -- man/
+fi
+gzip -t man/*.gz
+ok "gzip -t man/*.gz"
+
+step "5. functional check against a live server"
+tmp=$(mktemp -d "${TMPDIR:-/tmp}/verify-phase1.XXXXXX")
+pid=
+cleanup() {
+	if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+		kill -KILL "$pid" 2>/dev/null || true
+	fi
+	rm -rf "$tmp"
+}
+trap cleanup EXIT INT TERM
+
+go build -o "$tmp/cert-proxy-server" ./cmd/cert-proxy-server
+go build -o "$tmp/cert-proxy-client" ./cmd/cert-proxy-client
+
+pki=$tmp/pki
+domain=verify.example.test
+cn=verify-client
+mkdir -p "$pki" "$tmp/certs/$domain" "$tmp/clients"
+
+(
+	cd "$pki"
+	quiet() { "$@" >/dev/null 2>&1 || { echo "openssl failed: $*" >&2; exit 1; }; }
+	# throwaway CA
+	quiet openssl req -x509 -new -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes \
+		-keyout ca.key -out ca.pem -days 2 -subj "/CN=verify-phase1 CA"
+	# server: SAN 127.0.0.1
+	quiet openssl req -new -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes \
+		-keyout server.key -out server.csr -subj "/CN=127.0.0.1"
+	printf 'subjectAltName=IP:127.0.0.1\nextendedKeyUsage=serverAuth\n' >server.ext
+	quiet openssl x509 -req -in server.csr -CA ca.pem -CAkey ca.key -CAcreateserial \
+		-days 2 -extfile server.ext -out server.pem
+	cat server.pem server.key ca.pem >server-ssl.pem
+	# client
+	quiet openssl req -new -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes \
+		-keyout client.key -out client.csr -subj "/CN=$cn"
+	printf 'extendedKeyUsage=clientAuth\n' >client.ext
+	quiet openssl x509 -req -in client.csr -CA ca.pem -CAkey ca.key -CAcreateserial \
+		-days 2 -extfile client.ext -out client.pem
+	cat client.pem client.key ca.pem >client-ssl.pem
+	# served domain: self-signed leaf, chain = throwaway CA
+	d=$tmp/certs/$domain
+	quiet openssl req -x509 -new -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes \
+		-keyout "$d/privkey.pem" -out "$d/cert.pem" -days 2 -subj "/CN=$domain" \
+		-addext "subjectAltName=DNS:$domain"
+	cp ca.pem "$d/chain.pem"
+	cat "$d/cert.pem" "$d/chain.pem" >"$d/fullchain.pem"
+)
+printf '# verify-phase1\n%s\n' "$domain" >"$tmp/clients/$cn"
+
+port=$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')
+base=https://127.0.0.1:$port
+
+"$tmp/cert-proxy-server" -verbose \
+	-serve "127.0.0.1:$port" \
+	-sslfile "$pki/server-ssl.pem" \
+	-certbase "$tmp/certs" \
+	-ccd "$tmp/clients" >"$tmp/server.log" 2>&1 &
+pid=$!
+
+i=0
+until timeout 15 curl -s -o /dev/null --cacert "$pki/ca.pem" "$base/v1/list"; do
+	i=$((i + 1))
+	[ $i -lt 50 ] || { cat "$tmp/server.log"; fail "server did not come up on $base"; }
+	kill -0 "$pid" 2>/dev/null || { cat "$tmp/server.log"; fail "server exited"; }
+	sleep 0.1
+done
+ok "server listening on $base (pid $pid)"
+
+anon() { timeout 15 curl -s --cacert "$pki/ca.pem" "$@"; }
+auth() { timeout 15 curl -s --cacert "$pki/ca.pem" --cert "$pki/client.pem" --key "$pki/client.key" "$@"; }
+
+# (a) unknown domain, unauthenticated: 404, opaque body
+code=$(anon -o "$tmp/a.body" -w '%{http_code}' "$base/v1/cert/unknown.example")
+body=$(cat "$tmp/a.body")
+[ "$code" = 404 ] || fail "(a) status $code, want 404"
+[ "$body" = "not found" ] || fail "(a) body '$body', want 'not found'"
+ok "(a) GET /v1/cert/unknown.example -> $code '$body'"
+
+# (b) no X-Version for anonymous clients
+anon -D "$tmp/b.hdr" -o /dev/null "$base/v1/cert/$domain"
+grep -q '^HTTP/[0-9.]* 200' "$tmp/b.hdr" || { cat "$tmp/b.hdr"; fail "(b) public cert not served"; }
+if grep -qi '^x-version:' "$tmp/b.hdr"; then cat "$tmp/b.hdr"; fail "(b) X-Version sent unauthenticated"; fi
+ok "(b) anonymous GET /v1/cert/$domain: 200, no X-Version"
+
+# (c) authenticated list: 200 + X-Version
+code=$(auth -D "$tmp/c.hdr" -o "$tmp/c.body" -w '%{http_code}' "$base/v1/list")
+[ "$code" = 200 ] || fail "(c) status $code, want 200"
+grep -qx "$domain" "$tmp/c.body" || fail "(c) list lacks $domain"
+grep -i '^x-version:' "$tmp/c.hdr" || fail "(c) X-Version missing"
+ok "(c) authenticated GET /v1/list -> 200, lists $domain, X-Version present"
+
+# (d) TLS 1.1 refused (client side forced capable via SECLEVEL=0), TLS 1.2 accepted
+if timeout 15 openssl s_client -connect "127.0.0.1:$port" -tls1_1 -cipher 'DEFAULT:@SECLEVEL=0' \
+	-CAfile "$pki/ca.pem" </dev/null >"$tmp/d.out" 2>&1; then
+	cat "$tmp/d.out"
+	fail "(d) TLS 1.1 handshake succeeded"
+fi
+timeout 15 openssl s_client -connect "127.0.0.1:$port" -tls1_2 -cipher 'DEFAULT:@SECLEVEL=0' \
+	-CAfile "$pki/ca.pem" </dev/null >"$tmp/d12.out" 2>&1 || { cat "$tmp/d12.out"; fail "(d) TLS 1.2 control failed"; }
+ok "(d) s_client -tls1_1 fails ($(grep -io 'alert protocol version\|no protocols available\|wrong version number\|unsupported protocol' "$tmp/d.out" | head -n1 || true)), -tls1_2 succeeds"
+
+# (e) generated PKCS12: pass absent -> 200 + deprecation warning (v1.21.0
+# clients), pass= -> 200 (modern encoding)
+code=$(auth -o "$tmp/e1.p12" -w '%{http_code}' "$base/v1/bundle/$domain?format=PKCS12")
+[ "$code" = 200 ] || fail "(e) without pass: status $code, want 200"
+openssl pkcs12 -in "$tmp/e1.p12" -info -noout -passin pass: >"$tmp/e1.info" 2>&1 || { cat "$tmp/e1.info"; fail "(e) without pass: not a PKCS12 readable with the empty password"; }
+grep -q 'bundle request without pass=' "$tmp/server.log" || { cat "$tmp/server.log"; fail "(e) without pass: no deprecation warning logged"; }
+ok "(e) bundle without pass -> $code, valid PKCS12 (empty password), logged: $(grep -m1 -o 'bundle request without pass=.*' "$tmp/server.log")"
+code=$(auth -o "$tmp/e2.p12" -w '%{http_code}' "$base/v1/bundle/$domain?format=PKCS12&pass=")
+[ "$code" = 200 ] || fail "(e) with pass=: status $code, want 200"
+openssl pkcs12 -in "$tmp/e2.p12" -info -noout -passin pass: >"$tmp/e2.info" 2>&1 || { cat "$tmp/e2.info"; fail "(e) not a readable PKCS12"; }
+grep -q 'AES-256' "$tmp/e2.info" || { cat "$tmp/e2.info"; fail "(e) bundle not modern (AES-256) by default"; }
+ok "(e) bundle with pass= -> $code, valid PKCS12, $(grep -m1 'AES-256' "$tmp/e2.info")"
+
+# (e2) the real client fetches a PKCS12 bundle without -passout (sends pass=)
+mkdir "$tmp/out"
+timeout 15 "$tmp/cert-proxy-client" -connect "$base" -sslfile "$pki/client-ssl.pem" \
+	-certbase "$tmp/out" -format PKCS12 -timeout 10s -auto=false "$domain" >"$tmp/e3.log" 2>&1 \
+	|| { cat "$tmp/e3.log"; fail "(e2) client PKCS12 fetch failed"; }
+openssl pkcs12 -in "$tmp/out/$domain/bundle.pfx" -info -noout -passin pass: >"$tmp/e3.info" 2>&1 \
+	|| { cat "$tmp/e3.info"; fail "(e2) client bundle unreadable"; }
+ok "(e2) cert-proxy-client -format PKCS12 without -passout -> $(ls "$tmp/out/$domain")"
+
+# (f) private key without client cert: 401
+code=$(anon -o /dev/null -w '%{http_code}' "$base/v1/privkey/$domain")
+[ "$code" = 401 ] || fail "(f) status $code, want 401"
+ok "(f) anonymous GET /v1/privkey/$domain -> $code"
+
+# (g) graceful exit within 3s of SIGTERM
+kill -TERM "$pid"
+i=0
+while kill -0 "$pid" 2>/dev/null; do
+	i=$((i + 1))
+	[ $i -le 30 ] || fail "(g) server still running 3s after SIGTERM"
+	sleep 0.1
+done
+rc=0
+wait "$pid" || rc=$?
+pid=
+n=$(grep -c 'shutting down' "$tmp/server.log" || true)
+[ "$n" = 1 ] || { cat "$tmp/server.log"; fail "(g) 'shutting down' logged $n times, want 1"; }
+ok "(g) exited after SIGTERM within ~$((i * 100))ms, status $rc, 'shutting down' logged once"
+
+# (h) client refuses http:// and a colon-less -passout without panicking
+if timeout 15 "$tmp/cert-proxy-client" -connect "http://127.0.0.1:$port" -sslfile "$pki/client-ssl.pem" \
+	-certbase "$tmp/out" >"$tmp/h1.log" 2>&1; then fail "(h) http:// accepted"; fi
+grep -q 'must use https' "$tmp/h1.log" || { cat "$tmp/h1.log"; fail "(h) wrong http:// error"; }
+ok "(h) -connect http://... -> $(cat "$tmp/h1.log")"
+rc=0
+timeout 15 "$tmp/cert-proxy-client" -passout hunter2 -connect "$base" -sslfile "$pki/client-ssl.pem" \
+	-certbase "$tmp/out" >"$tmp/h2.log" 2>&1 || rc=$?
+[ "$rc" = 1 ] || { cat "$tmp/h2.log"; fail "(h) -passout hunter2: exit $rc, want 1 (log.Fatal, not panic=2)"; }
+if grep -q -e panic -e hunter2 "$tmp/h2.log"; then cat "$tmp/h2.log"; fail "(h) panic or password echoed"; fi
+ok "(h) -passout hunter2 -> exit $rc: $(cat "$tmp/h2.log")"
+rc=0
+timeout 15 "$tmp/cert-proxy-client" -passout hunter2:tail -connect "$base" -sslfile "$pki/client-ssl.pem" \
+	-certbase "$tmp/out" >"$tmp/h3.log" 2>&1 || rc=$?
+[ "$rc" = 1 ] || { cat "$tmp/h3.log"; fail "(h) -passout hunter2:tail: exit $rc, want 1"; }
+if grep -q -e panic -e hunter2 "$tmp/h3.log"; then cat "$tmp/h3.log"; fail "(h) panic or password prefix echoed"; fi
+ok "(h) -passout hunter2:tail -> exit $rc: $(cat "$tmp/h3.log")"
+
+echo "--- server log"
+cat "$tmp/server.log"
+
+step "6. git status --short"
+git status --short
+
+printf '\nALL GATES PASSED\n'

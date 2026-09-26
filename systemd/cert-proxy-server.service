@@ -1,10 +1,40 @@
 [Unit]
 Description=cert-proxy-server service
+Documentation=man:cert-proxy-server(8)
+After=network-online.target
+Wants=network-online.target
 
 [Service]
-ProtectSystem=strict
 EnvironmentFile=-/etc/default/cert-proxy-server
+# -certbase before $OPTS: the last occurrence of a flag wins, so OPTS in
+# /etc/default/cert-proxy-server can override it.
 ExecStart=cert-proxy-server -verbose -sslfile /etc/cert-proxy/server-ssl.pem -certbase /var/lib/dehydrated/certs -ccd /etc/cert-proxy/clients $OPTS
+Restart=on-failure
+
+# Runs as root. For an unprivileged dynamic user see the example drop-in
+# /usr/share/doc/cert-proxy-server/examples/dynamic-user.conf and
+# cert-proxy-server(8).
+# Not "cert-proxy": that is the client's store, and DynamicUser (opt-in)
+# would chown a shared StateDirectory recursively to the dynamic user.
+StateDirectory=cert-proxy-server
+WorkingDirectory=/var/lib/cert-proxy-server
+
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+# Root, but only what it needs: bind ports below 1024 (e.g. -serve :443)
+# and read cert files owned by another user (e.g. a dehydrated user).
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE CAP_DAC_READ_SEARCH
+AmbientCapabilities=
 
 [Install]
-WantedBy=network.target
+WantedBy=multi-user.target

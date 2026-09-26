@@ -26,52 +26,65 @@ is a symlink (mode 120000); no secret is in git history (all-blob scan done).
 No test/lint CI exists; `.forgejo/workflows/` only has the `nagonag`
 dependency bot.
 
-- [ ] `.forgejo/workflows/ci.yaml` on push + PR: `go build ./...`,
+- [x] `.forgejo/workflows/ci.yaml` on push + PR: `go build ./...`,
       `go test ./...`, `golangci-lint run ./...`, `govulncheck ./...`,
       `go generate ./... && git diff --exit-code man/`, `gzip -t man/*.gz`.
-- [ ] Scheduled job (weekly) running `make test-packaging`
+      *Done;* the man page check compares decompressed content, as the
+      compressed bytes differ across Go versions.
+- [x] Scheduled job (weekly) running `make test-packaging`
       (needs podman on the runner — verify availability first).
-- [ ] Fix current lint debt: `internal/program/program.go:21` (wsl_v5 ×2).
+      *Workflow in place; runner podman support still unverified.*
+- [x] Fix current lint debt: `internal/program/program.go:21` (wsl_v5 ×2).
 
 ### 1.2 Server hardening
 
-- [ ] `cmd/cert-proxy-server/main.go:73` — replace `http.Serve(listener, nil)`
+- [x] `cmd/cert-proxy-server/main.go:73` — replace `http.Serve(listener, nil)`
       with explicit `http.ServeMux` + `http.Server{ReadHeaderTimeout,
       ReadTimeout, WriteTimeout, IdleTimeout}`; graceful shutdown on
       SIGTERM/SIGINT.
-- [ ] `cmd/cert-proxy-server/serve.go` (`cert|chain|fullchain|privkey` branch
+- [x] `cmd/cert-proxy-server/serve.go` (`cert|chain|fullchain|privkey` branch
       and `bundle` branch) — *verified*: unauthenticated `/v1/cert/<unknown>`
       returns 500 with `open certs/<x>/cert.pem: no such file or directory`
       (leaks `-certbase`). Map `fs.ErrNotExist` → 404 with opaque body; other
       errors → 500 with opaque body, details only in the log.
-- [ ] `cmd/cert-proxy-server/version.go:14` — *verified*: `X-Version` sent to
+- [x] `cmd/cert-proxy-server/version.go:14` — *verified*: `X-Version` sent to
       unauthenticated clients. Send only when `ctx[REMOTE] != ""`, or make it
       a flag.
-- [ ] `cmd/cert-proxy-server/main.go` TLS config — set
+- [x] `cmd/cert-proxy-server/main.go` TLS config — set
       `MinVersion: tls.VersionTLS12` explicitly (Go default today, *verified*
       1.0/1.1 rejected); add `-tls-min 1.2|1.3`.
-- [ ] `cmd/cert-proxy-server/pkcs12.go:70` — default encoder is
+- [x] `cmd/cert-proxy-server/pkcs12.go:70` — default encoder is
       `pkcs12.LegacyDES` when `pkcs12-compat` is absent. Make `modern` the
       default; `legacy` only on explicit request.
 - [ ] `serve.go` bundle path — refuse empty PKCS12 password unless the
       client sent `pass=` explicitly (define semantics: empty `pass=` allowed,
       absent not).
+      *Decided otherwise for now:* absent `pass` is served with an empty
+      password and a deprecation warning in the server log, so v1.21
+      clients keep working. Rejecting it is left for the next major
+      release.
+- [x] Follow-up: the startup check for `-certbase`/`-ccd` tests existence
+      and type only, not readability (`cmd/cert-proxy-server/init.go`
+      `checkDir`).
+      *Done:* read and search access checked (`Readdirnames(1)`); write
+      access deliberately not required, the server never writes.
 
 ### 1.3 Client hardening
 
-- [ ] `cmd/cert-proxy-client/cert/const_windows.go` — `PKCS12Compat = "legacy"`
+- [x] `cmd/cert-proxy-client/cert/const_windows.go` — `PKCS12Compat = "legacy"`
       → `"modern"`. Document the Windows import caveat instead.
-- [ ] `cmd/cert-proxy-client/init.go` `checkConnectURL` — reject `http://`
+- [x] `cmd/cert-proxy-client/init.go` `checkConnectURL` — reject `http://`
       (private keys over plaintext); keep `https` only, or add
       `-insecure-http` with a loud warning.
-- [ ] `cmd/cert-proxy-client/cert/cert.go` `Execute` and
+      *Done:* https only, no `-insecure-http`.
+- [x] `cmd/cert-proxy-client/cert/cert.go` `Execute` and
       `cmd/cert-proxy-client/main.go` `fetchCNs` — no timeouts anywhere
       (`grep Timeout` → 0 hits). Add `-timeout` (default e.g. 60s) applied
       via `http.Client{Timeout}` or per-request `context.WithTimeout`.
-- [ ] `cmd/cert-proxy-client/secret/secret.go:17,36` — index panic on
+- [x] `cmd/cert-proxy-client/secret/secret.go:17,36` — index panic on
       `-passout foo` (no colon) and explicit `panic` on unknown scheme.
       Return errors.
-- [ ] `cmd/cert-proxy-client/init.go:89` — help text typo `-servernae`.
+- [x] `cmd/cert-proxy-client/init.go:89` — help text typo `-servernae`.
 
 ### 1.4 systemd units
 
@@ -85,30 +98,50 @@ dependency bot.
       `[Unit] After=network-online.target Wants=network-online.target`.
       Document how the service user gets read access to the ACME cert store
       (group or ACL).
-- [ ] `systemd/cert-proxy-client.service` — same hardening set; the client
+      *Partly, decided otherwise:* sandboxing done, but the unit stays
+      root (upgrade safety: `server-ssl.pem` and dehydrated's store are
+      root-only and renewals re-create them so) with
+      `CapabilityBoundingSet=CAP_NET_BIND_SERVICE CAP_DAC_READ_SEARCH`.
+      `DynamicUser=yes` + `SupplementaryGroups=ssl-cert` is an opt-in
+      drop-in (`systemd/cert-proxy-server.dynamic-user.conf`). Default
+      flip is a candidate for the next major release.
+- [x] `systemd/cert-proxy-client.service` — same hardening set; the client
       needs write to `-certbase` and exec of the hook, so `ProtectSystem=full`
       + `ReadWritePaths=/var/lib/cert-proxy`.
 - [ ] `systemd/cert-proxy-server.service` `-certbase /var/lib/dehydrated/certs`
       — dehydrated-specific. Move into `/etc/default/cert-proxy-server` as a
       documented example alongside certbot (`/etc/letsencrypt/live`) and
       acme.sh layouts.
-- [ ] Update `man/cert-proxy-server.8.md`, `man/cert-proxy-client.8.md`,
+      *Decided otherwise:* stays in `ExecStart` before `$OPTS` (last
+      flag wins) so a locally modified conffile cannot lose it on
+      upgrade; dehydrated and certbot examples are in the `.default`
+      file. No acme.sh example yet.
+- [ ] Follow-up: `test/packaging` does not assert that
+      `usr/share/doc/cert-proxy-server/examples/dynamic-user.conf` and
+      the server's sysusers snippet land in the server package.
+- [x] Update `man/cert-proxy-server.8.md`, `man/cert-proxy-client.8.md`,
       `.gogogo.conf` (sysusers) and regenerate man pages.
 
 ### 1.5 Scrub author-specific infrastructure from shipped files
 
-- [ ] `systemd/cert-proxy-client.default:4` — `cert-proxy.schlittermann.de`
+- [x] `systemd/cert-proxy-client.default:4` — `cert-proxy.schlittermann.de`
       → `cert-proxy.example.com`.
-- [ ] `CA/lib/vars.sh.example` — `DE/Sachsen/Dresden/IUS` → neutral
+- [x] `CA/lib/vars.sh.example` — `DE/Sachsen/Dresden/IUS` → neutral
       placeholders with a comment.
-- [ ] `README.md:45` clone URL; `README.md:250,338-342` issue links → plain
+- [x] `README.md:45` clone URL; `README.md:250,338-342` issue links → plain
       `#N` references plus one "issue tracker" link in a Support section.
-- [ ] `.gogogo.conf:268` `publish.deb: dupload` — private repo. Either move
+- [x] `.gogogo.conf:268` `publish.deb: dupload` — private repo. Either move
       to a non-tracked override or document that operators must set their
       own destination.
 
 Gate for Phase 1: CI green; `go test ./...`; manual curl checks for 404/opaque
 body; `systemd-analyze security cert-proxy-server.service` reported.
+Status: `go test ./...`, curl checks (`bin/verify-phase1`) and
+`systemd-analyze security` (4.5 as shipped, 3.8 with the drop-in) done;
+CI green: run 176 on `c4da116`, all steps passed (tests unprivileged,
+govulncheck clean with go1.27.1, required by `go.mod` since the runner
+image's go1.26.5 had 5 standard-library vulnerabilities).
+**Phase 1 gate met.**
 
 ---
 
