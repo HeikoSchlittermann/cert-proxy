@@ -138,7 +138,10 @@ Gate for Phase 1: CI green; `go test ./...`; manual curl checks for 404/opaque
 body; `systemd-analyze security cert-proxy-server.service` reported.
 Status: `go test ./...`, curl checks (`bin/verify-phase1`) and
 `systemd-analyze security` (4.5 as shipped, 3.8 with the drop-in) done;
-"CI green" open until the workflow has run on the runner.
+CI green: run 176 on `c4da116`, all steps passed (tests unprivileged,
+govulncheck clean with go1.27.1, required by `go.mod` since the runner
+image's go1.26.5 had 5 standard-library vulnerabilities).
+**Phase 1 gate met.**
 
 ---
 
