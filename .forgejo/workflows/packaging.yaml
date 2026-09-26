@@ -1,0 +1,29 @@
+# (co)authored by ai:claude-opus-5-5
+#
+# Weekly packaging test: builds the .deb packages with gogogo and installs
+# them in a podman container (see AGENTS.md, "Packaging test").
+#
+# UNVERIFIED: it is not known whether the "gogogo" runner provides podman
+# (and gogogo). Run it once via workflow_dispatch before relying on it.
+
+name: packaging
+
+on:
+  schedule:
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+jobs:
+  packaging:
+    runs-on: gogogo
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: tool versions
+        run: |
+          go version
+          podman --version
+          gogogo --version
+
+      - name: make test-packaging
+        run: make test-packaging

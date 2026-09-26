@@ -6,9 +6,11 @@
 // Command gen converts every man/*.md source into the tracked
 // <topic>.<section>.gz roff page beside it.
 //
-// Output is byte-for-byte reproducible: compress/gzip omits the source
-// filename and sets MTIME=0 unless the caller sets Name/ModTime, which we
-// deliberately do not. Each page is written to a temporary file in the
+// The page content is deterministic: go-md2man is pinned, and compress/gzip
+// omits the source filename and sets MTIME=0 unless the caller sets
+// Name/ModTime, which we deliberately do not. The compressed bytes are not
+// guaranteed to be: compress/gzip's output may differ across Go versions, so
+// compare the decompressed content (gzip -cd), not the .gz files. Each page is written to a temporary file in the
 // destination directory and renamed into place, so a failing run can never
 // leave a truncated tracked page behind.
 package main

@@ -26,11 +26,14 @@ is a symlink (mode 120000); no secret is in git history (all-blob scan done).
 No test/lint CI exists; `.forgejo/workflows/` only has the `nagonag`
 dependency bot.
 
-- [ ] `.forgejo/workflows/ci.yaml` on push + PR: `go build ./...`,
+- [x] `.forgejo/workflows/ci.yaml` on push + PR: `go build ./...`,
       `go test ./...`, `golangci-lint run ./...`, `govulncheck ./...`,
       `go generate ./... && git diff --exit-code man/`, `gzip -t man/*.gz`.
-- [ ] Scheduled job (weekly) running `make test-packaging`
+      *Done;* the man page check compares decompressed content, as the
+      compressed bytes differ across Go versions.
+- [x] Scheduled job (weekly) running `make test-packaging`
       (needs podman on the runner — verify availability first).
+      *Workflow in place; runner podman support still unverified.*
 - [x] Fix current lint debt: `internal/program/program.go:21` (wsl_v5 ×2).
 
 ### 1.2 Server hardening
@@ -133,6 +136,9 @@ dependency bot.
 
 Gate for Phase 1: CI green; `go test ./...`; manual curl checks for 404/opaque
 body; `systemd-analyze security cert-proxy-server.service` reported.
+Status: `go test ./...`, curl checks (`bin/verify-phase1`) and
+`systemd-analyze security` (4.5 as shipped, 3.8 with the drop-in) done;
+"CI green" open until the workflow has run on the runner.
 
 ---
 

@@ -1,0 +1,57 @@
+# (co)authored by ai:claude-opus-5-5
+#
+# Build, vet, test, lint, vulnerability scan and man page determinism on
+# every push and pull request.
+
+name: ci
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: gogogo
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: go version
+        run: go version
+
+      - name: install tools
+        run: |
+          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.2
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: build
+        run: go build ./...
+
+      - name: vet
+        run: go vet ./...
+
+      - name: test
+        run: go test -count=1 ./...
+
+      - name: lint
+        run: golangci-lint run ./...
+
+      - name: govulncheck
+        run: govulncheck ./...
+
+      # Compares decompressed content: compress/gzip's output may differ
+      # across Go versions for identical pages.
+      - name: man pages are up to date
+        run: |
+          go generate ./...
+          rc=0
+          for f in man/*.gz; do
+            a=$(git show "HEAD:$f" | gzip -cd | sha256sum)
+            b=$(gzip -cd "$f" | sha256sum)
+            if [ "$a" != "$b" ]; then echo "stale: $f (run go generate ./...)"; rc=1; fi
+          done
+          exit $rc
+
+      - name: man pages are valid gzip
+        run: gzip -t man/*.gz
