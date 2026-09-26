@@ -121,13 +121,13 @@ dependency bot.
 
 ### 1.5 Scrub author-specific infrastructure from shipped files
 
-- [ ] `systemd/cert-proxy-client.default:4` — `cert-proxy.schlittermann.de`
+- [x] `systemd/cert-proxy-client.default:4` — `cert-proxy.schlittermann.de`
       → `cert-proxy.example.com`.
-- [ ] `CA/lib/vars.sh.example` — `DE/Sachsen/Dresden/IUS` → neutral
+- [x] `CA/lib/vars.sh.example` — `DE/Sachsen/Dresden/IUS` → neutral
       placeholders with a comment.
 - [ ] `README.md:45` clone URL; `README.md:250,338-342` issue links → plain
       `#N` references plus one "issue tracker" link in a Support section.
-- [ ] `.gogogo.conf:268` `publish.deb: dupload` — private repo. Either move
+- [x] `.gogogo.conf:268` `publish.deb: dupload` — private repo. Either move
       to a non-tracked override or document that operators must set their
       own destination.
 
