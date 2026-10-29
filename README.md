@@ -1,4 +1,4 @@
-<img src="assets/frontmatter.svg" alt="cert-proxy frontmatter" style="width:100%;max-width:1200px;height:auto">
+<img src="assets/hero.svg" alt="cert-proxy frontmatter" style="width:100%;max-width:1200px;height:auto">
 
 # CERT-PROXY
 
