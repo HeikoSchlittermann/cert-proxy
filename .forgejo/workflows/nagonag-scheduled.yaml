@@ -4,9 +4,11 @@
 #
 # Scheduled/manual caller.
 #
-# This caller passes an explicit branch list for broad scans. Reusable
-# workflow inputs support only string, boolean, and number values, so
-# scan_branches is a JSON array encoded as a string, not a native YAML list.
+# Without inputs, the reusable workflow scans the triggering commit:
+# scheduled runs always fire on the repository's default branch, manual
+# runs scan the branch selected in the UI. To scan an explicit branch list
+# instead, add `with: scan_branches: '["main", "release/1.x"]'` (a JSON
+# array encoded as a string; reusable workflow inputs cannot be YAML lists).
 
 name: nagonag (Scheduled)
 
@@ -26,5 +28,3 @@ jobs:
     runs-on: nagonag
     uses: ius/workflows/.forgejo/workflows/nagonag.yaml@master
     secrets: inherit
-    with:
-      scan_branches: '["master"]'
